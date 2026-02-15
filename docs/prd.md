@@ -1,0 +1,851 @@
+# Minerva Tour App
+
+**How to use this PRD:** This document is the single source of truth for **what** the app must do—features, user roles, business rules, and data requirements. It is written for a **fresh start**: no assumption about existing code or UI. **Design and implementation choices** (layout, visual style, navigation pattern, component structure, tech stack within the recommendations) are left to the builder. Prefer clear requirements over prescriptive UI; allow creative freedom where it doesn’t conflict with the rules below.
+
+---
+
+**Overview**
+
+This app is the hub for members of The Minerva Tour Golf Club (MGC). In this app, members can submit scores, view the leaderboards, view the season schedule, view stats, view scores from previous events. For members who are admins, they can configure what the members can see and do, change the mode from regular season to playoffs or special tournaments, adjust settings, view logs and audit for debugging.
+
+The first major version of this app will be a website that is meant to be used on mobile devices (iOS and Android). Users will save the website to their home screen to use like a progressive web app. In a future phase, after most functionality is completed and validated working, we will also create a native version of the app for iOS and Android.
+
+## **Context about the Minerva Golf Club:**
+
+### **Format:**
+
+- During the Regular Season, there is a tour event window every two weeks in which each player may submit as many scores as they would like. The best net score will be counted toward the event, the remaining scores will be discarded.
+- The Regular Season has 9 event windows
+- Each two week event window begins on a Monday morning and ends on Sunday night.
+- Each event is for either 9, 18, or 36 holes. 18 hole rounds may be split into two 9 hole rounds to fit the event format. See the “Schedule” tab for the full season event schedule (you can add it to your own calendar too)
+- Players accumulate points for results in each event similar to the Fedex Cup on the PGA tour. Certain events are classified as majors and are worth more points. See the “Scoring” section below for more details
+
+### **General Rules and Guidelines:**
+
+- The tour complies with all USGA “Rules of Golf” (found at [https://www.usga.org/content/dam/usga/pdf/2015/2016 Rules/2016-rulesofgolf-USGAfinal.pdf](https://www.usga.org/content/dam/usga/pdf/2015/2016%20Rules/2016-rulesofgolf-USGAfinal.pdf)) , unless otherwise noted above, and with all rule changes for the 2019 PGA Tour season (found at [http://www.usga.org/rules-hub/rules-modernization/text/major-proposed-changes.html](http://www.usga.org/rules-hub/rules-modernization/text/major-proposed-changes.html))
+- Notable updates to the 2019 USGA rules include:
+    - No penalty for striking the flag stick with a putt
+    - No penalty for repairing spike marks on the putting line
+    - No penalty for accidentally moving your ball.
+- A quadruple bogey is the maximum score a player can score on any hole
+- The score posting process is available [here](https://minervatour.wordpress.com/rules/posting-scores/)
+- Event weeks begin on Monday morning and end on Sunday night (unless the deadline is extended due to weather or group consensus).
+- All scores are due by 11:59 PM on Sunday the week of the official tour event
+- “Remote” scores are allowed. Rounds do not need to be played on the same course to be eligible.
+- Scores should be submitted on the same day in which they are played
+- Scores must be shot during the event window to be eligible**.**
+    - Note: A provision is available to players who live in a location where golf cannot be played at the beginning of the Minerva Tour season. The first two events are eligible for retroactive scores to be posted by these players but the events must be made up by the end of event 4. The best score posted in each event window applies to the current event, subsequent posted scores are applied as makeup rounds to the first two events.
+- If you are able, you may play multiple rounds during a single event week and submit all of your scores. Your best net score will be selected and applied to the active event. There is no limit to the number of rounds you can play in a single event week.
+- Playing multiple balls during a single round and submitting each ball as a separate score is not allowed.
+- The maximum scored allowed per hole in a match play event (for example Bobby Jones Cup) is a net quad. This means, a player may not pick up their ball, say they made a gross quad and receive handicap strokes on top of this score. The player must play the ball out to a maximum of net quadruple bogey.
+- Major and Playoff events are 18 holes (final event is 36 holes). 9 hole scores may not be combined to form an 18 hole score in these events.
+- Regular 18 hole events allow for 9 hole scores to be combined to form an 18 hole score. However, 18 hole scores may not be divided and combined with another outstanding 9 hole score (termed “splicing”). 9 hole scores are automatically combined with the next 9 hole score within the event window even if it is not the “next golf played” (same procedure as GHIN handicap process, allowing for “bridging” across one or multiple 18 hole rounds).
+
+### **Handicapping:**
+
+- The tour follows all best practices set by the USGA for maintaining handicaps. This is done automatically through GHIN . More details on the USGA handicapping process is available here: [http://www.usga.org/content/usga/home-page/Handicapping/handicap-manual.html#!rule-14389](http://www.usga.org/content/usga/home-page/Handicapping/handicap-manual.html#!rule-14389)
+- A USGA compliant handicap is required to post an official score to the Minerva Tour (at least 54 holes must be played).
+- The maximum handicap is 54
+- Event scores are handicapped based on the player’s official GHIN handicap at the time of the first day of the event.
+- Official handicaps through GHIN are used for Minerva Tour event scoring.
+
+### **Format & Rules**
+
+Local Minerva Tour Rules and Guidelines
+
+- Max hole score - The max score on any hole is **gross quadruple bogey**
+- Gimmies - **No gimmies** allowed, players must putt everything out
+- Major course/tee requirement - **Major and Playoff events** must be played from course/tee **rated 68 or higher and may not be comprised of combined 9 hole scores**
+- Out of Bounds + Lost Ball -
+    
+    Two additional options are available in case of a lost ball or out of bounds:
+    
+    1. Player must return to the place of the previous shot under one penalty stroke.
+    2. Player may take a drop within 2 club lengths of the position of the lost ball or where the ball went out of bounds under penalty of **2 strokes.**
+    3. Player may take a drop 2 club lengths inside the nearest fairway edge, no closer to the hole than where the ball was lost or where the ball went out of bounds under penalty of **2 strokes.**
+- Lost Ball Relief - In the event a ball has been lost and if you are **virtually certain** that your ball is lost in standard rough or fairway grass **on the hole you are playing**, you may elect to take a free drop in the area where your ball is estimated to have come to rest. The spirit of this rule is to provide relief in situations where a ball should be find-able (such as in light rough or embedded in the fairway), but it inexplicably cannot be found.
+    
+    **Using this rule requires mandatory reporting to the membership with photo evidence and explanation of circumstances.**
+    
+    This rule does not apply if the ball is expected to be in the following areas:
+    
+    - Heavy rough which is longer than the course’s standard rough length (i.e. tall rough between holes at Lawsonia
+    - Ivy covered areas
+    - Hazards (marked by red or yellow stakes)
+    - Bunkers
+    - Out of bounds areas
+    - Bushes or low brush
+    - Drainage ditch
+    - Pinestraw
+- Scoring -
+    - Course handicap calculations as applied to Net score are **rounded to the nearest stroke**
+    - Net scores are rounded to the **nearest stroke**
+    - In case of a tie in an event, points are split evenly between the tied players and rounded to the **nearest tenth of a point**
+
+### **Scoring**:
+
+- Scoring for each tour event will be done with a standard handicapped stroke play format. To calculate a net score which is normalized for course difficulty (yardage, hazards, etc.) and player ability (handicap), the following formula is used: “Net Strokes Over Par” (rounded to nearest stroke) = (“Gross Score” – “Course Handicap (rounded to nearest stroke)” – “Course Rating”)
+    - Each player is assigned a course handicap based on the course they are playing and tees selected
+    - At the end of the round, the course handicap is subtracted from the player’s final score
+    - The course rating is then subtracted to get “Net Strokes Over Par” and rounded to the nearest stroke.
+    - The player with the lowest “Net Strokes Over Par” after subtracting the course handicap and course rating is the winner.
+- Note: Ranking by “Net Strokes Over Par” allows us to play on courses with variations in yardage/course par (i.e. executive courses with par 62, par 70, par 72, etc.)
+- Regular Season scoring on the the Minerva Tour is done as follows
+    - The winner of **9 hole events** and **non-major 18 hole events** receives 1 point for each player who plays in the event. Subsequent places receive one less point per place. For example, if 3 people play in a 9 hole event, first place wins 3 points, second place 2 points, and third place 1 point
+    - **Majors (18 holes)** are assigned higher point values. Winners receive **1.33** points per participant or 10, whichever is greater. Subsequent places will receive points as indicated below:
+        - Place - Point Payout
+            - 1st - Max of (# of participants * 1.33) or (10)
+            - 2nd - 1st place minus 3
+            - 3rd - 2nd place minus 2
+            - 4th - 3rd place minus 1
+            - 5th - 4th place minus 1
+            - 6th - 5th place minus 1
+            - 7th and beyond - 1 less per place (minimum of 1 point)
+        - For example, if 7 participants play, below are the payouts (1st place receives minimum of 10 points)
+            - Place - Points
+                - 1st - 10
+                - 2nd - 7
+                - 3rd - 5
+                - 4th - 4
+                - 5th - 3
+                - 6th - 2
+                - 7th - 1
+        - If 15 participants play, below are the payouts (First place receives 15 * 1.33 rounded to the nearest tenth of a point)
+            - **Place - Points**
+                - 1st- 20
+                - 2nd - 17
+                - 3rd - 15
+                - 4th - 14
+                - 5th - 13
+                - 6th- 12
+                - 7th - 11
+                - 8th through 15th - 1 less per place (minimum of 1 point)
+
+**Playoffs:**
+
+The final 3 events of the season make up the Minerva Tour playoffs. Seeding for the playoffs are determined by the first 9 events which make up the regular season. The top 6 members of the regular season qualify for the championship flight of the head-to-head playoff. The top 2 seeds receive a first round bye, however they will compete against each other for the right to select their round 2 opponent. Seed #2 will play seed #6 and seed #4 plays #5 in the first round.
+
+The format for each playoff round, by default, is net stroke play where the best net score posted by each player during the event is used. If players are able to compete in person, they may agree to play a different format such as handicapped match play or any other mutually agreed upon format. If competitors cannot physically play together or cannot agree on a format, the match will revert to the default “best net” stroke play.
+
+Consolation flights will be organized for players who finish outside of the top 6 in the regular season. You must play in at least 1 regular season event to qualify for the playoffs.
+
+Note: The championship match is 36 holes. All other playoff rounds are 18 holes.
+
+**Results:**
+
+Tour Champion:
+
+- The winner of the Minerva Tour is the winner of the championship match in the championship playoff flight. The winner will have their name engraved on the Minerva Tour Trophy which is passed from champion to champion each year. The winner also receives a Purple Jacket and a cash prize.
+
+Scratch Champion:
+
+- The scratch champion is the player who scores the most points throughout the season without handicap assistance. Scores in the scratch competition are calculated as if every member is a 0.0 handicap. Event points are awarded in the same manner as for the net competition. The scratch competition runs for the entire length of the season (including playoff events) and the final event of the season (during the Championship match window) is considered a Major with elevated point payouts.
+- **Scratch scoring formula**: Scratch Strokes Over Rating = Gross Score − Course Rating (rounded to nearest stroke). This is the same formula as net scoring but with a 0.0 handicap, ensuring scratch scores are normalized across courses of different difficulty (just as net scores are).
+- **Scratch standings**: Accumulate scratch points across ALL events in the season (regular + playoff). The leaderboard should show scratch standings alongside net standings.
+
+Unicorn:
+
+- The player who loses the Unicorn flight of the playoffs will be crowned as the “Unicorn”. In this flight, the bottom players from the regular season standings who have played at least one event play head-to-head. The loser of each round advances to the next round. The player who finishes in the unicorn position must use the pink unicorn headcover for one year (throughout the following Minerva Tour season).
+
+**Tie Breakers:**
+
+Tour Champion:
+
+- The champion of the Minerva Tour will be decided by the winner of the final match of the championship playoff flight.
+- If two players are tied after the final match and the two players are geographically located in the same location, they may agree to play an 18 hole handicapped match play round at a mutually agreed upon course. If the two players are unable to meet in person, the additional playoff event will be 18 holes of handicapped stroke play with the net winner being crowned champion (best net score is used).
+- If two or more players are still tied and are playing at the same location, the match continues to sudden death extra hole play. If players are not playing at the same location, an additional 18 hole event is required.
+
+Playoff Qualification and Seeding
+
+- If two or more players are tied in the standings after the final regular season event, the tie breaker in all circumstances goes to the player with the lower handicap during the final regular season event. For example after the final regular season event, a 10 handicap and a 16 handicap are tied for 6th place on the season, the 10 handicap would qualify for the championship flight of the playoffs as a 6 seed.
+- The above also applies for all tiebreakers to determine playoff seeding.
+- If the tie is still not broken by handicap, the next tie breaker is the number of events competed in on the season
+- The next tie breaker is the total number of scores posted on the season.
+- Finally, the tie will be broken with a coin flip if none of the above breaks the tie.
+
+Playoff Advancement:
+
+- The tiebreaker for playoff advancement to the next round is the player’s playoff seed (applies to advancement from the first to the second and second to championship playoff events). The player with the better seed wins the tie (3 seed wins tiebreaker over a 6 seed)
+    - Note: The players in the match may mutually agree to settle the tie in a different manner (i.e. sudden death holes, additional round, etc.) but the tie must be resolved by the end of the event window otherwise the standard tiebreaker mentioned above will apply)
+
+Unicorn:
+
+- The tie breaker for the recipient of the “Unicorn” award will first be the player with the worse seed.
+
+## **User Personas of the app:**
+
+- Administrator - the commissioner of the Minerva Golf Club (as well as the developer of this app). They run the operations of the league, setting up the season events, tournaments, and playoffs. They will need to be able to control what users see in the app, control the data associated with each user (such as scores), and be able to see logging and audit events for troubleshooting from within the app itself (often the admin will need to troubleshoot a member’s issue from their phone while on the golf course, and won’t have access to a computer at the time)
+- Member - the primary user of the app. In this app the primary uses will be to log scores, create/add courses to log their scores against, view leaderboards and scores of other members, view stats of their own or across the membership.
+- Playing Guest - this is a special user account for users who are not members of MGC, but are playing in the Member-Guest tournament. They will need the ability to input scores while in tournament mode (set to Member-Guest). They can view leaderboards, other users, stats, etc, but after the tournament is over, their view of the app should switch to be like that of a non-playing Guest user.
+- Non-Playing Guest - this user can view current scores and leaderboards, but cannot make any changes to anything within the app. It is view only.
+
+## **App Major Requirements:**
+
+### **Meta:**
+
+- **4 user modes** - Administrator, Member, Playing Guest, Non-Playing Guest
+- Administrators, Members, and Playing Guests must use email to signin. Email will be how user accounts are tracked and managed. Non-Playing Guests do not need to sign-in and will get a limited, read only, view of the app. Users signing in can either Sign In With Google, or get a one-time code emailed to them to enter in. If a user signs in with an email that is not explicitly provisioned in the system as an Administrator, Member, or Playing Guest, then they should be treated as a Non Playing Guest.
+- **App Access**: Non-Playing Guests can access the app via URL shared by members. When they visit, they get a very limited, read-only view.
+- Administrators can switch between member and admin modes within the app. Being in Admin mode allows them to switch the mode of the app between off-season, regular season, and playoffs. They can also turn on Tournament mode, which can happen at any time during off-season, regular season, or playoffs. Administrators should be able to see all user accounts, modify roles (admin, member, playing guest, non playing guest), provision users (by email address) who have not signed-in yet, and delete users. Administrators should be able to set the schedule for each tour event window.
+- All data about the club, users, seasons, playoffs, scores, courses, tournament data, stats, etc should be stored in a database that an administrator can access/view and, if needed, modify from within the app while in admin mode. Admins need the ability to view and edit specific tables/data (not full SQL query access, as admins will almost always be viewing from their phone).
+- **Audit Trail & Logging**: Store actions and events so an administrator can view and search them in the app (e.g. while troubleshooting on a phone). Track every material action (logins, score submissions and edits, course add/edit/delete, etc.) with: who did it, what type of action, what entity was affected, and structured details (for edits: before/after; for add/delete: relevant data). Support filtering by type and time, and make logs easy to scan on a mobile device.
+- **Offline Support**: App must work offline to save scores locally and sync when connection returns (in case someone loses service while on the golf course).
+- **Data Retention**: All data should be stored in a place that comes with data retention and availability out of the box. Historical data should be retained indefinitely (all previous seasons).
+
+### **UI/Navigation Structure:**
+
+The app is mobile-first (used on phones, often outdoors). Layout and visual design are up to the builder; the following describe **what** needs to be reachable, not exactly how.
+
+**Areas the app must expose (structure by role and mode as needed):**
+
+- **Home** — Default landing for signed-in users: current event status, user’s position, quick actions to start a round or add a tee time, and links to standings, rules, photos (external), and schedule.
+- **Scores** — Entry point for score submission and tee times; access to course list for selecting where the round is played.
+- **Leaderboard** — Current event and season standings; ability to switch between current-event view and season view, and between Net and Scratch standings.
+- **Courses** — List of courses (with search) and course detail; from a course, users can edit, add another tee, or start a round / add tee time.
+- **Event History** — Past events and results.
+- **Tour Stats** — Stats views (see Stats section).
+- **Members** — List of members (as appropriate for role).
+- **Admin** — Visible only to administrators: mode switching, user management, schedule, data/audit, etc.
+- **User profile** — Own profile: picture, name, email, current handicap; ability to change profile picture (upload from device, photo library, or camera). Profile pictures should be available where it’s useful (e.g. profile, leaderboards, tee time views). Each member has a profile page showing stats, scores, and handicap history.
+
+### **Member:**
+
+**Course Management:**
+
+- Members can view and add golf courses. To submit a score, they choose the course and tee from the list. To add a course, require: Course Name, Tee Name, Type (18 Holes, 9 Holes, Front 9, or Back 9), Rating, Slope, Par. Provide a link to [https://ncrdb.usga.org](https://ncrdb.usga.org) so users can look up course data. A course can be added multiple times (once per tee); rating and par vary by tee and by 9 vs 18 holes.
+- **Course detail**: From the list, users can open a read-only detail view with all course info, and from there: enter edit mode, add another tee for the same course (course name pre-filled and locked), or start a round / add a tee time.
+- **Add another tee**: When adding a tee for an existing course, only tee name, type, rating, slope, and par are required.
+- **Editing**: Any member can edit any course (honor system; no admin approval). Editing is done from the course detail view, not by inline edit on the list.
+- **Deletion**: Only administrators can delete courses.
+- **Duplicate prevention**: Block saving when the exact same combination (course name, tee, type, rating, slope, par) already exists. Allow slight variants (e.g. different rating) so multiple entries for the same course with different data are possible.
+- **Audit**: Record who added and who last edited each course, and show that on the course detail (e.g. “Added by … on …”, “Last edited by … on …”).
+
+**Score Submission:**
+
+- During the regular season, users submit scores during or after their round. From the Scores area, they choose a course and tee (full course list with search/browse; if the course isn’t listed, they can add it). They can choose “Me” or “Other Member” (with a searchable way to pick another member) and optionally set a tee time and/or enter gross score. Saving with only a tee time creates an incomplete round they can finish later.
+- **Tee times**: Users can create multiple future tee times (incomplete rounds). Show incomplete tee times in a dedicated area: course name, tee, type, player, tee time date/time; sort by date with the current user’s tee times first; support search/filter. Tapping a tee time opens a screen where they can enter or update score (gross score to par or gross score, and holes played). Once a score is entered, the round counts as complete and moves out of “tee times” into completed rounds.
+- **Score entry**: Support entering gross score (or gross score to par) and holes played. Holes played can be 1 through the course maximum (9, 18, or 36) to support partial rounds. Allow updating the score as the round progresses. Net score must be calculated by the app (members do not enter course handicap):
+  - **Course handicap**: (Handicap Index × Slope) / 113, rounded to nearest stroke.
+  - **Partial rounds**: Use proportional handicap and par: Partial Course Handicap = Full Course Handicap × (Holes Played / Max Holes), rounded; Partial Par = Full Par × (Holes Played / Max Holes), rounded; then Gross = Partial Par + (gross to par), Net = Gross − Partial Course Handicap, Net to Par = Net − Partial Par.
+  - **Complete rounds**: Net = Gross − Full Course Handicap, Net to Par = Net − Full Par.
+  - Show gross and net to par and holes played where relevant (e.g. on tee time detail and completed rounds).
+- **Editing/deleting**: Members can edit or delete only scores in the current event window. Past events are locked; admins can correct those.
+- **Other member**: Members can submit and update scores on behalf of other members (with a clear way to select who is playing).
+- **Completed rounds**: List completed rounds (e.g. grouped by person, best net first). Include course, tee, holes, gross, net; support search/filter.
+- **Score corrections**: Admins can correct scores (including wrong course data) and edit locked (past event) scores.
+- **Validation**: Honor system—no strict validation on score values.
+- **Live scoring**: Leaderboard and scores should update as new scores are posted (real-time or refresh).
+- **Partial rounds in leaderboard**: Show in-progress rounds with projected points; if not completed by event end, they don’t count for points.
+- **9-hole bridging**: For regular 18-hole events only (not majors/playoffs), members manually combine two 9-hole scores to form an 18-hole score; no splicing (splitting an 18-hole score to combine with another 9).
+- **Course handicap**: Calculated from member’s handicap index; never entered manually by the member.
+
+**Leaderboards:**
+
+- All users that have started a round, or completed a round should have their scores displayed on a leaderboard for the current season event with the projected points payout if scores stay the same. As users add more scores, the leader board should dynamically update based on projected points payouts.
+- There should also be a season wide leaderboard for both Net and Scratch champion. When viewing the leaderboard, the user should be able to toggle between the current event leaderboards or the season standing leaderboards.
+
+**Stats:**
+
+- Members can view detailed stats for themselves and other members, including:
+    - Average net score
+    - Best/worst rounds
+    - Courses played most
+    - Scoring trends over time
+    - Head-to-head records
+- Stats should be viewable for both current season and previous seasons.
+
+**Schedule:**
+
+- Display schedule in both calendar view and list view.
+
+**Handicap:**
+
+- **Phase 1 (MVP)**: Admin manually updates member handicaps.
+- **Phase 2 (Future)**: Direct GHIN integration to automatically pull handicaps.
+  - **Note**: GHIN does not provide a public API. Integration requires:
+    - Contacting state/regional golf association for official API access
+    - OR becoming a GHIN-licensed vendor/partner
+    - OR using unofficial wrappers (with terms of service risks)
+  - See `GHIN_INTEGRATION.md` in this folder for detailed information
+- App should track handicap history over time for each member.
+- Handicaps are locked at the start of each event window. The app should automatically capture and store the handicap from user profiles when the event window starts. (If GHIN integration is implemented, it would automatically capture from GHIN).
+- Users can add/edit their GHIN number in their profile (if not pre-provisioned by admin).
+
+### **Playing Guest:**
+
+- Playing Guests participate in specific tournaments (primarily Member-Guest tournament).
+- **Limitations**: Cannot add courses or participate in regular season events.
+- **Permissions**: Can view historical data, member stats, and tournament-related info.
+- **Status Management**: When admin completes a tournament, Playing Guests should automatically revert to Non-Playing Guest status. However, some Playing Guests return for multiple tournaments, so the system should allow them to switch back and forth based on which tournaments they are participating in.
+
+### **Non-Playing Guest:**
+
+- View-only access to current scores and leaderboards.
+- Cannot make any changes within the app.
+- No sign-in required.
+
+### **Administrator:**
+
+**User Management:**
+
+- View all user accounts and modify roles (admin, member, playing guest, non-playing guest).
+- **User provisioning**: Admins can provision users by email before they sign in. When a user signs in for the first time, the app assigns the provisioned role; if not provisioned, default to non-playing guest. Admins need to: add provisions (email + role), view all provisions and see who has signed in vs pending, edit or delete provisions before sign-in, and update roles for already-provisioned users. Bulk import (e.g. paste list of emails or CSV) is desirable.
+- Delete users.
+
+**Season/Mode Management:**
+
+- Switch app mode between off-season, regular season, playoffs, and tournament mode.
+- Set and modify the schedule for each tour event window.
+- Extend event windows for weather/emergency situations by modifying the schedule.
+
+**Playoff Management:**
+
+- Admin manually sets playoff bracket matchups and advancement.
+- For the "top 2 seeds compete for right to select round 2 opponent" scenario, the admin manually selects the opponent after it is determined outside of the app (via Slack, text message, etc.).
+- Playoff coordination and communication between matched players happens externally (not in the app).
+
+**Data Management:**
+
+- Correct member scores (especially scores from previous locked events).
+- Manually enter retroactive scores for members in unplayable climates (for first 2 events, must be made up by end of event 4).
+- View and edit database tables directly from the app.
+
+**Reporting & Troubleshooting:**
+
+- Access audit logs from within the app with filtering, search, and sort by type and time; view structured event data.
+
+### **Tournament Mode:**
+
+- Tournaments can occur during off-season, regular season, or after playoffs.
+- Main tournaments: **Member-Guest** (typically first half of regular season) and **Bobby Jones Cup** (end of regular season, after playoffs).
+- Tournaments may have different scoring rules, leaderboards, and team formats from regular events.
+- Tournament results are visible in a dedicated tournament area when admin has tournament mode enabled.
+- Some tournaments are one-off events with just a few participants.
+
+**Tournament Format Details (TO BE DEFINED):**
+
+- [ ]  Member-Guest tournament format: team-based? Scoring method (best ball, alternate shot, combined)?
+- [ ]  Bobby Jones Cup format details: match play brackets? Team format?
+- [ ]  What settings does admin need to configure when creating a tournament? (format, scoring rules, eligibility, point values, pairings/teams?)
+- [ ]  Should tournament pairings/teams be randomly assigned, manually set by admin, or member-selected?
+
+**Playoff Bracket Display:**
+
+- Show the playoff bracket in a clear visual format (e.g. ladder or tree) so matchups and advancement are easy to follow.
+
+### **Off-Season Mode:**
+
+- Members can only view historical data (no score submissions, even for practice rounds).
+- No leaderboards or stats tracking during off-season.
+- Read-only mode for members.
+
+### **Notifications:**
+
+- Both push notifications and in-app notifications.
+- **Priority**: Event window open/close notifications and reminders for members who haven't submitted scores are nice-to-have features to add after major functionality is complete.
+
+### **Data Export & Backup (Nice-to-Have, Not High Priority):**
+
+- Export capabilities: season results to CSV/PDF, leaderboard snapshots.
+- Data backup/restore functionality accessible to admins.
+
+### **Security & Permissions:**
+
+- No rate limiting needed on score submissions.
+- No special protection against data tampering - all members and users are trusted friends with 0% chance of malicious behavior.
+
+### **Chirps (Automated Score Commentary):**
+
+- When a score is submitted, the app generates an automated "chirp" — a humorous, personalized commentary based on the player's performance.
+- **Chirp buckets** are based on net strokes over par: -10 or better, -9 to -5, -4 to +1, +2 to +4, +5 to +9, +10 to +19, +20 or worse.
+- Each bucket has multiple chirp templates. A random template is selected from the matching bucket when a score is finalized.
+- Templates use `$first_name` as a placeholder which is substituted with the player's first name.
+- Chirps are displayed:
+  - On the completed score card (after submission)
+  - On the event leaderboard (next to each player's entry)
+- Chirps add personality and social engagement to the app, inspired by the original Glide app's chirps feature.
+- Chirps are purely entertainment — they have no effect on scoring or standings.
+
+### **Betting/Wagering (Deferred — Future Phase):**
+
+- The original Glide app included a betting feature where members could propose bets (with moneyline odds, max wagers, expiration dates) and other members could accept them. This feature is deferred to a future phase.
+- When implemented, it should include: bet creation with description and odds, bet acceptance, bet resolution tracking, and integration with Venmo handles for settlement.
+
+### **Error Handling & User Experience:**
+
+- **Lost Connection During Score Submission**: Use offline-first approach - save locally and sync when connection returns. Show clear sync status indicator.
+- **Confirmation Messages**: Display confirmation toasts/messages after key actions (score submitted, course added, tee time saved, etc.) to provide user feedback.
+- **Error Messages**: Show friendly, actionable error messages when something goes wrong (e.g., "Unable to save score. Check your connection and try again.").
+
+### **Google Photos Integration:**
+
+- **MVP**: External link to Google album (admin can set URL).
+- **Future Enhancement**: Admin can import photos from Google album URL to display within the app itself.
+
+### **Rules Display:**
+
+- **MVP**: Link out to WordPress site.
+- **Future Enhancement**: Display rules inline within the app.
+
+### **Tech Stack Recommendations:**
+
+Since this will be AI-coded and you want to prioritize ease of use for administrators and ease of troubleshooting:
+
+- **Recommended Approach**: Use modern, well-documented frameworks with strong AI coding tool support
+- **Backend**: Firebase or Supabase (both have excellent documentation, built-in auth, real-time sync, and are AI-friendly)
+- **Database**: Use the default database that comes with Firebase/Supabase (Firestore or PostgreSQL respectively) for simplicity
+- **Frontend**: Next.js with React (most popular, best AI coding support, built-in PWA capabilities)
+- **Rationale**: These are the most "AI-codeable" stacks with extensive documentation, examples, and community support. They handle offline sync, auth, and real-time updates out of the box, reducing custom code needed.
+
+### **Complete Cost Breakdown:**
+
+**AI Coding Tool** (choose one):
+
+- **Cursor**: $20/month - Best option for this project
+- [**Bolt.new**](http://Bolt.new): $25/month
+- **Claude Pro** (with manual setup): $20/month
+- **Free alternatives**: Replit (limited free tier), v0 (limited free tier)
+
+**Backend & Database** (choose one):
+
+**Option 1: Supabase (RECOMMENDED)**
+
+- **Free tier**: Up to 500MB database, 50K monthly active users, 2GB bandwidth
+- **This is plenty for your golf league** (likely 10-50 members)
+- **Cost**: $0/month (free tier will cover you)
+- **Paid tier**: $25/month (only if you exceed free limits - unlikely)
+- **What you get**: PostgreSQL database, authentication, real-time subscriptions, storage
+
+**Option 2: Firebase**
+
+- **Free tier (Spark plan)**: 1GB storage, 10GB bandwidth/month, 50K document reads/day
+- **Should be sufficient** for your use case
+- **Cost**: $0/month on free tier
+- **Paid tier**: Pay-as-you-go (Blaze plan) - probably $0-5/month for small league
+- **What you get**: Firestore database, authentication, real-time sync, storage
+
+**Hosting** (choose one):
+
+**Option 1: Vercel (RECOMMENDED)**
+
+- **Free tier**: Unlimited personal projects, 100GB bandwidth/month
+- **Perfect for your needs**
+- **Cost**: $0/month
+- **Paid tier**: $20/month (only needed for teams or high traffic)
+
+**Option 2: Netlify**
+
+- **Free tier**: 100GB bandwidth/month, 300 build minutes/month
+- **Also sufficient**
+- **Cost**: $0/month
+
+**Domain (optional)**:
+
+- **Cost**: $10-15/year from Namecheap or Google Domains
+- **Not required** - Vercel gives you a free [yourapp.vercel.app](http://yourapp.vercel.app) domain
+
+---
+
+### **TOTAL MONTHLY COST:**
+
+**Minimum (Free hosting + backend):**
+
+- AI Tool: $20/month (Cursor)
+- Backend: $0/month (Supabase free tier)
+- Hosting: $0/month (Vercel free tier)
+- **TOTAL: $20/month**
+
+**Recommended Setup:**
+
+- **Cursor**: $20/month
+- **Supabase**: $0/month (free tier)
+- **Vercel**: $0/month (free tier)
+- **Custom domain**: ~$1/month ($12/year)
+- **TOTAL: ~$21/month**
+
+**Only pay for AI coding during active development** - Once the app is built, you can cancel Cursor and only pay for hosting/backend if you exceed free tiers (which is unlikely for a small golf league).
+
+---
+
+### **Cost After Development:**
+
+Once the app is fully built:
+
+- **Backend (Supabase)**: $0/month (free tier covers you)
+- **Hosting (Vercel)**: $0/month (free tier covers you)
+- **Domain**: ~$1/month (optional)
+- **TOTAL: $0-1/month**
+
+You only need to pay for the AI coding tool ($20/month) while actively building new features. For maintenance and small fixes, you can use free AI tools or re-subscribe for a month when needed.
+
+### **Edge Cases:**
+
+- **Event with no participants**: No points awarded to anyone.
+- **Retroactive scores**: Members in unplayable climates can request via Slack to submit retroactive scores for first 2 events (must be made up by end of event 4). Admin manually enters the score, course, and tee for previous event(s).
+
+---
+
+## **Development Phases & Implementation Sequence:**
+
+### **Phase 0: Foundation Setup**
+
+**Goal**: Get the basic infrastructure running
+
+**🤖 AI Can Do This**: You don't need to do this manually. AI coding tools (like Cursor, v0, Bolt, Claude with Projects, etc.) can generate and set up all of this for you.
+
+**What to do:**
+
+- Set up Next.js project with PWA capabilities
+- Configure Firebase or Supabase (auth, database, storage)
+- Set up basic project structure and routing
+- Implement mobile-responsive layout
+- Set up authentication (Google Sign-In + one-time email code)
+- Create user roles (Admin, Member, Playing Guest, Non-Playing Guest)
+- Deploy to hosting (e.g. Vercel/Netlify)
+
+**Example Prompt for AI:**
+
+*"Create a new Next.js project for the Minerva Tour App with the following setup: mobile-first responsive design, PWA capabilities, Firebase/Supabase for backend (auth + database), bottom navigation with 3 tabs (Home, Scores, Leaderboard), authentication supporting Google Sign-In and one-time email codes, and a user roles system (Admin, Member, Playing Guest, Non-Playing Guest). Deploy it to Vercel. Use Tailwind CSS for styling. Set up the project structure and routing."*
+
+**Deliverable**: A deployed, empty app shell that users can log into
+
+---
+
+### **Phase 1: Core Member Experience - Score Submission**
+
+**Goal**: Members can add courses and submit scores
+
+**1.1 Course Management:**
+
+- Create courses table/collection
+- Add Course: Course Name, Tee Name, Type, Rating, Slope, Par; link to USGA course database
+- Course list with search; course detail with edit, add another tee, start round / add tee time
+- Course edit (all members); course delete (admin only)
+- Prevent exact duplicate courses; track who added/edited each course
+
+**1.2 Basic Score Submission:**
+
+- Create scores and users tables
+- Add Tee Time flow (select course/tee, set tee time); Submit Score (gross score, holes played)
+- Edit/delete scores within current event only; show own scores; allow submitting for other members
+- Tee times: list incomplete tee times (course, tee, player, date/time); sort by date, own first; search; open to enter/update score; completed rounds move to completed list
+
+**1.3 Admin Handicap Management:**
+
+- Create handicap history table
+- Build admin panel to manually update member handicaps
+- Display handicap on member profiles
+
+**Deliverable**: Members can add courses and submit scores; admins can manage handicaps
+
+---
+
+### **Phase 2: Leaderboards & Calculations**
+
+**Goal**: Display live leaderboards with correct scoring
+
+**2.1 Scoring Calculations:**
+
+- Implement course handicap calculation formula
+- Implement net score calculation (Net Strokes Over Par formula)
+- Handle rounding (course handicap and net scores to nearest stroke)
+- Implement point payout calculations (regular events, majors, playoffs)
+- Handle tied scores (split points, round to nearest tenth)
+
+**2.2 Event Management:**
+
+- Create events database table (event windows with dates)
+- Create season database table
+- Admin can create/edit event schedule
+- App mode switching (off-season, regular season, playoffs, tournament)
+- Automatic handicap capture at event window start
+
+**2.3 Leaderboards:**
+
+- Build current event leaderboard with projected points
+- Build season standings leaderboard (Net champion)
+- Build season standings leaderboard (Scratch champion)
+- Toggle between event vs season leaderboards
+- Real-time updates as scores are posted
+- Display partial rounds with projected points
+- Filter out incomplete partial rounds after event window ends
+
+**Deliverable**: Working leaderboards that update in real-time with correct calculations
+
+---
+
+### **Phase 3: Home Dashboard & Navigation**
+
+**Goal**: Create the home experience and complete navigation
+
+**3.1 Home Tab:**
+
+- Display current event status
+- Display user's current position in event and season
+- Quick action buttons (Start a round, Add a tee time)
+- Quick links (Standings, Rules [link to WordPress], Photos [external link], Schedule)
+
+**3.2 Navigation:**
+
+- Build hamburger menu with all sections
+- Create Event History view
+- Create Courses list view
+- Create Members list view
+- Create member profile pages (stats, scores, handicap history)
+- Implement bottom navigation that changes based on mode (Regular Season, Tournament, Playoffs)
+
+**3.3 Schedule Views:**
+
+- Build calendar view of schedule
+- Build list view of schedule
+
+**Deliverable**: Complete navigation and home experience
+
+---
+
+### **Phase 4: Stats & History**
+
+**Goal**: Members can view detailed statistics
+
+**4.1 Individual Stats:**
+
+- Average net score
+- Best/worst rounds
+- Courses played most
+- Scoring trends over time
+- Calculate and display for current season and all-time
+
+**4.2 Comparative Stats:**
+
+- Head-to-head records between members
+- Member comparison views
+
+**4.3 Event History:**
+
+- View past events with results
+- View past seasons with final standings
+- Historical data retained indefinitely
+
+**Deliverable**: Complete stats and historical data views
+
+---
+
+### **Phase 5: Admin Panel & Data Management**
+
+**Goal**: Admins can manage all aspects of the app
+
+**5.1 User Management:**
+
+- View all users
+- Modify user roles
+- **User Provisioning UI:**
+  - Form to add single user provision (email + role)
+  - Bulk import interface (paste list of emails, CSV import, or similar)
+  - View all provisions with status (pending vs. signed in)
+  - Edit/delete provisions before users sign in
+  - Update roles for already-provisioned users
+- Delete users
+
+**5.2 Data Management:**
+
+- View and edit database tables (mobile-friendly interface)
+- Correct scores (including locked scores from previous events)
+- Manually enter retroactive scores
+
+**5.3 Audit Logs:**
+
+- Track every action (logins, score submissions, edits, course additions, etc.)
+- Categorize events by type
+- Build filtering, searching, and sorting interface (mobile-friendly)
+- Make events structured and easily queryable
+
+**5.4 Season/Event Management:**
+
+- Admin mode accessible to admins
+- Create/edit event windows
+- Modify event window dates (for weather extensions)
+- Set event types (9-hole, 18-hole, 36-hole, major, playoff)
+
+**Deliverable**: Complete admin panel with full data management capabilities
+
+---
+
+### **Phase 6: Playoffs**
+
+**Goal**: Handle playoff bracket and advancement
+
+**6.1 Playoff Bracket:**
+
+- Display traditional left-to-right ladder/tree bracket
+- Show top 6 seeds in championship flight
+- Show consolation flights
+- Show Unicorn flight
+
+**6.2 Playoff Management:**
+
+- Admin manually sets matchups
+- Admin manually sets round 2 opponent selection (for top 2 seeds)
+- Track playoff advancement
+- Apply playoff tiebreaker rules (better seed wins)
+
+**6.3 Playoff Scoring:**
+
+- Best net score per player in each round
+- Handle 36-hole championship match
+- Apply playoff-specific rules
+
+**Deliverable**: Full playoff bracket and management system
+
+---
+
+### **Phase 7: Offline Support & Sync**
+
+**Goal**: App works without internet connection
+
+**7.1 Offline Functionality:**
+
+- Implement offline-first data storage
+- Save scores locally when offline
+- Queue actions when offline
+- Sync when connection returns
+
+**7.2 Sync Status:**
+
+- Show clear sync status indicator
+- Handle sync conflicts gracefully
+- Show confirmation when sync completes
+
+**Deliverable**: App fully functional offline on the golf course
+
+---
+
+### **Phase 8: Polish & UX Enhancements**
+
+**Goal**: Make the app delightful to use
+
+**8.1 Confirmation Messages:**
+
+- Toast notifications after key actions
+- Success/error messages
+- Loading states
+
+**8.2 Error Handling:**
+
+- Friendly, actionable error messages
+- Graceful degradation when features fail
+
+**8.3 9-Hole Bridging:**
+
+- UI for members to manually combine 9-hole scores
+- Validate against splicing rules
+- Only for regular 18-hole events (block for majors/playoffs)
+
+**8.4 Photos:**
+
+- Admin can set Google Photos album URL
+- Link to album from home page
+
+**Deliverable**: Polished, production-ready app
+
+---
+
+### **Phase 9: Tournament Mode (Member-Guest & Bobby Jones Cup)**
+
+**Goal**: Support tournament functionality
+
+- Complete tournament format definitions (currently in TO BE DEFINED)
+- Build tournament tab in navigation
+- Tournament-specific scoring and leaderboards
+- Tournament results display
+- Playing Guest status management (auto-revert after tournament)
+- Different tournament formats and rules
+
+**Deliverable**: Full tournament support
+
+---
+
+### **Future Enhancements (Post-MVP):**
+
+- GHIN integration (automatic handicap pulling)
+- Data backup/restore functionality
+- Google Photos import (display photos within app)
+- Inline rules display (instead of linking to WordPress)
+- Native iOS/Android apps
+- Betting/wagering system (see Betting section above)
+
+---
+
+### **Implemented Features (Not Originally in PRD):**
+
+The following features have been built and should be considered part of the app's current specification:
+
+**Offline Architecture & Performance:**
+- **Service worker** (`public/sw.js`): Pre-caches static assets, stale-while-revalidate for resources, network-first for navigation.
+- **SWR + IndexedDB caching** (`src/components/SWRProvider.tsx`, `src/lib/offline/cache.ts`): All data fetching uses SWR with IndexedDB persistence for instant page loads and offline fallback.
+- **Offline banner** (`src/components/OfflineBanner.tsx`): Displays connectivity status and pending sync count.
+- **Offline score queue** (`src/lib/offline/sync-queue.ts`): Queues score submissions when offline and flushes when connection returns.
+- **Online status detection** (`src/lib/hooks/useOnlineStatus.ts`): React hook for real-time online/offline state.
+
+**Notifications:**
+- **Push notifications** (`src/lib/push-notifications.ts`, `src/app/(protected)/notifications/page.tsx`): Full Web Push API integration with subscribe/unsubscribe, VAPID key support, and push event handling in the service worker.
+- **In-app notification bell** (`src/components/navigation/NotificationBell.tsx`): Bell icon with unread badge in the header, linking to notifications page.
+- **Notification types**: event_start, event_end, score_posted, handicap_update, admin_message, season_mode, tournament, general.
+
+**Data Export:**
+- **CSV/PDF export** (`src/lib/export.ts`): Export leaderboards and event history as CSV or PDF (print-to-PDF via HTML). Available on leaderboard and event history pages.
+
+**Admin Features:**
+- **Database viewer** (`src/app/(protected)/admin/data/page.tsx`): Mobile-friendly table browser with search, pagination, and inline editing for all 9 core tables.
+- **Retroactive scores** (`src/app/(protected)/admin/retroactive/page.tsx`): Dedicated admin page for entering retroactive scores for members in unplayable climates.
+- **Audit log viewer** (`src/app/(protected)/admin/audit/page.tsx`): Filterable, searchable audit log with structured event data and mobile-friendly display.
+
+**Score Features:**
+- **9-hole bridging** (`src/app/(protected)/scores/bridge/page.tsx`): Dedicated UI for combining two 9-hole scores into one 18-hole score, with splicing prevention.
+- **Gross-to-par score entry**: Toggle between entering gross score or gross score relative to par.
+- **Major/playoff course rating validation**: Warning when selected course rating is below 68 for major/playoff events.
+
+**Chirps:**
+- **Automated score commentary** (`src/lib/chirps.ts`): Score-based trash talk templates with performance buckets and `$first_name` substitution.
+
+**Data Migration:**
+- **Glide-to-Supabase migration** (`scripts/migrate-glide-data.mjs`): Comprehensive migration script that imported all historical data from the legacy Glide app (30 users, 216 handicap records, 805 courses, 12 events, 227 scores, 6 playoff matchups). Script is idempotent and uses Supabase Admin Auth API for user creation.
+
+**Testing:**
+- **Comprehensive test suite**: 256+ tests covering unit, component, integration, functional, and E2E testing using Vitest, React Testing Library, and Playwright. TDD workflow enforced via workspace rules.
+
+---
+
+### **Tips for AI Coding:**
+
+**Start Small:**
+
+- Don't try to build everything at once
+- Complete and test each phase before moving to the next
+- Each phase should result in a working, deployable version
+
+**Prompting Strategy:**
+
+- Give the AI the entire spec as context, but ask it to implement one phase at a time
+- Reference specific sections of this spec in your prompts
+- Example: "Based on the Minerva Tour App spec, implement Phase 1.1 Course Management"
+
+**Testing Between Phases:**
+
+- Deploy and manually test after each phase
+- Have members try it on their phones
+- Fix issues before moving to next phase
+- A comprehensive automated test suite (220+ tests) has been implemented covering unit, component, integration, functional, and E2E tests (see PROGRESS.md for details)
+
+**Database Schema:**
+
+- Have the AI create the complete database schema upfront (even if not all tables are used yet)
+- This prevents migration headaches later
+
+**Key Tables to Create Early:**
+
+- users (with role, handicap, handicap_history)
+- courses (with all tee variations)
+- scores (with event_id, user_id, course_id)
+- events (with season_id, dates, type, is_major)
+- seasons (with year, mode)
+- audit_logs (for all actions)

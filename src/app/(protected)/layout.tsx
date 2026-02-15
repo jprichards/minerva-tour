@@ -1,0 +1,18 @@
+import BottomNav from '@/components/navigation/BottomNav';
+import { OfflineBanner } from '@/components/OfflineBanner';
+
+export default function ProtectedLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="min-h-screen pb-20">
+      <OfflineBanner />
+      <main className="max-w-lg mx-auto">
+        {children}
+      </main>
+      <BottomNav />
+    </div>
+  );
+}

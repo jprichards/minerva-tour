@@ -1,0 +1,51 @@
+---
+alwaysApply: true
+---
+# Overview
+
+The PRD for this project is in `docs/prd.md` (requirements). Follow `docs/START_HERE.md` for this build. If new requirements are introduced in chat or a requirement is revised, update the PRD when writing code. The PRD should always be the up-to-date source of truth for project requirements.
+
+# Test-Driven Development (TDD)
+
+Every code change MUST include corresponding tests. No feature, fix, or refactor is complete without them.
+
+## What to test for every change
+
+1. **New utility/lib function** → Add unit tests in `src/__tests__/unit/`
+2. **New or modified page/component** → Add component tests in `src/__tests__/components/`
+3. **New or modified hook** → Add integration tests in `src/__tests__/integration/`
+4. **New user-facing workflow** → Add functional tests in `src/__tests__/functional/`
+5. **New route or navigation change** → Add E2E test in `e2e/`
+
+## Process for every task
+
+1. Write (or plan) the test FIRST that describes the expected behavior
+2. Implement the feature/fix
+3. Run `npx vitest run` to verify all tests pass (existing + new)
+4. If tests fail, stop and fix before moving on
+5. Never assume something works — always run the tests
+
+## Test locations and conventions
+
+| Type | Location | Framework |
+|------|----------|-----------|
+| Unit | `src/__tests__/unit/*.test.ts` | Vitest |
+| Component | `src/__tests__/components/*.test.tsx` | Vitest + React Testing Library |
+| Integration | `src/__tests__/integration/*.test.ts(x)` | Vitest + React Testing Library |
+| Functional | `src/__tests__/functional/*.test.ts(x)` | Vitest + React Testing Library |
+| E2E | `e2e/*.spec.ts` | Playwright |
+
+## Test setup
+
+- Global mocks (Supabase, next/navigation, next/link) are in `src/__tests__/setup.tsx`
+- The mock Supabase client is exported as `mockSupabaseClient` from setup
+- Use `vi.mock()` for hook overrides in component/functional tests
+- Vitest config is in `vitest.config.ts`, Playwright config in `playwright.config.ts`
+
+## Verification
+
+After implementing + writing tests, always run:
+```bash
+npx vitest run          # Must show 0 failures
+npm run build           # Must compile without errors
+```

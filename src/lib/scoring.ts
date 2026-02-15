@@ -1,0 +1,216 @@
+/**
+ * Minerva Tour Scoring Calculations
+ *
+ * Net Strokes Over Par = Gross Score - Course Handicap (rounded) - Course Rating
+ * Course Handicap = (Handicap Index × Slope) / 113, rounded to nearest stroke
+ *
+ * For partial rounds:
+ *   Partial Course Handicap = Full Course Handicap × (Holes Played / Max Holes), rounded
+ *   Partial Par = Full Par × (Holes Played / Max Holes), rounded
+ *   Gross = Partial Par + (gross to par)
+ *   Net = Gross − Partial Course Handicap
+ *   Net to Par = Net − Partial Par
+ */
+
+/**
+ * Calculate course handicap from handicap index and slope
+ */
+export function calculateCourseHandicap(handicapIndex: number, slope: number): number {
+  return Math.round((handicapIndex * slope) / 113);
+}
+
+/**
+ * Calculate partial course handicap for partial rounds
+ */
+export function calculatePartialCourseHandicap(
+  fullCourseHandicap: number,
+  holesPlayed: number,
+  maxHoles: number
+): number {
+  return Math.round(fullCourseHandicap * (holesPlayed / maxHoles));
+}
+
+/**
+ * Calculate partial par for partial rounds
+ */
+export function calculatePartialPar(fullPar: number, holesPlayed: number, maxHoles: number): number {
+  return Math.round(fullPar * (holesPlayed / maxHoles));
+}
+
+/**
+ * Get the max holes for a course type
+ */
+export function getMaxHoles(courseType: string): number {
+  switch (courseType) {
+    case '18_holes':
+      return 18;
+    case '9_holes':
+    case 'front_9':
+    case 'back_9':
+      return 9;
+    default:
+      return 18;
+  }
+}
+
+/**
+ * Calculate net score and net strokes over par
+ */
+export function calculateNetScore(
+  grossScore: number,
+  handicapIndex: number,
+  slope: number,
+  rating: number,
+  par: number,
+  holesPlayed: number,
+  maxHoles: number
+): {
+  courseHandicap: number;
+  netScore: number;
+  netStrokesOverPar: number;
+  isPartial: boolean;
+} {
+  const fullCourseHandicap = calculateCourseHandicap(handicapIndex, slope);
+  const isPartial = holesPlayed < maxHoles;
+
+  if (isPartial) {
+    const partialHandicap = calculatePartialCourseHandicap(fullCourseHandicap, holesPlayed, maxHoles);
+    const partialPar = calculatePartialPar(par, holesPlayed, maxHoles);
+    const netScore = grossScore - partialHandicap;
+    const netStrokesOverPar = Math.round(netScore - partialPar);
+
+    return {
+      courseHandicap: partialHandicap,
+      netScore,
+      netStrokesOverPar,
+      isPartial: true,
+    };
+  }
+
+  // Complete round
+  const netScore = grossScore - fullCourseHandicap;
+  // Net Strokes Over Par = Gross Score - Course Handicap - Course Rating (rounded)
+  const netStrokesOverPar = Math.round(grossScore - fullCourseHandicap - rating);
+
+  return {
+    courseHandicap: fullCourseHandicap,
+    netScore,
+    netStrokesOverPar,
+    isPartial: false,
+  };
+}
+
+/**
+ * Calculate scratch score (gross score relative to course rating, no handicap)
+ * Scratch Strokes Over Rating = Gross Score − Course Rating (rounded)
+ * For partial rounds, use proportional rating
+ */
+export function calculateScratchScore(
+  grossScore: number,
+  rating: number,
+  par: number,
+  holesPlayed: number,
+  maxHoles: number
+): {
+  scratchStrokesOverRating: number;
+  isPartial: boolean;
+} {
+  const isPartial = holesPlayed < maxHoles;
+
+  if (isPartial) {
+    const partialRating = rating * (holesPlayed / maxHoles);
+    return {
+      scratchStrokesOverRating: Math.round(grossScore - partialRating),
+      isPartial: true,
+    };
+  }
+
+  return {
+    scratchStrokesOverRating: Math.round(grossScore - rating),
+    isPartial: false,
+  };
+}
+
+/**
+ * Calculate point payouts for a regular event
+ * Winner gets 1 point per participant, subsequent places get one less
+ */
+export function calculateRegularEventPoints(
+  numParticipants: number,
+  place: number
+): number {
+  if (numParticipants === 0 || place < 1 || place > numParticipants) return 0;
+  return Math.max(numParticipants - place + 1, 0);
+}
+
+/**
+ * Calculate point payouts for a major event
+ * 1st: Max of (participants * 1.33) or 10
+ * 2nd: 1st - 3
+ * 3rd: 2nd - 2
+ * 4th: 3rd - 1
+ * 5th: 4th - 1
+ * 6th: 5th - 1
+ * 7th+: 1 less per place (minimum 1)
+ */
+export function calculateMajorEventPoints(
+  numParticipants: number,
+  place: number
+): number {
+  if (numParticipants === 0 || place < 1 || place > numParticipants) return 0;
+
+  const firstPlacePoints = Math.max(
+    Math.round(numParticipants * 1.33 * 10) / 10, // round to nearest tenth
+    10
+  );
+
+  if (place === 1) return firstPlacePoints;
+
+  // Calculate points for each place
+  const points: number[] = [firstPlacePoints];
+
+  // 2nd: 1st - 3
+  points.push(points[0] - 3);
+  // 3rd: 2nd - 2
+  points.push(points[1] - 2);
+  // 4th: 3rd - 1
+  points.push(points[2] - 1);
+  // 5th: 4th - 1
+  points.push(points[3] - 1);
+  // 6th: 5th - 1
+  points.push(points[4] - 1);
+
+  // 7th and beyond: 1 less per place (minimum 1)
+  for (let i = 6; i < numParticipants; i++) {
+    points.push(Math.max(points[i - 1] - 1, 1));
+  }
+
+  return Math.max(points[place - 1] ?? 1, 1);
+}
+
+/**
+ * Handle tied scores - split points evenly and round to nearest tenth
+ */
+export function splitTiedPoints(points: number[], numTied: number): number {
+  const totalPoints = points.reduce((sum, p) => sum + p, 0);
+  return Math.round((totalPoints / numTied) * 10) / 10;
+}
+
+/**
+ * Format net score for display (e.g. +3, -2, E for even)
+ */
+export function formatNetScore(netStrokesOverPar: number): string {
+  if (netStrokesOverPar === 0) return 'E';
+  if (netStrokesOverPar > 0) return `+${netStrokesOverPar}`;
+  return `${netStrokesOverPar}`;
+}
+
+/**
+ * Format gross score for display
+ */
+export function formatGrossScore(grossScore: number, par: number): string {
+  const diff = grossScore - par;
+  if (diff === 0) return `${grossScore} (E)`;
+  if (diff > 0) return `${grossScore} (+${diff})`;
+  return `${grossScore} (${diff})`;
+}
