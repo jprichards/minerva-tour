@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { mockSupabaseClient } from '../setup';
 
 import PlayoffsPage from '@/app/(protected)/playoffs/page';
@@ -115,5 +115,35 @@ describe('Playoffs Member View', () => {
     const tiger = await screen.findByText('Tiger Woods');
     expect(tiger.className).toContain('font-bold');
     expect(tiger.className).toContain('text-green-700');
+  });
+
+  it('shows Loser Advances banner when Unicorn tab is selected', async () => {
+    render(<PlayoffsPage />);
+    await screen.findByText('Playoffs');
+
+    // Banner should not be visible for Championship (default tab)
+    expect(screen.queryByText(/Reverse bracket/)).not.toBeInTheDocument();
+
+    // Click Unicorn tab
+    fireEvent.click(screen.getByText('Unicorn'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Reverse bracket/)).toBeInTheDocument();
+      expect(screen.getByText(/loser/)).toBeInTheDocument();
+    });
+  });
+
+  it('does not show Loser Advances banner for Championship or Consolation', async () => {
+    render(<PlayoffsPage />);
+    await screen.findByText('Playoffs');
+
+    // Default is Championship
+    expect(screen.queryByText(/Reverse bracket/)).not.toBeInTheDocument();
+
+    // Switch to Consolation
+    fireEvent.click(screen.getByText('Consolation'));
+    await waitFor(() => {
+      expect(screen.queryByText(/Reverse bracket/)).not.toBeInTheDocument();
+    });
   });
 });

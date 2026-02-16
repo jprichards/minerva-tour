@@ -284,7 +284,7 @@ describe('Admin Playoffs Page', () => {
     });
   });
 
-  it('does not show BYE badge for Unicorn seeds 13-14', async () => {
+  it('shows BYE badge for the last 2 Unicorn seeds (reverse bracket)', async () => {
     const unicornSeeds = [
       { id: 's1', season_id: 's2', user_id: 'u1', seed_number: 13, user: { id: 'u1', full_name: 'Tiger Woods' } },
       { id: 's2', season_id: 's2', user_id: 'u2', seed_number: 14, user: { id: 'u2', full_name: 'Jack Nicklaus' } },
@@ -304,7 +304,37 @@ describe('Admin Playoffs Page', () => {
     fireEvent.click(screen.getByText(/Manage Seeds/));
 
     await waitFor(() => {
-      expect(screen.queryByText('BYE')).not.toBeInTheDocument();
+      // Seeds 13-14 are the last 2 Unicorn seeds, so both get BYE
+      const byeBadges = screen.getAllByText('BYE');
+      expect(byeBadges.length).toBe(2);
+    });
+  });
+
+  it('only gives BYE to last 2 Unicorn seeds, not middle ones', async () => {
+    const unicornSeeds = [
+      { id: 's1', season_id: 's2', user_id: 'u1', seed_number: 13, user: { id: 'u1', full_name: 'Tiger Woods' } },
+      { id: 's2', season_id: 's2', user_id: 'u2', seed_number: 14, user: { id: 'u2', full_name: 'Jack Nicklaus' } },
+      { id: 's3', season_id: 's2', user_id: 'u3', seed_number: 15, user: { id: 'u3', full_name: 'Arnold Palmer' } },
+      { id: 's4', season_id: 's2', user_id: 'u4', seed_number: 16, user: { id: 'u4', full_name: 'Ben Hogan' } },
+    ];
+
+    mockSupabaseClient.from.mockImplementation((table: string) => {
+      if (table === 'seasons') return createChainProxy(mockSeasons);
+      if (table === 'users') return createChainProxy(mockMembers);
+      if (table === 'playoff_brackets') return createChainProxy([]);
+      if (table === 'playoff_seeds') return createChainProxy(unicornSeeds);
+      return createChainProxy([]);
+    });
+
+    render(<AdminPlayoffsPage />);
+    await screen.findByText('Playoff Brackets');
+
+    fireEvent.click(screen.getByText(/Manage Seeds/));
+
+    await waitFor(() => {
+      // Only seeds 15-16 (last 2) get BYE, not 13-14
+      const byeBadges = screen.getAllByText('BYE');
+      expect(byeBadges.length).toBe(2);
     });
   });
 

@@ -136,6 +136,14 @@ export default function PlayoffsPage() {
         })}
       </div>
 
+      {/* Unicorn reverse bracket banner */}
+      {selectedFlight === 'unicorn' && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-purple-50 border border-purple-200 rounded-xl text-sm text-purple-700">
+          <span className="text-base">🦄</span>
+          <span>Reverse bracket — the <strong>loser</strong> of each matchup advances. The last player standing is crowned the Unicorn.</span>
+        </div>
+      )}
+
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => <div key={i} className="h-20 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />)}

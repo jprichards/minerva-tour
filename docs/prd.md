@@ -145,7 +145,7 @@ Scratch Champion:
 
 Unicorn:
 
-- The player who loses the Unicorn flight of the playoffs will be crowned as the “Unicorn”. In this flight, the bottom players from the regular season standings who have played at least one event play head-to-head. The loser of each round advances to the next round. The player who finishes in the unicorn position must use the pink unicorn headcover for one year (throughout the following Minerva Tour season).
+- The player who loses the Unicorn flight of the playoffs will be crowned as the “Unicorn”. In this flight, the bottom players from the regular season standings who have played at least one event play head-to-head. The loser of each round advances to the next round (reverse bracket). Even in a matchup where one player posts a score and the other DNPs, the DNP player advances. The last two seeds (highest seed numbers) in the Unicorn flight receive a first-round bye. The player who finishes in the unicorn position must use the pink unicorn headcover for one year (throughout the following Minerva Tour season).
 
 **Tie Breakers:**
 
@@ -692,7 +692,7 @@ You only need to pay for the AI coding tool ($20/month) while actively building 
 - Display traditional left-to-right ladder/tree bracket
 - Show top 6 seeds in championship flight
 - Show consolation flights
-- Show Unicorn flight
+- Show Unicorn flight (reverse bracket with "Loser Advances" banner, last 2 seeds get bye)
 
 **6.2 Playoff Management:**
 

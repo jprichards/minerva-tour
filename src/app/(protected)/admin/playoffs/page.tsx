@@ -363,7 +363,7 @@ export default function PlayoffsAdminPage() {
       {showSeeds && (
         <div className="bg-[var(--bg-card)] border border-[var(--border-light)] rounded-xl p-4 space-y-3">
           <p className="text-xs text-[var(--text-faint)]">
-            Seeds 1-6 = Championship, 7-12 = Consolation, 13+ = Unicorn. Top 2 seeds per flight get a bye.
+            Seeds 1-6 = Championship, 7-12 = Consolation, 13+ = Unicorn. Top 2 seeds in Championship/Consolation get a bye. Last 2 seeds in Unicorn get a bye (reverse bracket).
           </p>
 
           {seedEntries.length === 0 ? (
@@ -374,7 +374,9 @@ export default function PlayoffsAdminPage() {
                 const flightGroup = getFlightForSeed(entry.seed_number);
                 const prevFlightGroup = idx > 0 ? getFlightForSeed(seedEntries[idx - 1].seed_number) : null;
                 const showDivider = idx > 0 && flightGroup !== prevFlightGroup;
-                const isBye = entry.seed_number <= 2 || (entry.seed_number >= 7 && entry.seed_number <= 8);
+                const unicornSeeds = seedEntries.filter((s) => s.seed_number >= 13).map((s) => s.seed_number).sort((a, b) => b - a);
+                const unicornByeSeeds = unicornSeeds.slice(0, 2);
+                const isBye = entry.seed_number <= 2 || (entry.seed_number >= 7 && entry.seed_number <= 8) || unicornByeSeeds.includes(entry.seed_number);
 
                 return (
                   <div key={idx}>
@@ -531,13 +533,15 @@ export default function PlayoffsAdminPage() {
                                 />
                               </div>
                               <div>
-                                <label className="text-xs text-[var(--text-muted)]">Winner</label>
+                                <label className="text-xs text-[var(--text-muted)]">
+                                  {selectedFlight === 'unicorn' ? 'Advances (loser)' : 'Winner'}
+                                </label>
                                 <select
                                   value={editFields.winner_id}
                                   onChange={(e) => setEditFields({ ...editFields, winner_id: e.target.value })}
                                   className="w-full mt-1 px-3 py-2 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-[var(--text-primary)]"
                                 >
-                                  <option value="">No winner yet</option>
+                                  <option value="">{selectedFlight === 'unicorn' ? 'No advancer yet' : 'No winner yet'}</option>
                                   {editFields.player1_id && (
                                     <option value={editFields.player1_id}>
                                       {members.find((m) => m.id === editFields.player1_id)?.full_name || 'Player 1'}
