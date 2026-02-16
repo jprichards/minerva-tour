@@ -52,10 +52,24 @@ There are some open-source projects that reverse-engineer GHIN's internal endpoi
 
 ## Recommended Approach for Minerva Tour
 
-### Phase 1: Manual entry (MVP)
+### Phase 1: Manual entry (MVP) -- CURRENT
 - Admins manually update member handicaps.
 - Users can view their handicap on their profile.
 - Capture and store handicap at the start of each event window.
+
+#### Bulk update via GHIN screenshot (Cursor Skill)
+
+A Cursor agent skill exists at `.cursor/skills/ghin-scrape/SKILL.md` to streamline bulk handicap updates. The workflow:
+
+1. Login to the GHIN website and take a screenshot of the club member list
+2. In Cursor chat, share the screenshot and say **"run ghin-scrape"**
+3. The agent extracts names and handicap indexes from the image
+4. Matches members to the database by `full_name` (with known fuzzy matches like "Jay Kornder II" = "Jay Kornder", "Zachary Taylor" = "Zack Taylor")
+5. Presents a diff for confirmation before executing
+6. Updates `users.handicap_index` and inserts `handicap_history` rows with `source: 'manual'`
+7. Reports any DB members missing from the screenshot (with GHIN numbers so they can be added to the GHIN "following" list)
+
+**Important**: Members not present in the screenshot are left completely untouched -- no update, no history entry. Invoke the skill explicitly by name; it does not auto-trigger on mentions of GHIN or handicaps.
 
 ### Phase 2: Sync button (only if you have API access)
 - There is **no public GHIN API**. Tested endpoints return HTML or 404; programmatic access requires official credentials from a state/regional golf association or GHIN partnership.
