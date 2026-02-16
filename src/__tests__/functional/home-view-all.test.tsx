@@ -61,7 +61,7 @@ const mockScores = [
     net_strokes_over_par: 0,
     holes_played: 18,
     is_complete: true,
-    tee_time: null,
+    tee_time: '2025-07-12T14:00:00Z',
     created_at: '2026-02-15T00:00:00Z',
     course: { course_name: 'Torrey Pines', tee_name: 'Blue', type: '18_holes', par: 72 },
     event: { start_date: '2025-07-01', end_date: '2025-07-15' },
@@ -127,11 +127,11 @@ describe('Home Page - View All Link', () => {
     expect(await screen.findByText('Recent Rounds', {}, { timeout: 3000 })).toBeInTheDocument();
   });
 
-  it('displays event date on recent score cards', async () => {
+  it('displays actual round date (tee_time) on recent score cards', async () => {
     render(<HomePage />);
 
-    // Event start_date: 2025-07-01 → "Jul 1, 2025"
-    expect(await screen.findByText(/Jul 1, 2025/, {}, { timeout: 3000 })).toBeInTheDocument();
+    // tee_time: 2025-07-12 → "Jul 12, 2025" (NOT event start_date Jul 1)
+    expect(await screen.findByText(/Jul 12, 2025/, {}, { timeout: 3000 })).toBeInTheDocument();
   });
 
   it('displays course name on recent score cards', async () => {

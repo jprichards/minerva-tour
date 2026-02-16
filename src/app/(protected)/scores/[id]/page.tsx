@@ -215,14 +215,11 @@ export default function ScoreDetailPage() {
         </div>
 
         {/* Date */}
-        {(score.event?.start_date || score.tee_time) && !editing && (
+        {(score.tee_time || score.event?.start_date) && !editing && (
           <div className="border-t border-gray-100 pt-3">
             <p className="text-xs text-gray-500 uppercase tracking-wide">Date</p>
             <p className="text-sm font-medium text-gray-900 mt-0.5">
-              {score.event?.start_date
-                ? `${new Date(score.event.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} – ${new Date(score.event.end_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
-                : new Date(score.tee_time!).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-              }
+              {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             </p>
           </div>
         )}

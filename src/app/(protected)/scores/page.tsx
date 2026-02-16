@@ -198,14 +198,11 @@ function ScoresContent() {
                     <span className="text-xs text-gray-400">
                       {score.user?.full_name || score.user?.email || 'Unknown'}
                     </span>
-                    {(score.event?.start_date || score.tee_time) && (
+                    {(score.tee_time || score.event?.start_date) && (
                       <>
                         <span className="text-xs text-gray-300">&middot;</span>
                         <span className="text-xs text-gray-400">
-                          {new Date((score.event?.start_date ? score.event.start_date + 'T00:00:00' : score.tee_time)!).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          {score.tee_time && (
-                            <> &middot; {new Date(score.tee_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>
-                          )}
+                          {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       </>
                     )}

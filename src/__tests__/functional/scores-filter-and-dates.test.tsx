@@ -57,7 +57,7 @@ const mockScores = [
     holes_played: 18,
     is_complete: true,
     course_handicap: 13,
-    tee_time: null,
+    tee_time: '2025-05-10T14:00:00Z',
     created_at: '2026-02-15T00:00:00Z',
     event_id: 'evt-1',
     course: { course_name: 'Pine Valley', tee_name: 'Blue', type: '18_holes', par: 72, rating: 72.5, slope: 130 },
@@ -73,7 +73,7 @@ const mockScores = [
     holes_played: 18,
     is_complete: true,
     course_handicap: 15,
-    tee_time: null,
+    tee_time: '2025-06-07T09:30:00Z',
     created_at: '2026-02-15T00:00:00Z',
     event_id: 'evt-2',
     course: { course_name: 'Augusta National', tee_name: 'Gold', type: '18_holes', par: 72, rating: 74.0, slope: 137 },
@@ -175,12 +175,12 @@ describe('Scores Page - Date Display', () => {
     vi.clearAllMocks();
   });
 
-  it('displays event start_date for scores linked to events', () => {
+  it('displays tee_time date (actual round date) over event start_date', () => {
     render(<ScoresPage />);
-    // Event 3 start_date: 2025-05-01 → "May 1, 2025"
-    expect(screen.getByText(/May 1, 2025/)).toBeInTheDocument();
-    // Event 4 start_date: 2025-06-01 → "Jun 1, 2025"
-    expect(screen.getByText(/Jun 1, 2025/)).toBeInTheDocument();
+    // score-1 tee_time: 2025-05-10 (event start was 2025-05-01) → should show "May 10, 2025"
+    expect(screen.getByText(/May 10, 2025/)).toBeInTheDocument();
+    // score-2 tee_time: 2025-06-07 (event start was 2025-06-01) → should show "Jun 7, 2025"
+    expect(screen.getByText(/Jun 7, 2025/)).toBeInTheDocument();
   });
 
   it('displays tee_time date for scores without events', () => {
@@ -189,13 +189,18 @@ describe('Scores Page - Date Display', () => {
     expect(screen.getByText(/Jan 20, 2026/)).toBeInTheDocument();
   });
 
-  it('does NOT show Feb 14/15, 2026 (import date) for imported scores', () => {
+  it('does NOT show Feb 15, 2026 (import date) for any scores', () => {
     render(<ScoresPage />);
-    // All scores have created_at of Feb 15 2026 from migration, but the display
-    // should use event.start_date or tee_time instead
     const feb15Elements = screen.queryAllByText(/Feb 15, 2026/);
-    // score-3 is not imported (no event, has tee_time), so we shouldn't see Feb 15 anywhere
     expect(feb15Elements.length).toBe(0);
+  });
+
+  it('does NOT show event start_date when tee_time is available', () => {
+    render(<ScoresPage />);
+    // Event 3 start_date was May 1 — should NOT appear since tee_time is May 10
+    expect(screen.queryByText(/May 1, 2025/)).not.toBeInTheDocument();
+    // Event 4 start_date was Jun 1 — should NOT appear since tee_time is Jun 7
+    expect(screen.queryByText(/Jun 1, 2025/)).not.toBeInTheDocument();
   });
 });
 
