@@ -4,6 +4,7 @@ import './globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 import { SWRProvider } from '@/components/SWRProvider';
+import { ThemeProvider, ThemeScript } from '@/components/ThemeProvider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -14,6 +15,10 @@ export const metadata: Metadata = {
   title: 'Minerva Tour',
   description: 'The Minerva Tour Golf Club App',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -26,7 +31,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#065f46',
+  themeColor: '#6652a3',
 };
 
 export default function RootLayout({
@@ -35,13 +40,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased bg-gray-50 text-gray-900`}>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <ThemeScript />
+      </head>
+      <body className={`${inter.variable} font-sans antialiased bg-[var(--bg-page)] text-[var(--text-primary)]`}>
         <ServiceWorkerRegistration />
         <SWRProvider>
-          <ToastProvider>
-            {children}
-          </ToastProvider>
+          <ThemeProvider>
+            <ToastProvider>
+              {children}
+            </ToastProvider>
+          </ThemeProvider>
         </SWRProvider>
       </body>
     </html>

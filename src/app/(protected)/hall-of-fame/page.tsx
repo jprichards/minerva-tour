@@ -54,11 +54,11 @@ export default function HallOfFamePage() {
   if (isLoading) {
     return (
       <div className="p-4 space-y-4">
-        <div className="h-8 bg-gray-200 rounded animate-pulse w-48" />
+        <div className="h-8 bg-[var(--bg-skeleton)] rounded animate-pulse w-48" />
         {[1, 2, 3].map(i => (
           <div key={i} className="space-y-2">
-            <div className="h-6 bg-gray-200 rounded animate-pulse w-40" />
-            <div className="h-20 bg-gray-200 rounded-xl animate-pulse" />
+            <div className="h-6 bg-[var(--bg-skeleton)] rounded animate-pulse w-40" />
+            <div className="h-20 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
           </div>
         ))}
       </div>
@@ -68,38 +68,39 @@ export default function HallOfFamePage() {
   return (
     <div className="p-4 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Hall of Fame</h1>
-        <p className="text-sm text-gray-500 mt-1">Award winners through the years</p>
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Hall of Fame</h1>
+        <p className="text-sm text-[var(--text-muted)] mt-1">Award winners through the years</p>
       </div>
 
       {orderedCategories.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-4xl mb-3">🏆</p>
-          <p className="text-gray-500 text-sm">No awards recorded yet.</p>
+          <p className="text-[var(--text-muted)] text-sm">No awards recorded yet.</p>
         </div>
       ) : (
         orderedCategories.map(awardType => {
           const items = groupedByType[awardType];
           const emoji = AWARD_EMOJI[awardType];
           const displayName = AWARD_DISPLAY_NAMES[awardType];
+          const headerEmoji = awardType === 'bobby_jones_cup' ? '🌳🌺' : emoji;
 
           return (
             <section key={awardType} className="space-y-2">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="text-xl">{emoji}</span>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                <span className="text-xl">{headerEmoji}</span>
                 {displayName}
               </h2>
 
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
                 {items.map((trophy, idx) => (
                   <div
                     key={trophy.id}
                     className={`flex items-center gap-3 px-4 py-3 ${
-                      idx < items.length - 1 ? 'border-b border-gray-50' : ''
+                      idx < items.length - 1 ? 'border-b border-[var(--border-light)]' : ''
                     }`}
                   >
                     {/* Player photo */}
-                    <div className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <div className="w-9 h-9 bg-minerva-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
                       {trophy.user?.profile_picture_url ? (
                         <img
                           src={trophy.user.profile_picture_url}
@@ -107,7 +108,7 @@ export default function HallOfFamePage() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <span className="text-xs font-bold text-emerald-600">
+                        <span className="text-xs font-bold text-minerva-600">
                           {(trophy.user?.full_name || '?')[0].toUpperCase()}
                         </span>
                       )}
@@ -115,18 +116,18 @@ export default function HallOfFamePage() {
 
                     {/* Details */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                      <p className="text-sm font-medium text-[var(--text-primary)] truncate">
                         {trophy.user?.full_name || 'Unknown'}
                       </p>
                       {trophy.description && (
-                        <p className="text-xs text-gray-500">{trophy.description}</p>
+                        <p className="text-xs text-[var(--text-muted)]">{trophy.description}</p>
                       )}
                     </div>
 
                     {/* Year + emoji */}
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <span className="text-base">{trophy.emoji}</span>
-                      <span className="text-sm font-semibold text-gray-700">{trophy.year}</span>
+                      <span className="text-sm font-semibold text-[var(--text-secondary)]">{trophy.year}</span>
                     </div>
                   </div>
                 ))}

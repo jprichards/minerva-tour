@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useUser } from '@/lib/hooks/useUser';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { Users, UserPlus, FileText, Calendar, Settings, Shield, Database, Swords, Trophy, Cog, RotateCcw } from 'lucide-react';
+import { Users, UserPlus, FileText, Calendar, Settings, Shield, Database, Swords, Trophy, Cog, RotateCcw, Award } from 'lucide-react';
 
 const adminLinks = [
   {
@@ -43,6 +43,13 @@ const adminLinks = [
     color: 'bg-red-100 text-red-600',
   },
   {
+    href: '/admin/trophies',
+    label: 'Trophies & Awards',
+    description: 'Award trophies, manage member achievements',
+    icon: Award,
+    color: 'bg-yellow-100 text-yellow-600',
+  },
+  {
     href: '/admin/audit',
     label: 'Audit Logs',
     description: 'View action history, filter, search',
@@ -68,7 +75,7 @@ const adminLinks = [
     label: 'App Settings',
     description: 'Google Photos URL, rules link, app config',
     icon: Cog,
-    color: 'bg-gray-100 text-gray-600',
+    color: 'bg-[var(--bg-subtle)] text-[var(--text-muted)]',
   },
 ];
 
@@ -85,9 +92,9 @@ export default function AdminPage() {
   if (loading) {
     return (
       <div className="p-4 space-y-4">
-        <div className="h-8 bg-gray-200 rounded-lg animate-pulse w-32" />
+        <div className="h-8 bg-[var(--bg-skeleton)] rounded-lg animate-pulse w-32" />
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-20 bg-gray-200 rounded-xl animate-pulse" />
+          <div key={i} className="h-20 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
         ))}
       </div>
     );
@@ -98,8 +105,8 @@ export default function AdminPage() {
   return (
     <div className="p-4 space-y-5">
       <div className="flex items-center gap-2">
-        <Shield className="w-6 h-6 text-emerald-600" />
-        <h1 className="text-2xl font-bold text-gray-900">Admin</h1>
+        <Shield className="w-6 h-6 text-minerva-600" />
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Admin</h1>
       </div>
 
       <div className="space-y-3">
@@ -109,14 +116,14 @@ export default function AdminPage() {
             <Link
               key={link.href}
               href={link.href}
-              className="flex items-center gap-4 bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+              className="flex items-center gap-4 bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border-light)] shadow-[var(--shadow-sm)] hover:shadow-md transition-shadow"
             >
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${link.color}`}>
                 <Icon className="w-6 h-6" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-900">{link.label}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{link.description}</p>
+                <p className="text-sm font-semibold text-[var(--text-primary)]">{link.label}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">{link.description}</p>
               </div>
             </Link>
           );

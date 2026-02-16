@@ -100,8 +100,8 @@ export default function HeadToHeadPage() {
   if (loading) {
     return (
       <div className="p-4 space-y-4">
-        <div className="h-6 bg-gray-200 rounded animate-pulse w-40" />
-        <div className="h-40 bg-gray-200 rounded-xl animate-pulse" />
+        <div className="h-6 bg-[var(--bg-skeleton)] rounded animate-pulse w-40" />
+        <div className="h-40 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
       </div>
     );
   }
@@ -109,54 +109,54 @@ export default function HeadToHeadPage() {
   return (
     <div className="p-4 space-y-5">
       <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-gray-100">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-[var(--bg-subtle)]">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-muted)]" />
         </button>
-        <h1 className="text-xl font-bold text-gray-900">Head to Head</h1>
+        <h1 className="text-xl font-bold text-[var(--text-primary)]">Head to Head</h1>
       </div>
 
       {/* Matchup Header */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-5">
         <div className="flex items-center justify-between">
           <div className="text-center flex-1">
-            <p className="text-sm font-semibold text-gray-900">{profile?.full_name?.split(' ')[0] || 'You'}</p>
-            <p className="text-3xl font-bold text-emerald-600 mt-1">{h2h.wins}</p>
-            <p className="text-xs text-gray-500">wins</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)]">{profile?.full_name?.split(' ')[0] || 'You'}</p>
+            <p className="text-3xl font-bold text-minerva-600 mt-1">{h2h.wins}</p>
+            <p className="text-xs text-[var(--text-muted)]">wins</p>
           </div>
           <div className="text-center px-4">
-            <Swords className="w-6 h-6 text-gray-400 mx-auto" />
-            <p className="text-xs text-gray-400 mt-1">{h2h.ties} tie{h2h.ties !== 1 ? 's' : ''}</p>
+            <Swords className="w-6 h-6 text-[var(--text-faint)] mx-auto" />
+            <p className="text-xs text-[var(--text-faint)] mt-1">{h2h.ties} tie{h2h.ties !== 1 ? 's' : ''}</p>
           </div>
           <div className="text-center flex-1">
-            <p className="text-sm font-semibold text-gray-900">{opponent?.full_name?.split(' ')[0] || 'Opponent'}</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)]">{opponent?.full_name?.split(' ')[0] || 'Opponent'}</p>
             <p className="text-3xl font-bold text-red-600 mt-1">{h2h.losses}</p>
-            <p className="text-xs text-gray-500">wins</p>
+            <p className="text-xs text-[var(--text-muted)]">wins</p>
           </div>
         </div>
       </div>
 
       {/* Event Breakdown */}
       {h2h.events.length === 0 ? (
-        <p className="text-center text-gray-400 text-sm py-4">No shared events found.</p>
+        <p className="text-center text-[var(--text-faint)] text-sm py-4">No shared events found.</p>
       ) : (
         <div>
-          <h3 className="text-base font-semibold text-gray-900 mb-3">Event Breakdown</h3>
+          <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Event Breakdown</h3>
           <div className="space-y-2">
             {h2h.events.map((e, idx) => (
-              <div key={idx} className="flex items-center justify-between bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
-                <p className="text-sm text-gray-700">{e.eventName}</p>
+              <div key={idx} className="flex items-center justify-between bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)]">
+                <p className="text-sm text-[var(--text-secondary)]">{e.eventName}</p>
                 <div className="flex items-center gap-4">
-                  <span className={`text-sm font-bold ${e.myNet <= e.theirNet ? 'text-emerald-600' : 'text-gray-400'}`}>
+                  <span className={`text-sm font-bold ${e.myNet <= e.theirNet ? 'text-green-600' : 'text-[var(--text-faint)]'}`}>
                     {formatNetScore(e.myNet)}
                   </span>
                   <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                    e.result === 'W' ? 'bg-emerald-100 text-emerald-700' :
+                    e.result === 'W' ? 'bg-green-100 text-green-700' :
                     e.result === 'L' ? 'bg-red-100 text-red-700' :
-                    'bg-gray-100 text-gray-600'
+                    'bg-[var(--bg-subtle)] text-[var(--text-muted)]'
                   }`}>
                     {e.result}
                   </span>
-                  <span className={`text-sm font-bold ${e.theirNet <= e.myNet ? 'text-emerald-600' : 'text-gray-400'}`}>
+                  <span className={`text-sm font-bold ${e.theirNet <= e.myNet ? 'text-green-600' : 'text-[var(--text-faint)]'}`}>
                     {formatNetScore(e.theirNet)}
                   </span>
                 </div>

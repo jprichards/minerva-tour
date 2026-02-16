@@ -50,11 +50,11 @@ export default function CoursesPage() {
     <div className="p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Courses</h1>
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Courses</h1>
         {isMember && (
           <Link
             href="/courses/add"
-            className="flex items-center gap-1.5 bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-emerald-700 transition-colors"
+            className="flex items-center gap-1.5 bg-minerva-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-minerva-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
             Add Course
@@ -64,13 +64,13 @@ export default function CoursesPage() {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-faint)]" />
         <input
           type="text"
           placeholder="Search courses or tees..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+          className="w-full pl-10 pr-4 py-3 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500 focus:border-transparent"
         />
       </div>
 
@@ -79,7 +79,7 @@ export default function CoursesPage() {
         href="https://ncrdb.usga.org"
         target="_blank"
         rel="noopener noreferrer"
-        className="block text-xs text-emerald-600 hover:underline"
+        className="block text-xs text-minerva-600 hover:underline"
       >
         Look up course data on USGA NCRDB &rarr;
       </a>
@@ -88,15 +88,15 @@ export default function CoursesPage() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-gray-200 rounded-xl animate-pulse" />
+            <div key={i} className="h-20 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
           ))}
         </div>
       ) : courseNames.length === 0 ? (
         <div className="text-center py-12">
           <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 text-sm">No courses found.</p>
+          <p className="text-[var(--text-muted)] text-sm">No courses found.</p>
           {isMember && (
-            <Link href="/courses/add" className="text-emerald-600 text-sm font-medium mt-2 inline-block">
+            <Link href="/courses/add" className="text-minerva-600 text-sm font-medium mt-2 inline-block">
               Add the first course
             </Link>
           )}
@@ -106,30 +106,30 @@ export default function CoursesPage() {
           {courseNames.map((name) => {
             const tees = groupedCourses[name];
             return (
-              <div key={name} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+              <div key={name} className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
                 <div className="p-3">
                   <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <h3 className="text-sm font-semibold text-gray-900 flex-1">{name}</h3>
-                    <span className="text-xs text-gray-400">{tees.length} tee{tees.length !== 1 ? 's' : ''}</span>
+                    <MapPin className="w-4 h-4 text-minerva-600 flex-shrink-0" />
+                    <h3 className="text-sm font-semibold text-[var(--text-primary)] flex-1">{name}</h3>
+                    <span className="text-xs text-[var(--text-faint)]">{tees.length} tee{tees.length !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
-                <div className="border-t border-gray-50">
+                <div className="border-t border-[var(--border-light)]">
                   {tees.map((course) => (
                     <Link
                       key={course.id}
                       href={`/courses/${course.id}`}
-                      className="flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0"
+                      className="flex items-center justify-between px-3 py-2.5 hover:bg-[var(--bg-page)] transition-colors border-b border-[var(--border-light)] last:border-b-0"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                          <span className="text-xs font-bold text-gray-600">
+                        <div className="w-8 h-8 bg-[var(--bg-subtle)] rounded-lg flex items-center justify-center">
+                          <span className="text-xs font-bold text-[var(--text-muted)]">
                             {course.type === '18_holes' ? '18' : '9'}
                           </span>
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-800">{course.tee_name}</p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-[var(--text-muted)]">
                             {course.type.replace(/_/g, ' ')} &middot; Par {course.par} &middot;
                             Rating {course.rating} / Slope {course.slope}
                           </p>

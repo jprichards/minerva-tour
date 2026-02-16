@@ -15,7 +15,7 @@ type Step = 'course' | 'player' | 'details';
 
 export default function AddScorePage() {
   return (
-    <Suspense fallback={<div className="p-4"><div className="h-6 bg-gray-200 rounded animate-pulse w-32" /></div>}>
+    <Suspense fallback={<div className="p-4"><div className="h-6 bg-[var(--bg-skeleton)] rounded animate-pulse w-32" /></div>}>
       <AddScoreContent />
     </Suspense>
   );
@@ -35,9 +35,9 @@ function AddScoreContent() {
     return (
       <div className="p-4 text-center py-16">
         <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-        <h2 className="text-lg font-semibold text-gray-900">Off Season</h2>
-        <p className="text-sm text-gray-500 mt-1">Score submissions are not available during the off-season.</p>
-        <button onClick={() => router.back()} className="mt-4 text-emerald-600 text-sm font-medium">Go back</button>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Off Season</h2>
+        <p className="text-sm text-[var(--text-muted)] mt-1">Score submissions are not available during the off-season.</p>
+        <button onClick={() => router.back()} className="mt-4 text-minerva-600 text-sm font-medium">Go back</button>
       </div>
     );
   }
@@ -47,9 +47,9 @@ function AddScoreContent() {
     return (
       <div className="p-4 text-center py-16">
         <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-        <h2 className="text-lg font-semibold text-gray-900">Tournament Only</h2>
-        <p className="text-sm text-gray-500 mt-1">Playing guests can only submit scores during tournaments.</p>
-        <button onClick={() => router.back()} className="mt-4 text-emerald-600 text-sm font-medium">Go back</button>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Tournament Only</h2>
+        <p className="text-sm text-[var(--text-muted)] mt-1">Playing guests can only submit scores during tournaments.</p>
+        <button onClick={() => router.back()} className="mt-4 text-minerva-600 text-sm font-medium">Go back</button>
       </div>
     );
   }
@@ -230,15 +230,15 @@ function AddScoreContent() {
             else if (step === 'player') setStep('course');
             else router.back();
           }}
-          className="p-2 -ml-2 rounded-lg hover:bg-gray-100"
+          className="p-2 -ml-2 rounded-lg hover:bg-[var(--bg-subtle)]"
         >
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+          <ArrowLeft className="w-5 h-5 text-[var(--text-muted)]" />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">
+          <h1 className="text-xl font-bold text-[var(--text-primary)]">
             {teeTimeOnly ? 'Add Tee Time' : 'Submit Score'}
           </h1>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-[var(--text-muted)]">
             Step {step === 'course' ? '1' : step === 'player' ? '2' : '3'} of 3:
             {step === 'course' ? ' Select course' : step === 'player' ? ' Select player' : ' Enter details'}
           </p>
@@ -249,13 +249,13 @@ function AddScoreContent() {
       {step === 'course' && (
         <div className="space-y-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-faint)]" />
             <input
               type="text"
               placeholder="Search courses..."
               value={courseSearch}
               onChange={(e) => setCourseSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full pl-10 pr-4 py-3 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
             />
           </div>
 
@@ -272,18 +272,18 @@ function AddScoreContent() {
                 <button
                   key={course.id}
                   onClick={() => handleSelectCourse(course)}
-                  className={`w-full flex items-center justify-between bg-white rounded-xl p-3 border transition-colors text-left ${
+                  className={`w-full flex items-center justify-between bg-[var(--bg-card)] rounded-xl p-3 border transition-colors text-left ${
                     ineligible
                       ? 'border-amber-200 opacity-60'
-                      : 'border-gray-100 hover:border-emerald-200'
+                      : 'border-[var(--border-light)] hover:border-minerva-200'
                   }`}
                 >
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-[var(--text-primary)]">
                       {course.course_name}
                       {ineligible && <span className="text-amber-600 text-xs ml-1">(ineligible)</span>}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-[var(--text-muted)]">
                       {course.tee_name} &middot; {course.type.replace(/_/g, ' ')} &middot;
                       Par {course.par} &middot; {course.rating}/{course.slope}
                     </p>
@@ -294,9 +294,9 @@ function AddScoreContent() {
             })}
           </div>
 
-          <p className="text-xs text-gray-400 text-center mt-4">
+          <p className="text-xs text-[var(--text-faint)] text-center mt-4">
             Don&apos;t see your course?{' '}
-            <a href="/courses/add" className="text-emerald-600 font-medium">Add it</a>
+            <a href="/courses/add" className="text-minerva-600 font-medium">Add it</a>
           </p>
         </div>
       )}
@@ -305,39 +305,39 @@ function AddScoreContent() {
       {step === 'player' && (
         <div className="space-y-3">
           {selectedCourse && (
-            <div className="bg-emerald-50 rounded-xl p-3 mb-4">
-              <p className="text-sm font-medium text-emerald-800">{selectedCourse.course_name}</p>
-              <p className="text-xs text-emerald-600">{selectedCourse.tee_name} &middot; Par {selectedCourse.par}</p>
+            <div className="bg-minerva-50 rounded-xl p-3 mb-4">
+              <p className="text-sm font-medium text-minerva-800">{selectedCourse.course_name}</p>
+              <p className="text-xs text-minerva-600">{selectedCourse.tee_name} &middot; Par {selectedCourse.par}</p>
             </div>
           )}
 
           {/* Me Button */}
           <button
             onClick={handleSelectSelf}
-            className="w-full flex items-center gap-3 bg-emerald-600 text-white rounded-xl p-4 hover:bg-emerald-700 transition-colors"
+            className="w-full flex items-center gap-3 bg-minerva-600 text-white rounded-xl p-4 hover:bg-minerva-700 transition-colors"
           >
             <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
               <UserIcon className="w-5 h-5" />
             </div>
             <div className="text-left">
               <p className="text-sm font-semibold">Me</p>
-              <p className="text-xs text-emerald-200">{profile?.full_name || profile?.email}</p>
+              <p className="text-xs text-minerva-200">{profile?.full_name || profile?.email}</p>
             </div>
           </button>
 
-          <div className="text-center text-xs text-gray-400 uppercase tracking-wide py-1">
+          <div className="text-center text-xs text-[var(--text-faint)] uppercase tracking-wide py-1">
             or submit for another member
           </div>
 
           {/* Search Members */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-faint)]" />
             <input
               type="text"
               placeholder="Search members..."
               value={memberSearch}
               onChange={(e) => setMemberSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full pl-10 pr-4 py-3 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
             />
           </div>
 
@@ -348,17 +348,17 @@ function AddScoreContent() {
                 <button
                   key={member.id}
                   onClick={() => handleSelectOther(member)}
-                  className="w-full flex items-center justify-between bg-white rounded-xl p-3 border border-gray-100 hover:border-emerald-200 transition-colors text-left"
+                  className="w-full flex items-center justify-between bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] hover:border-minerva-200 transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-bold text-gray-600">
+                    <div className="w-8 h-8 bg-[var(--bg-subtle)] rounded-full flex items-center justify-center">
+                      <span className="text-xs font-bold text-[var(--text-muted)]">
                         {(member.full_name || member.email || '?')[0].toUpperCase()}
                       </span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{member.full_name || 'Unnamed'}</p>
-                      <p className="text-xs text-gray-500">{member.email}</p>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">{member.full_name || 'Unnamed'}</p>
+                      <p className="text-xs text-[var(--text-muted)]">{member.email}</p>
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-300" />
@@ -386,29 +386,29 @@ function AddScoreContent() {
           )}
 
           {/* Summary */}
-          <div className="bg-gray-50 rounded-xl p-3 space-y-1">
+          <div className="bg-[var(--bg-page)] rounded-xl p-3 space-y-1">
             <p className="text-sm font-medium text-gray-800">
               {selectedCourse?.course_name} &middot; {selectedCourse?.tee_name}
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-[var(--text-muted)]">
               Player: {selectedPlayer?.full_name || selectedPlayer?.email}
               {!playingForSelf && ' (submitted by you)'}
             </p>
             {selectedPlayer?.handicap_index != null && (
-              <p className="text-xs text-gray-500">Handicap: {selectedPlayer.handicap_index}</p>
+              <p className="text-xs text-[var(--text-muted)]">Handicap: {selectedPlayer.handicap_index}</p>
             )}
           </div>
 
           {/* Tee Time */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
               Tee Time (optional)
             </label>
             <input
               type="datetime-local"
               value={teeTime}
               onChange={(e) => setTeeTime(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
             />
           </div>
 
@@ -416,13 +416,13 @@ function AddScoreContent() {
             <>
               {/* Score Entry Mode Toggle */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Score</label>
-                <div className="flex bg-gray-100 rounded-lg p-0.5 mb-2">
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Score</label>
+                <div className="flex bg-[var(--bg-subtle)] rounded-lg p-0.5 mb-2">
                   <button
                     type="button"
                     onClick={() => { setScoreEntryMode('gross'); setGrossToPar(''); }}
                     className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                      scoreEntryMode === 'gross' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                      scoreEntryMode === 'gross' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
                     }`}
                   >
                     Gross Score
@@ -431,7 +431,7 @@ function AddScoreContent() {
                     type="button"
                     onClick={() => { setScoreEntryMode('toPar'); setGrossScore(''); }}
                     className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                      scoreEntryMode === 'toPar' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                      scoreEntryMode === 'toPar' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
                     }`}
                   >
                     Gross to Par
@@ -444,7 +444,7 @@ function AddScoreContent() {
                     value={grossScore}
                     onChange={(e) => setGrossScore(e.target.value)}
                     placeholder={`e.g. ${(selectedCourse?.par || 72) + 10}`}
-                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
                   />
                 ) : (
                   <div>
@@ -453,10 +453,10 @@ function AddScoreContent() {
                       value={grossToPar}
                       onChange={(e) => setGrossToPar(e.target.value)}
                       placeholder="e.g. +5 or -2 (enter number only)"
-                      className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
                     />
                     {grossToPar !== '' && selectedCourse && (
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-[var(--text-muted)] mt-1">
                         = Gross {(() => {
                           const par = selectedCourse.par;
                           const maxH = getMaxHoles(selectedCourse.type);
@@ -472,7 +472,7 @@ function AddScoreContent() {
 
               {/* Holes Played */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
                   Holes Played
                 </label>
                 <input
@@ -482,16 +482,16 @@ function AddScoreContent() {
                   value={holesPlayed}
                   onChange={(e) => setHolesPlayed(e.target.value)}
                   placeholder={`1-${getMaxHoles(selectedCourse?.type || '18_holes')}`}
-                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
                 />
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-[var(--text-faint)] mt-1">
                   Partial rounds are supported. Enter as you play.
                 </p>
               </div>
 
               {/* Net Score Preview */}
               {((scoreEntryMode === 'gross' && grossScore) || (scoreEntryMode === 'toPar' && grossToPar !== '')) && holesPlayed && selectedPlayer?.handicap_index != null && selectedCourse && (
-                <div className="bg-emerald-50 rounded-xl p-3">
+                <div className="bg-minerva-50 rounded-xl p-3">
                   {(() => {
                     let previewGross: number;
                     if (scoreEntryMode === 'toPar') {
@@ -515,17 +515,17 @@ function AddScoreContent() {
                     return (
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-xs text-emerald-600 font-medium">Net Score Preview</p>
-                          <p className="text-xs text-emerald-500 mt-0.5">
+                          <p className="text-xs text-minerva-600 font-medium">Net Score Preview</p>
+                          <p className="text-xs text-minerva-500 mt-0.5">
                             Course Handicap: {result.courseHandicap}
                             {result.isPartial && ' (partial)'}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-lg font-bold text-emerald-800">
+                          <p className="text-lg font-bold text-minerva-800">
                             {formatNetScore(result.netStrokesOverPar)}
                           </p>
-                          <p className="text-xs text-emerald-500">Net: {result.netScore}</p>
+                          <p className="text-xs text-minerva-500">Net: {result.netScore}</p>
                         </div>
                       </div>
                     );
@@ -542,7 +542,7 @@ function AddScoreContent() {
           <button
             type="submit"
             disabled={loading || !!courseFailsRatingCheck}
-            className="w-full bg-emerald-600 text-white rounded-xl px-4 py-3 text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50"
+            className="w-full bg-minerva-600 text-white rounded-xl px-4 py-3 text-sm font-semibold hover:bg-minerva-700 transition-colors disabled:opacity-50"
           >
             {loading
               ? 'Saving...'

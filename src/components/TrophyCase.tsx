@@ -40,29 +40,29 @@ export default function TrophyCase({ trophies, seasonFinishes = [], compact = fa
   return (
     <div className="space-y-4">
       {/* Trophy Case Header */}
-      <h3 className="text-base font-semibold text-gray-900">Trophy Case</h3>
+      <h3 className="text-base font-semibold text-[var(--text-primary)]">Trophy Case</h3>
 
       {/* Awards list */}
       {sorted.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
           {sorted.map((trophy, idx) => (
             <div
               key={trophy.id}
               className={`flex items-center gap-3 px-4 py-3 ${
-                idx < sorted.length - 1 ? 'border-b border-gray-50' : ''
+                idx < sorted.length - 1 ? 'border-b border-[var(--border-light)]' : ''
               }`}
             >
               <span className="text-xl flex-shrink-0" role="img" aria-label={trophy.award_name}>
                 {trophy.emoji}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-[var(--text-primary)]">
                   {trophy.award_name}
                   {trophy.description && (
-                    <span className="text-gray-500 font-normal"> ({trophy.description})</span>
+                    <span className="text-[var(--text-muted)] font-normal"> ({trophy.description})</span>
                   )}
                 </p>
-                <p className="text-xs text-gray-500">{trophy.year}</p>
+                <p className="text-xs text-[var(--text-muted)]">{trophy.year}</p>
               </div>
             </div>
           ))}
@@ -72,17 +72,17 @@ export default function TrophyCase({ trophies, seasonFinishes = [], compact = fa
       {/* Season Finishes */}
       {sortedFinishes.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-gray-700 mb-2">Season Finishes</h4>
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="grid grid-cols-2 gap-px bg-gray-100">
+          <h4 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Season Finishes</h4>
+          <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
+            <div className="grid grid-cols-2 gap-px bg-[var(--bg-subtle)]">
               {sortedFinishes.map((finish) => (
-                <div key={finish.id} className="bg-white px-4 py-2.5 flex items-center justify-between">
-                  <span className="text-sm text-gray-600">{finish.year}</span>
+                <div key={finish.id} className="bg-[var(--bg-card)] px-4 py-2.5 flex items-center justify-between">
+                  <span className="text-sm text-[var(--text-muted)]">{finish.year}</span>
                   <span className={`text-sm font-semibold ${
                     finish.finish_position === '1st' ? 'text-yellow-600' :
-                    finish.finish_position === '2nd' ? 'text-gray-500' :
+                    finish.finish_position === '2nd' ? 'text-[var(--text-muted)]' :
                     finish.finish_position === '3rd' ? 'text-amber-700' :
-                    'text-gray-700'
+                    'text-[var(--text-secondary)]'
                   }`}>
                     {finish.finish_position}
                   </span>

@@ -475,10 +475,10 @@ export default function LeaderboardPage() {
   if (loading) {
     return (
       <div className="p-4 space-y-4">
-        <div className="h-8 bg-gray-200 rounded-lg animate-pulse w-48" />
-        <div className="h-12 bg-gray-200 rounded-xl animate-pulse" />
+        <div className="h-8 bg-[var(--bg-skeleton)] rounded-lg animate-pulse w-48" />
+        <div className="h-12 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="h-16 bg-gray-200 rounded-xl animate-pulse" />
+          <div key={i} className="h-16 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
         ))}
       </div>
     );
@@ -488,8 +488,8 @@ export default function LeaderboardPage() {
     return (
       <div className="p-4 text-center py-16">
         <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-        <h2 className="text-lg font-semibold text-gray-900">Off Season</h2>
-        <p className="text-sm text-gray-500 mt-1">Leaderboards are hidden during the off-season. Check back when the season starts!</p>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Off Season</h2>
+        <p className="text-sm text-[var(--text-muted)] mt-1">Leaderboards are hidden during the off-season. Check back when the season starts!</p>
       </div>
     );
   }
@@ -497,7 +497,7 @@ export default function LeaderboardPage() {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Leaderboard</h1>
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Leaderboard</h1>
         <div className="flex gap-1.5">
           <button
             onClick={() => {
@@ -526,7 +526,7 @@ export default function LeaderboardPage() {
                 );
               }
             }}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-[var(--text-faint)] hover:text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] rounded-lg transition-colors"
             title="Export CSV"
           >
             <Download className="w-4 h-4" />
@@ -535,11 +535,11 @@ export default function LeaderboardPage() {
       </div>
 
       {/* View Toggle */}
-      <div className="flex bg-gray-100 rounded-xl p-1">
+      <div className="flex bg-[var(--bg-subtle)] rounded-xl p-1">
         <button
           onClick={() => setView('event')}
           className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
-            view === 'event' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+            view === 'event' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
           }`}
         >
           Current Event
@@ -547,7 +547,7 @@ export default function LeaderboardPage() {
         <button
           onClick={() => setView('season')}
           className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
-            view === 'season' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+            view === 'season' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
           }`}
         >
           Season Standings
@@ -555,11 +555,11 @@ export default function LeaderboardPage() {
       </div>
 
       {/* Scoring Mode Toggle */}
-      <div className="flex bg-gray-100 rounded-xl p-1">
+      <div className="flex bg-[var(--bg-subtle)] rounded-xl p-1">
         <button
           onClick={() => setScoringMode('net')}
           className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
-            scoringMode === 'net' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+            scoringMode === 'net' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
           }`}
         >
           Net
@@ -567,7 +567,7 @@ export default function LeaderboardPage() {
         <button
           onClick={() => setScoringMode('scratch')}
           className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
-            scoringMode === 'scratch' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+            scoringMode === 'scratch' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
           }`}
         >
           Scratch
@@ -578,27 +578,27 @@ export default function LeaderboardPage() {
       {view === 'event' && (
         <>
           {currentEvent ? (
-            <div className="bg-emerald-50 rounded-xl p-3 mb-2">
-              <p className="text-sm font-medium text-emerald-800">
+            <div className="bg-minerva-50 rounded-xl p-3 mb-2">
+              <p className="text-sm font-medium text-minerva-800">
                 {currentEvent.name || `Event ${currentEvent.event_number}`}
                 {currentEvent.is_major && ' (Major)'}
               </p>
-              <p className="text-xs text-emerald-600">
+              <p className="text-xs text-minerva-600">
                 {currentEvent.holes} holes &middot;{' '}
                 {new Date(currentEvent.start_date).toLocaleDateString()} &ndash;{' '}
                 {new Date(currentEvent.end_date).toLocaleDateString()}
               </p>
             </div>
           ) : (
-            <div className="bg-gray-100 rounded-xl p-3">
-              <p className="text-sm text-gray-500">No active event.</p>
+            <div className="bg-[var(--bg-subtle)] rounded-xl p-3">
+              <p className="text-sm text-[var(--text-muted)]">No active event.</p>
             </div>
           )}
 
           {eventLeaderboard.length === 0 ? (
             <div className="text-center py-8">
               <Trophy className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 text-sm">No scores yet for this event.</p>
+              <p className="text-[var(--text-muted)] text-sm">No scores yet for this event.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -607,20 +607,20 @@ export default function LeaderboardPage() {
                 return (
                   <div
                     key={entry.userId}
-                    className={`flex items-center gap-3 bg-white rounded-xl p-3 border ${
-                      isCurrentUser ? 'border-emerald-200 bg-emerald-50/30' : 'border-gray-100'
-                    } shadow-sm`}
+                    className={`flex items-center gap-3 bg-[var(--bg-card)] rounded-xl p-3 border ${
+                      isCurrentUser ? 'border-minerva-200 bg-minerva-50/30' : 'border-[var(--border-light)]'
+                    } shadow-[var(--shadow-sm)]`}
                   >
                     {/* Position */}
                     <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
                       {idx === 0 ? (
                         <Medal className="w-6 h-6 text-yellow-500" />
                       ) : idx === 1 ? (
-                        <Medal className="w-6 h-6 text-gray-400" />
+                        <Medal className="w-6 h-6 text-[var(--text-faint)]" />
                       ) : idx === 2 ? (
                         <Medal className="w-6 h-6 text-amber-700" />
                       ) : (
-                        <span className="text-sm font-bold text-gray-400">{idx + 1}</span>
+                        <span className="text-sm font-bold text-[var(--text-faint)]">{idx + 1}</span>
                       )}
                     </div>
 
@@ -632,8 +632,8 @@ export default function LeaderboardPage() {
                         className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-gray-500">
+                      <div className="w-8 h-8 rounded-full bg-[var(--bg-skeleton)] flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-bold text-[var(--text-muted)]">
                           {entry.playerName.charAt(0).toUpperCase()}
                         </span>
                       </div>
@@ -641,11 +641,11 @@ export default function LeaderboardPage() {
 
                     {/* Player Info */}
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium truncate ${isCurrentUser ? 'text-emerald-800' : 'text-gray-900'}`}>
+                      <p className={`text-sm font-medium truncate ${isCurrentUser ? 'text-minerva-800' : 'text-[var(--text-primary)]'}`}>
                         {entry.playerName}
-                        {isCurrentUser && <span className="text-xs text-emerald-600 ml-1">(you)</span>}
+                        {isCurrentUser && <span className="text-xs text-minerva-600 ml-1">(you)</span>}
                       </p>
-                      <p className="text-xs text-gray-500 truncate">
+                      <p className="text-xs text-[var(--text-muted)] truncate">
                         {entry.courseName} &middot; {entry.holesPlayed}h
                         {!entry.isComplete && ' (in progress)'}
                       </p>
@@ -663,9 +663,9 @@ export default function LeaderboardPage() {
                           ? ((scoringMode === 'net' ? entry.bestNetOverPar! : entry.scratchOverRating!) < 0
                             ? 'text-red-600'
                             : (scoringMode === 'net' ? entry.bestNetOverPar! : entry.scratchOverRating!) === 0
-                            ? 'text-emerald-600'
-                            : 'text-gray-900')
-                          : 'text-gray-400'
+                            ? 'text-green-600'
+                            : 'text-[var(--text-primary)]')
+                          : 'text-[var(--text-faint)]'
                       }`}>
                         {scoringMode === 'net'
                           ? entry.bestNetOverPar != null ? formatNetScore(entry.bestNetOverPar) : '-'
@@ -701,7 +701,7 @@ export default function LeaderboardPage() {
           {seasonStandings.length === 0 ? (
             <div className="text-center py-8">
               <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 text-sm">No season data yet.</p>
+              <p className="text-[var(--text-muted)] text-sm">No season data yet.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -710,19 +710,19 @@ export default function LeaderboardPage() {
                 return (
                   <div
                     key={entry.userId}
-                    className={`flex items-center gap-3 bg-white rounded-xl p-3 border ${
-                      isCurrentUser ? 'border-emerald-200 bg-emerald-50/30' : 'border-gray-100'
-                    } shadow-sm`}
+                    className={`flex items-center gap-3 bg-[var(--bg-card)] rounded-xl p-3 border ${
+                      isCurrentUser ? 'border-minerva-200 bg-minerva-50/30' : 'border-[var(--border-light)]'
+                    } shadow-[var(--shadow-sm)]`}
                   >
                     <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
                       {idx === 0 ? (
                         <Medal className="w-6 h-6 text-yellow-500" />
                       ) : idx === 1 ? (
-                        <Medal className="w-6 h-6 text-gray-400" />
+                        <Medal className="w-6 h-6 text-[var(--text-faint)]" />
                       ) : idx === 2 ? (
                         <Medal className="w-6 h-6 text-amber-700" />
                       ) : (
-                        <span className="text-sm font-bold text-gray-400">{idx + 1}</span>
+                        <span className="text-sm font-bold text-[var(--text-faint)]">{idx + 1}</span>
                       )}
                     </div>
 
@@ -734,26 +734,26 @@ export default function LeaderboardPage() {
                         className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-gray-500">
+                      <div className="w-8 h-8 rounded-full bg-[var(--bg-skeleton)] flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-bold text-[var(--text-muted)]">
                           {entry.playerName.charAt(0).toUpperCase()}
                         </span>
                       </div>
                     )}
 
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium truncate ${isCurrentUser ? 'text-emerald-800' : 'text-gray-900'}`}>
+                      <p className={`text-sm font-medium truncate ${isCurrentUser ? 'text-minerva-800' : 'text-[var(--text-primary)]'}`}>
                         {entry.playerName}
-                        {isCurrentUser && <span className="text-xs text-emerald-600 ml-1">(you)</span>}
+                        {isCurrentUser && <span className="text-xs text-minerva-600 ml-1">(you)</span>}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-[var(--text-muted)]">
                         {entry.eventsPlayed} event{entry.eventsPlayed !== 1 ? 's' : ''} played
                       </p>
                     </div>
 
                     <div className="text-right flex-shrink-0">
-                      <p className="text-lg font-bold text-gray-900">{entry.totalPoints}</p>
-                      <p className="text-xs text-gray-400">pts</p>
+                      <p className="text-lg font-bold text-[var(--text-primary)]">{entry.totalPoints}</p>
+                      <p className="text-xs text-[var(--text-faint)]">pts</p>
                     </div>
                   </div>
                 );

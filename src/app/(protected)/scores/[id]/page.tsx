@@ -162,8 +162,8 @@ export default function ScoreDetailPage() {
   if (loading) {
     return (
       <div className="p-4 space-y-4">
-        <div className="h-6 bg-gray-200 rounded animate-pulse w-32" />
-        <div className="h-48 bg-gray-200 rounded-xl animate-pulse" />
+        <div className="h-6 bg-[var(--bg-skeleton)] rounded animate-pulse w-32" />
+        <div className="h-48 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
       </div>
     );
   }
@@ -171,7 +171,7 @@ export default function ScoreDetailPage() {
   if (!score) {
     return (
       <div className="p-4 text-center">
-        <p className="text-gray-500">Score not found.</p>
+        <p className="text-[var(--text-muted)]">Score not found.</p>
       </div>
     );
   }
@@ -180,45 +180,45 @@ export default function ScoreDetailPage() {
     <div className="p-4 space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-gray-100">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-[var(--bg-subtle)]">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-muted)]" />
         </button>
         <div className="flex-1">
-          <h1 className="text-xl font-bold text-gray-900">
+          <h1 className="text-xl font-bold text-[var(--text-primary)]">
             {score.is_complete ? 'Round Detail' : 'Tee Time Detail'}
           </h1>
         </div>
         {canEdit && !editing && (
-          <button onClick={() => setEditing(true)} className="p-2 rounded-lg hover:bg-gray-100">
-            <Edit className="w-5 h-5 text-gray-600" />
+          <button onClick={() => setEditing(true)} className="p-2 rounded-lg hover:bg-[var(--bg-subtle)]">
+            <Edit className="w-5 h-5 text-[var(--text-muted)]" />
           </button>
         )}
       </div>
 
       {/* Score Card */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+      <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-5 space-y-4">
         {/* Course Info */}
         <div>
-          <p className="text-lg font-bold text-gray-900">{score.course?.course_name}</p>
-          <p className="text-sm text-gray-500">
+          <p className="text-lg font-bold text-[var(--text-primary)]">{score.course?.course_name}</p>
+          <p className="text-sm text-[var(--text-muted)]">
             {score.course?.tee_name} &middot; {score.course?.type.replace(/_/g, ' ')} &middot;
             Par {score.course?.par}
           </p>
         </div>
 
         {/* Player */}
-        <div className="border-t border-gray-100 pt-3">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Player</p>
-          <p className="text-sm font-medium text-gray-900 mt-0.5">
+        <div className="border-t border-[var(--border-light)] pt-3">
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Player</p>
+          <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">
             {score.user?.full_name || score.user?.email}
           </p>
         </div>
 
         {/* Date */}
         {(score.tee_time || score.event?.start_date) && !editing && (
-          <div className="border-t border-gray-100 pt-3">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Date</p>
-            <p className="text-sm font-medium text-gray-900 mt-0.5">
+          <div className="border-t border-[var(--border-light)] pt-3">
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Date</p>
+            <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">
               {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             </p>
           </div>
@@ -227,18 +227,18 @@ export default function ScoreDetailPage() {
         {/* Tee Time */}
         {editing ? (
           <div>
-            <label className="text-xs text-gray-500 uppercase tracking-wide">Tee Time</label>
+            <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Tee Time</label>
             <input
               type="datetime-local"
               value={teeTime}
               onChange={(e) => setTeeTime(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-minerva-500"
             />
           </div>
         ) : score.tee_time ? (
-          <div className="border-t border-gray-100 pt-3">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Tee Time</p>
-            <p className="text-sm font-medium text-gray-900 mt-0.5">
+          <div className="border-t border-[var(--border-light)] pt-3">
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Tee Time</p>
+            <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">
               {new Date(score.tee_time).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}{' '}
               {new Date(score.tee_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </p>
@@ -249,69 +249,69 @@ export default function ScoreDetailPage() {
         {editing ? (
           <div className="space-y-3">
             <div>
-              <label className="text-xs text-gray-500 uppercase tracking-wide">Gross Score</label>
+              <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Gross Score</label>
               <input
                 type="number"
                 value={grossScore}
                 onChange={(e) => setGrossScore(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-minerva-500"
               />
             </div>
             <div>
-              <label className="text-xs text-gray-500 uppercase tracking-wide">Holes Played</label>
+              <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Holes Played</label>
               <input
                 type="number"
                 min="1"
                 max={getMaxHoles(score.course?.type || '18_holes')}
                 value={holesPlayed}
                 onChange={(e) => setHolesPlayed(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-minerva-500"
               />
             </div>
           </div>
         ) : (
           <>
             {score.gross_score && (
-              <div className="border-t border-gray-100 pt-3 grid grid-cols-2 gap-4">
+              <div className="border-t border-[var(--border-light)] pt-3 grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">Gross</p>
-                  <p className="text-xl font-bold text-gray-900 mt-0.5">
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Gross</p>
+                  <p className="text-xl font-bold text-[var(--text-primary)] mt-0.5">
                     {formatGrossScore(score.gross_score, score.course?.par || 72)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">Holes</p>
-                  <p className="text-xl font-bold text-gray-900 mt-0.5">{score.holes_played}</p>
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Holes</p>
+                  <p className="text-xl font-bold text-[var(--text-primary)] mt-0.5">{score.holes_played}</p>
                 </div>
               </div>
             )}
 
             {score.net_strokes_over_par != null && (
-              <div className="border-t border-gray-100 pt-3 grid grid-cols-3 gap-4">
+              <div className="border-t border-[var(--border-light)] pt-3 grid grid-cols-3 gap-4">
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">Net</p>
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Net</p>
                   <p className={`text-xl font-bold mt-0.5 ${
                     score.net_strokes_over_par < 0 ? 'text-red-600' :
-                    score.net_strokes_over_par === 0 ? 'text-emerald-600' :
-                    'text-gray-900'
+                    score.net_strokes_over_par === 0 ? 'text-green-600' :
+                    'text-[var(--text-primary)]'
                   }`}>
                     {formatNetScore(score.net_strokes_over_par)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">Course Hcp</p>
-                  <p className="text-sm font-medium text-gray-900 mt-0.5">{score.course_handicap}</p>
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Course Hcp</p>
+                  <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">{score.course_handicap}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">Net Score</p>
-                  <p className="text-sm font-medium text-gray-900 mt-0.5">{score.net_score}</p>
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Net Score</p>
+                  <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">{score.net_score}</p>
                 </div>
               </div>
             )}
 
             {score.points_awarded != null && (
-              <div className="border-t border-gray-100 pt-3">
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Points</p>
+              <div className="border-t border-[var(--border-light)] pt-3">
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Points</p>
                 <p className="text-lg font-bold text-yellow-600 mt-0.5">{score.points_awarded}</p>
               </div>
             )}
@@ -320,9 +320,9 @@ export default function ScoreDetailPage() {
 
         {/* Event Info */}
         {score.event && (
-          <div className="border-t border-gray-100 pt-3">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Event</p>
-            <p className="text-sm font-medium text-gray-900 mt-0.5">
+          <div className="border-t border-[var(--border-light)] pt-3">
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Event</p>
+            <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">
               {score.event.name || `Event ${score.event.event_number}`}
               {score.event.is_major && ' (Major)'}
             </p>
@@ -336,14 +336,14 @@ export default function ScoreDetailPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center justify-center gap-2 w-full bg-emerald-600 text-white rounded-xl px-4 py-3 text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50"
+            className="flex items-center justify-center gap-2 w-full bg-minerva-600 text-white rounded-xl px-4 py-3 text-sm font-semibold hover:bg-minerva-700 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
           <button
             onClick={() => setEditing(false)}
-            className="w-full text-gray-500 text-sm py-2"
+            className="w-full text-[var(--text-muted)] text-sm py-2"
           >
             Cancel
           </button>
@@ -361,7 +361,7 @@ export default function ScoreDetailPage() {
       )}
 
       {!canEdit && !isAdmin && (
-        <p className="text-xs text-gray-400 text-center">
+        <p className="text-xs text-[var(--text-faint)] text-center">
           Scores from past events cannot be edited. Contact an admin for corrections.
         </p>
       )}

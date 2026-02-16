@@ -1,8 +1,54 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-minerva-50: #f3f1f9;
+  --color-minerva-100: #e8e4f3;
+  --color-minerva-200: #d1c9e7;
+  --color-minerva-300: #b5a7d6;
+  --color-minerva-400: #9985c3;
+  --color-minerva-500: #7b68ae;
+  --color-minerva-600: #6652a3;
+  --color-minerva-700: #554489;
+  --color-minerva-800: #47396f;
+  --color-minerva-900: #3b305c;
+  --color-minerva-950: #241d3a;
+}
+
 @layer base {
   :root {
     --font-inter: 'Inter', sans-serif;
+    /* Semantic color tokens – light mode */
+    --bg-page: var(--color-gray-50);
+    --bg-card: #ffffff;
+    --bg-subtle: var(--color-gray-100);
+    --bg-skeleton: var(--color-gray-200);
+    --text-primary: var(--color-gray-900);
+    --text-secondary: var(--color-gray-700);
+    --text-muted: var(--color-gray-500);
+    --text-faint: var(--color-gray-400);
+    --border-default: var(--color-gray-200);
+    --border-light: var(--color-gray-100);
+    --input-bg: #ffffff;
+    --input-border: var(--color-gray-300);
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+
+  .dark {
+    --bg-page: var(--color-gray-950);
+    --bg-card: var(--color-gray-900);
+    --bg-subtle: var(--color-gray-800);
+    --bg-skeleton: var(--color-gray-700);
+    --text-primary: var(--color-gray-100);
+    --text-secondary: var(--color-gray-300);
+    --text-muted: var(--color-gray-400);
+    --text-faint: var(--color-gray-500);
+    --border-default: var(--color-gray-700);
+    --border-light: var(--color-gray-800);
+    --input-bg: var(--color-gray-800);
+    --input-border: var(--color-gray-600);
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
   }
 }
 

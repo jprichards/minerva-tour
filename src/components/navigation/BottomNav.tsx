@@ -45,13 +45,13 @@ export default function BottomNav() {
         <div className="fixed inset-0 z-50" onClick={() => setMenuOpen(false)}>
           <div className="absolute inset-0 bg-black/30" />
           <div
-            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl p-4 pb-8 safe-area-bottom animate-slide-up"
+            className="absolute bottom-0 left-0 right-0 bg-[var(--bg-card)] rounded-t-2xl shadow-2xl p-4 pb-8 safe-area-bottom animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-gray-900">More</h3>
-              <button onClick={() => setMenuOpen(false)} className="p-1 rounded-lg hover:bg-gray-100">
-                <X className="w-5 h-5 text-gray-500" />
+              <h3 className="text-base font-semibold text-[var(--text-primary)]">More</h3>
+              <button onClick={() => setMenuOpen(false)} className="p-1 rounded-lg hover:bg-[var(--bg-subtle)]">
+                <X className="w-5 h-5 text-[var(--text-muted)]" />
               </button>
             </div>
             <div className="grid grid-cols-3 gap-3">
@@ -64,7 +64,7 @@ export default function BottomNav() {
                     href={item.href}
                     onClick={() => setMenuOpen(false)}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors ${
-                      isActive ? 'bg-emerald-50 text-emerald-600' : 'text-gray-600 hover:bg-gray-50'
+                      isActive ? 'bg-minerva-50 text-minerva-600' : 'text-[var(--text-muted)] hover:bg-[var(--bg-page)]'
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -77,7 +77,7 @@ export default function BottomNav() {
                   href={adminItem.href}
                   onClick={() => setMenuOpen(false)}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors ${
-                    pathname.startsWith(adminItem.href) ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-50'
+                    pathname.startsWith(adminItem.href) ? 'bg-red-50 text-red-600' : 'text-[var(--text-muted)] hover:bg-[var(--bg-page)]'
                   }`}
                 >
                   <Shield className="w-5 h-5" />
@@ -89,7 +89,7 @@ export default function BottomNav() {
                 <button
                   onClick={toggleAdminMode}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors ${
-                    isAdminView ? 'bg-purple-50 text-purple-600' : 'bg-gray-50 text-gray-500'
+                    isAdminView ? 'bg-purple-50 text-purple-600' : 'bg-[var(--bg-page)] text-[var(--text-muted)]'
                   }`}
                 >
                   {isAdminView ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
@@ -102,7 +102,7 @@ export default function BottomNav() {
       )}
 
       {/* Bottom Nav Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-bottom z-40">
+      <nav className="fixed bottom-0 left-0 right-0 bg-[var(--bg-card)] border-t border-[var(--border-default)] safe-area-bottom z-40">
         <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
           {mainItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
@@ -112,7 +112,7 @@ export default function BottomNav() {
                 key={item.href}
                 href={item.href}
                 className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-0 flex-1 ${
-                  isActive ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'
+                  isActive ? 'text-minerva-600' : 'text-[var(--text-faint)] hover:text-[var(--text-muted)]'
                 }`}
               >
                 <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
@@ -126,7 +126,7 @@ export default function BottomNav() {
           <button
             onClick={() => setMenuOpen(true)}
             className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-0 flex-1 ${
-              menuOpen ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'
+              menuOpen ? 'text-minerva-600' : 'text-[var(--text-faint)] hover:text-[var(--text-muted)]'
             }`}
           >
             <Menu className="w-5 h-5" />

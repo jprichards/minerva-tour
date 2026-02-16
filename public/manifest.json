@@ -4,8 +4,8 @@
   "description": "The Minerva Tour Golf Club App",
   "start_url": "/home",
   "display": "standalone",
-  "background_color": "#f9fafb",
-  "theme_color": "#065f46",
+  "background_color": "#f3f1f9",
+  "theme_color": "#6652a3",
   "icons": [
     {
       "src": "/icon-192.png",

@@ -90,13 +90,13 @@ export default function PublicViewPage() {
   }, [eventScores, currentEvent]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[var(--bg-page)]">
       {/* Header */}
-      <div className="bg-gradient-to-br from-emerald-700 to-emerald-900 px-4 py-6 text-white">
+      <div className="bg-gradient-to-br from-minerva-700 to-minerva-900 px-4 py-6 text-white">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold">Minerva Tour</h1>
-            <p className="text-emerald-300 text-sm">
+            <p className="text-minerva-300 text-sm">
               {currentSeason ? `${currentSeason.year} Season` : 'Golf Club'}
             </p>
           </div>
@@ -114,31 +114,31 @@ export default function PublicViewPage() {
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-16 bg-gray-200 rounded-xl animate-pulse" />
+              <div key={i} className="h-16 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
             ))}
           </div>
         ) : (
           <>
             {/* Current Event */}
             {currentEvent ? (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+              <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="w-4 h-4 text-emerald-600" />
-                  <span className="text-xs font-medium text-emerald-600 uppercase tracking-wide">Current Event</span>
+                  <Calendar className="w-4 h-4 text-minerva-600" />
+                  <span className="text-xs font-medium text-minerva-600 uppercase tracking-wide">Current Event</span>
                 </div>
-                <h2 className="text-base font-bold text-gray-900">
+                <h2 className="text-base font-bold text-[var(--text-primary)]">
                   {currentEvent.name || `Event ${currentEvent.event_number}`}
                   {currentEvent.is_major && (
                     <span className="ml-2 text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-medium">Major</span>
                   )}
                 </h2>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-[var(--text-muted)] mt-1">
                   {currentEvent.holes} holes &middot; {new Date(currentEvent.start_date).toLocaleDateString()} &ndash; {new Date(currentEvent.end_date).toLocaleDateString()}
                 </p>
               </div>
             ) : (
-              <div className="bg-gray-100 rounded-xl p-4 text-center">
-                <p className="text-gray-500 text-sm">No active event right now.</p>
+              <div className="bg-[var(--bg-subtle)] rounded-xl p-4 text-center">
+                <p className="text-[var(--text-muted)] text-sm">No active event right now.</p>
               </div>
             )}
 
@@ -146,29 +146,29 @@ export default function PublicViewPage() {
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Trophy className="w-5 h-5 text-yellow-500" />
-                <h2 className="text-lg font-bold text-gray-900">Leaderboard</h2>
+                <h2 className="text-lg font-bold text-[var(--text-primary)]">Leaderboard</h2>
               </div>
 
               {leaderboard.length === 0 ? (
-                <p className="text-center text-gray-400 text-sm py-6">No scores yet.</p>
+                <p className="text-center text-[var(--text-faint)] text-sm py-6">No scores yet.</p>
               ) : (
                 <div className="space-y-2">
                   {leaderboard.map((score, idx) => (
-                    <div key={score.id} className="flex items-center gap-3 bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
+                    <div key={score.id} className="flex items-center gap-3 bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)]">
                       <div className="w-7 h-7 flex items-center justify-center">
                         {idx === 0 ? <Medal className="w-5 h-5 text-yellow-500" /> :
-                         idx === 1 ? <Medal className="w-5 h-5 text-gray-400" /> :
+                         idx === 1 ? <Medal className="w-5 h-5 text-[var(--text-faint)]" /> :
                          idx === 2 ? <Medal className="w-5 h-5 text-amber-700" /> :
-                         <span className="text-sm font-bold text-gray-400">{idx + 1}</span>}
+                         <span className="text-sm font-bold text-[var(--text-faint)]">{idx + 1}</span>}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{score.user?.full_name || 'Player'}</p>
-                        <p className="text-xs text-gray-500">{score.course?.course_name} &middot; {score.holes_played}h</p>
+                        <p className="text-sm font-medium text-[var(--text-primary)] truncate">{score.user?.full_name || 'Player'}</p>
+                        <p className="text-xs text-[var(--text-muted)]">{score.course?.course_name} &middot; {score.holes_played}h</p>
                       </div>
                       <div className="text-right">
                         <p className={`text-lg font-bold ${
                           (score.net_strokes_over_par ?? 0) < 0 ? 'text-red-600' :
-                          (score.net_strokes_over_par ?? 0) === 0 ? 'text-emerald-600' : 'text-gray-900'
+                          (score.net_strokes_over_par ?? 0) === 0 ? 'text-green-600' : 'text-[var(--text-primary)]'
                         }`}>
                           {score.net_strokes_over_par != null ? formatNetScore(score.net_strokes_over_par) : '-'}
                         </p>
@@ -184,10 +184,10 @@ export default function PublicViewPage() {
 
             {/* CTA */}
             <div className="text-center py-4">
-              <p className="text-sm text-gray-500 mb-2">Sign in to submit scores and see more.</p>
+              <p className="text-sm text-[var(--text-muted)] mb-2">Sign in to submit scores and see more.</p>
               <Link
                 href="/login"
-                className="inline-flex items-center gap-2 bg-emerald-600 text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-emerald-700"
+                className="inline-flex items-center gap-2 bg-minerva-600 text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-minerva-700"
               >
                 <LogIn className="w-4 h-4" />
                 Sign In

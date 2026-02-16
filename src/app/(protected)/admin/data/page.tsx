@@ -129,10 +129,10 @@ export default function AdminDataPage() {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-gray-100">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-[var(--bg-subtle)]">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-muted)]" />
         </button>
-        <h1 className="text-xl font-bold text-gray-900">Database Viewer</h1>
+        <h1 className="text-xl font-bold text-[var(--text-primary)]">Database Viewer</h1>
       </div>
 
       {/* Table Selector */}
@@ -145,7 +145,7 @@ export default function AdminDataPage() {
             setSearch('');
             setEditingRow(null);
           }}
-          className="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="flex-1 rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 text-sm bg-[var(--bg-card)] focus:outline-none focus:ring-2 focus:ring-minerva-500"
         >
           {TABLES.map((t) => (
             <option key={t.value} value={t.value}>{t.label}</option>
@@ -155,30 +155,30 @@ export default function AdminDataPage() {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-faint)]" />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search records..."
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
         />
       </div>
 
       {/* Row count */}
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-[var(--text-muted)]">
         {totalCount} total records &middot; Page {page + 1} of {totalPages || 1}
       </p>
 
       {/* Data Cards */}
       {isLoading ? (
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => <div key={i} className="h-24 bg-gray-200 rounded-xl animate-pulse" />)}
+          {[1, 2, 3].map((i) => <div key={i} className="h-24 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />)}
         </div>
       ) : filteredRows.length === 0 ? (
         <div className="text-center py-12">
           <Database className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No records found.</p>
+          <p className="text-sm text-[var(--text-muted)]">No records found.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -192,8 +192,8 @@ export default function AdminDataPage() {
             return (
               <div
                 key={rowId}
-                className={`bg-white rounded-xl border shadow-sm overflow-hidden ${
-                  isEditing ? 'border-emerald-300 ring-1 ring-emerald-300' : 'border-gray-100'
+                className={`bg-[var(--bg-card)] rounded-xl border shadow-[var(--shadow-sm)] overflow-hidden ${
+                  isEditing ? 'border-minerva-300 ring-1 ring-minerva-300' : 'border-[var(--border-light)]'
                 }`}
               >
                 {/* Card Header: show first 3 fields */}
@@ -202,16 +202,16 @@ export default function AdminDataPage() {
                     <div className="flex-1 min-w-0 space-y-1">
                       {displayColumns.map((col) => (
                         <div key={col} className="flex items-center gap-2">
-                          <span className="text-xs font-medium text-gray-400 uppercase w-20 flex-shrink-0">{col.replace(/_/g, ' ')}</span>
+                          <span className="text-xs font-medium text-[var(--text-faint)] uppercase w-20 flex-shrink-0">{col.replace(/_/g, ' ')}</span>
                           {isEditing && col !== 'id' && col !== 'created_at' ? (
                             <input
                               type="text"
                               value={editData[col] != null ? String(editData[col]) : ''}
                               onChange={(e) => setEditData({ ...editData, [col]: e.target.value })}
-                              className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-0.5 bg-gray-50"
+                              className="flex-1 text-sm border border-[var(--border-default)] rounded-lg px-2 py-0.5 bg-[var(--bg-page)]"
                             />
                           ) : (
-                            <span className="text-sm text-gray-900 truncate">
+                            <span className="text-sm text-[var(--text-primary)] truncate">
                               {truncate(formatValue(row[col]))}
                             </span>
                           )}
@@ -222,21 +222,21 @@ export default function AdminDataPage() {
                     <div className="flex items-center gap-1 ml-2 flex-shrink-0">
                       {isEditing ? (
                         <>
-                          <button onClick={handleSaveEdit} className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100">
+                          <button onClick={handleSaveEdit} className="p-1.5 bg-minerva-50 text-minerva-600 rounded-lg hover:bg-minerva-100">
                             <Save className="w-3.5 h-3.5" />
                           </button>
-                          <button onClick={handleCancelEdit} className="p-1.5 bg-gray-50 text-gray-500 rounded-lg hover:bg-gray-100">
+                          <button onClick={handleCancelEdit} className="p-1.5 bg-[var(--bg-page)] text-[var(--text-muted)] rounded-lg hover:bg-[var(--bg-subtle)]">
                             <X className="w-3.5 h-3.5" />
                           </button>
                         </>
                       ) : (
                         <>
-                          <button onClick={() => handleStartEdit(row)} className="p-1.5 text-gray-400 rounded-lg hover:bg-gray-50 hover:text-gray-600">
+                          <button onClick={() => handleStartEdit(row)} className="p-1.5 text-[var(--text-faint)] rounded-lg hover:bg-[var(--bg-page)] hover:text-[var(--text-muted)]">
                             <Edit className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => setExpandedRow(isExpanded ? null : rowId)}
-                            className="p-1.5 text-gray-400 rounded-lg hover:bg-gray-50 hover:text-gray-600"
+                            className="p-1.5 text-[var(--text-faint)] rounded-lg hover:bg-[var(--bg-page)] hover:text-[var(--text-muted)]"
                           >
                             {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                           </button>
@@ -248,19 +248,19 @@ export default function AdminDataPage() {
 
                 {/* Expanded Details */}
                 {(isExpanded || isEditing) && extraColumns.length > 0 && (
-                  <div className="border-t border-gray-100 px-3 py-2 bg-gray-50/50 space-y-1">
+                  <div className="border-t border-[var(--border-light)] px-3 py-2 bg-[var(--bg-page)]/50 space-y-1">
                     {extraColumns.map((col) => (
                       <div key={col} className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-gray-400 uppercase w-20 flex-shrink-0">{col.replace(/_/g, ' ')}</span>
+                        <span className="text-xs font-medium text-[var(--text-faint)] uppercase w-20 flex-shrink-0">{col.replace(/_/g, ' ')}</span>
                         {isEditing && col !== 'id' && col !== 'created_at' ? (
                           <input
                             type="text"
                             value={editData[col] != null ? String(editData[col]) : ''}
                             onChange={(e) => setEditData({ ...editData, [col]: e.target.value })}
-                            className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-0.5 bg-white"
+                            className="flex-1 text-sm border border-[var(--border-default)] rounded-lg px-2 py-0.5 bg-[var(--bg-card)]"
                           />
                         ) : (
-                          <span className="text-sm text-gray-700 truncate">
+                          <span className="text-sm text-[var(--text-secondary)] truncate">
                             {truncate(formatValue(row[col]), 50)}
                           </span>
                         )}
@@ -280,17 +280,17 @@ export default function AdminDataPage() {
           <button
             onClick={() => setPage(Math.max(0, page - 1))}
             disabled={page === 0}
-            className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+            className="px-4 py-2 text-sm font-medium rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--bg-page)]"
           >
             Previous
           </button>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-[var(--text-muted)]">
             {page + 1} / {totalPages}
           </span>
           <button
             onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
             disabled={page >= totalPages - 1}
-            className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+            className="px-4 py-2 text-sm font-medium rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--bg-page)]"
           >
             Next
           </button>

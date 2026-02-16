@@ -5,14 +5,17 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
-import { Edit, LogOut, Camera, TrendingUp, Trophy, Target, Calendar } from 'lucide-react';
+import { Edit, LogOut, Camera, TrendingUp, Trophy, Target, Calendar, Sun, Moon, Monitor } from 'lucide-react';
 import TrophyCase from '@/components/TrophyCase';
+import { useThemeContext } from '@/components/ThemeProvider';
+import type { ThemePreference } from '@/lib/hooks/useTheme';
 import type { HandicapHistory, Score, Trophy as TrophyType, SeasonFinish } from '@/types/database';
 
 export default function ProfilePage() {
   const { profile, authUser, loading: userLoading } = useUser();
   const router = useRouter();
   const supabase = createClient();
+  const { preference, setTheme } = useThemeContext();
   const [handicapHistory, setHandicapHistory] = useState<HandicapHistory[]>([]);
   const [trophies, setTrophies] = useState<TrophyType[]>([]);
   const [seasonFinishes, setSeasonFinishes] = useState<SeasonFinish[]>([]);
@@ -114,10 +117,10 @@ export default function ProfilePage() {
     return (
       <div className="p-4 space-y-4">
         <div className="flex items-center gap-4">
-          <div className="w-20 h-20 bg-gray-200 rounded-full animate-pulse" />
+          <div className="w-20 h-20 bg-[var(--bg-skeleton)] rounded-full animate-pulse" />
           <div className="space-y-2 flex-1">
-            <div className="h-5 bg-gray-200 rounded animate-pulse w-32" />
-            <div className="h-4 bg-gray-200 rounded animate-pulse w-48" />
+            <div className="h-5 bg-[var(--bg-skeleton)] rounded animate-pulse w-32" />
+            <div className="h-4 bg-[var(--bg-skeleton)] rounded animate-pulse w-48" />
           </div>
         </div>
       </div>
@@ -129,7 +132,7 @@ export default function ProfilePage() {
       {/* Profile Header */}
       <div className="flex items-start gap-4">
         <div className="relative">
-          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center overflow-hidden">
+          <div className="w-20 h-20 bg-minerva-100 rounded-full flex items-center justify-center overflow-hidden">
             {profile?.profile_picture_url ? (
               <img
                 src={profile.profile_picture_url}
@@ -137,12 +140,12 @@ export default function ProfilePage() {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <span className="text-2xl font-bold text-emerald-600">
+              <span className="text-2xl font-bold text-minerva-600">
                 {(profile?.full_name || profile?.email || '?')[0].toUpperCase()}
               </span>
             )}
           </div>
-          <label className="absolute bottom-0 right-0 w-7 h-7 bg-emerald-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-emerald-700 transition-colors">
+          <label className="absolute bottom-0 right-0 w-7 h-7 bg-minerva-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-minerva-700 transition-colors">
             <Camera className="w-3.5 h-3.5 text-white" />
             <input
               type="file"
@@ -154,32 +157,32 @@ export default function ProfilePage() {
         </div>
 
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-bold text-gray-900 truncate">
+          <h1 className="text-xl font-bold text-[var(--text-primary)] truncate">
             {profile?.full_name || 'Unnamed User'}
           </h1>
-          <p className="text-sm text-gray-500 truncate">{profile?.email}</p>
-          <p className="text-xs text-gray-400 mt-0.5 capitalize">
+          <p className="text-sm text-[var(--text-muted)] truncate">{profile?.email}</p>
+          <p className="text-xs text-[var(--text-faint)] mt-0.5 capitalize">
             {profile?.role.replace(/_/g, ' ')}
           </p>
         </div>
 
-        <Link href="/profile/edit" className="p-2 rounded-lg hover:bg-gray-100">
-          <Edit className="w-5 h-5 text-gray-500" />
+        <Link href="/profile/edit" className="p-2 rounded-lg hover:bg-[var(--bg-subtle)]">
+          <Edit className="w-5 h-5 text-[var(--text-muted)]" />
         </Link>
       </div>
 
       {/* Handicap Card */}
-      <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-2xl p-5 text-white">
+      <div className="bg-gradient-to-br from-minerva-600 to-minerva-800 rounded-2xl p-5 text-white">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-emerald-200 uppercase tracking-wide">Current Handicap</p>
+            <p className="text-xs text-minerva-200 uppercase tracking-wide">Current Handicap</p>
             <p className="text-4xl font-bold mt-1">
               {profile?.handicap_index != null ? profile.handicap_index : '--'}
             </p>
           </div>
           {profile?.ghin_number && (
             <div className="text-right">
-              <p className="text-xs text-emerald-200 uppercase tracking-wide">GHIN #</p>
+              <p className="text-xs text-minerva-200 uppercase tracking-wide">GHIN #</p>
               <p className="text-lg font-semibold mt-1">{profile.ghin_number}</p>
             </div>
           )}
@@ -188,24 +191,24 @@ export default function ProfilePage() {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-center">
-          <Target className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
-          <p className="text-lg font-bold text-gray-900">{stats.totalRounds}</p>
-          <p className="text-xs text-gray-500">Rounds</p>
+        <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
+          <Target className="w-5 h-5 text-minerva-600 mx-auto mb-1" />
+          <p className="text-lg font-bold text-[var(--text-primary)]">{stats.totalRounds}</p>
+          <p className="text-xs text-[var(--text-muted)]">Rounds</p>
         </div>
-        <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-center">
+        <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
           <TrendingUp className="w-5 h-5 text-blue-600 mx-auto mb-1" />
-          <p className="text-lg font-bold text-gray-900">
+          <p className="text-lg font-bold text-[var(--text-primary)]">
             {stats.avgNet !== 0 ? (stats.avgNet > 0 ? `+${stats.avgNet}` : stats.avgNet) : '--'}
           </p>
-          <p className="text-xs text-gray-500">Avg Net</p>
+          <p className="text-xs text-[var(--text-muted)]">Avg Net</p>
         </div>
-        <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-center">
+        <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
           <Trophy className="w-5 h-5 text-yellow-600 mx-auto mb-1" />
-          <p className="text-lg font-bold text-gray-900">
+          <p className="text-lg font-bold text-[var(--text-primary)]">
             {stats.bestNet != null ? (stats.bestNet > 0 ? `+${stats.bestNet}` : stats.bestNet === 0 ? 'E' : stats.bestNet) : '--'}
           </p>
-          <p className="text-xs text-gray-500">Best Net</p>
+          <p className="text-xs text-[var(--text-muted)]">Best Net</p>
         </div>
       </div>
 
@@ -215,24 +218,24 @@ export default function ProfilePage() {
       {/* Handicap History */}
       {handicapHistory.length > 0 && (
         <div>
-          <h3 className="text-base font-semibold text-gray-900 mb-3">Handicap History</h3>
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Handicap History</h3>
+          <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
             {handicapHistory.map((h, idx) => (
               <div
                 key={h.id}
                 className={`flex items-center justify-between px-4 py-3 ${
-                  idx < handicapHistory.length - 1 ? 'border-b border-gray-50' : ''
+                  idx < handicapHistory.length - 1 ? 'border-b border-[var(--border-light)]' : ''
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <p className="text-sm text-gray-700">
+                  <Calendar className="w-4 h-4 text-[var(--text-faint)]" />
+                  <p className="text-sm text-[var(--text-secondary)]">
                     {new Date(h.effective_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-gray-900">{h.handicap_index}</p>
-                  <span className="text-xs text-gray-400 capitalize">{h.source}</span>
+                  <p className="text-sm font-semibold text-[var(--text-primary)]">{h.handicap_index}</p>
+                  <span className="text-xs text-[var(--text-faint)] capitalize">{h.source}</span>
                 </div>
               </div>
             ))}
@@ -240,10 +243,35 @@ export default function ProfilePage() {
         </div>
       )}
 
+      {/* Theme Toggle */}
+      <div>
+        <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Appearance</h3>
+        <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-1 flex gap-1">
+          {([
+            { value: 'system' as ThemePreference, icon: Monitor, label: 'System' },
+            { value: 'light' as ThemePreference, icon: Sun, label: 'Light' },
+            { value: 'dark' as ThemePreference, icon: Moon, label: 'Dark' },
+          ]).map(({ value, icon: Icon, label }) => (
+            <button
+              key={value}
+              onClick={() => setTheme(value)}
+              className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                preference === value
+                  ? 'bg-minerva-600 text-white'
+                  : 'text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Sign Out */}
       <button
         onClick={handleSignOut}
-        className="flex items-center justify-center gap-2 w-full bg-gray-100 text-gray-600 rounded-xl px-4 py-3 text-sm font-medium hover:bg-gray-200 transition-colors"
+        className="flex items-center justify-center gap-2 w-full bg-[var(--bg-subtle)] text-[var(--text-muted)] rounded-xl px-4 py-3 text-sm font-medium hover:opacity-80 transition-colors"
       >
         <LogOut className="w-4 h-4" />
         Sign Out

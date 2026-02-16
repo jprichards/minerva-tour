@@ -15,7 +15,7 @@ type TabType = 'completed' | 'teetimes';
 
 export default function ScoresPage() {
   return (
-    <Suspense fallback={<div className="p-4"><div className="h-6 bg-gray-200 rounded animate-pulse w-32" /></div>}>
+    <Suspense fallback={<div className="p-4"><div className="h-6 bg-[var(--bg-skeleton)] rounded animate-pulse w-32" /></div>}>
       <ScoresContent />
     </Suspense>
   );
@@ -81,18 +81,18 @@ function ScoresContent() {
     <div className="p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Scores</h1>
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Scores</h1>
         <div className="flex items-center gap-2">
           <Link
             href="/scores/bridge"
-            className="flex items-center gap-1.5 bg-gray-100 text-gray-700 text-sm font-medium px-3 py-2 rounded-xl hover:bg-gray-200 transition-colors"
+            className="flex items-center gap-1.5 bg-[var(--bg-subtle)] text-[var(--text-secondary)] text-sm font-medium px-3 py-2 rounded-xl hover:bg-[var(--bg-skeleton)] transition-colors"
           >
             <Link2 className="w-4 h-4" />
             Bridge
           </Link>
           <Link
             href="/scores/add"
-            className="flex items-center gap-1.5 bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-emerald-700 transition-colors"
+            className="flex items-center gap-1.5 bg-minerva-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-minerva-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
             New
@@ -101,11 +101,11 @@ function ScoresContent() {
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-gray-100 rounded-xl p-1">
+      <div className="flex bg-[var(--bg-subtle)] rounded-xl p-1">
         <button
           onClick={() => setTab('completed')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium rounded-lg transition-colors ${
-            tab === 'completed' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+            tab === 'completed' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
           }`}
         >
           <CheckCircle className="w-4 h-4" />
@@ -114,7 +114,7 @@ function ScoresContent() {
         <button
           onClick={() => setTab('teetimes')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium rounded-lg transition-colors ${
-            tab === 'teetimes' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+            tab === 'teetimes' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
           }`}
         >
           <Clock className="w-4 h-4" />
@@ -125,21 +125,21 @@ function ScoresContent() {
       {/* Search + Filter */}
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-faint)]" />
           <input
             type="text"
             placeholder="Search by course, player..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full pl-10 pr-4 py-3 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
           />
         </div>
         <button
           onClick={() => setFilterMyRounds(!filterMyRounds)}
           className={`px-3 py-2 text-xs font-medium rounded-xl border transition-colors whitespace-nowrap ${
             filterMyRounds
-              ? 'bg-emerald-600 text-white border-emerald-600'
-              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+              ? 'bg-minerva-600 text-white border-minerva-600'
+              : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-default)] hover:bg-[var(--bg-page)]'
           }`}
         >
           My Rounds
@@ -150,16 +150,16 @@ function ScoresContent() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-gray-200 rounded-xl animate-pulse" />
+            <div key={i} className="h-20 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12">
           <Target className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 text-sm">
+          <p className="text-[var(--text-muted)] text-sm">
             {tab === 'teetimes' ? 'No tee times yet.' : 'No completed rounds yet.'}
           </p>
-          <Link href="/scores/add" className="text-emerald-600 text-sm font-medium mt-2 inline-block">
+          <Link href="/scores/add" className="text-minerva-600 text-sm font-medium mt-2 inline-block">
             {tab === 'teetimes' ? 'Add a tee time' : 'Submit a score'}
           </Link>
         </div>
@@ -169,12 +169,12 @@ function ScoresContent() {
             <Link
               key={score.id}
               href={`/scores/${score.id}`}
-              className="block bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+              className="block bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border-light)] shadow-[var(--shadow-sm)] hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                   {/* Profile Picture */}
-                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden mt-0.5">
+                  <div className="w-9 h-9 rounded-full bg-[var(--bg-subtle)] flex items-center justify-center shrink-0 overflow-hidden mt-0.5">
                     {score.user?.profile_picture_url ? (
                       <Image
                         src={score.user.profile_picture_url}
@@ -184,24 +184,24 @@ function ScoresContent() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <UserIcon className="w-4 h-4 text-gray-400" />
+                      <UserIcon className="w-4 h-4 text-[var(--text-faint)]" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">
+                  <p className="text-sm font-semibold text-[var(--text-primary)] truncate">
                     {score.course?.course_name || 'Unknown Course'}
                   </p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-xs text-[var(--text-muted)] mt-0.5">
                     {score.course?.tee_name} &middot; {score.course?.type.replace(/_/g, ' ')}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-[var(--text-faint)]">
                       {score.user?.full_name || score.user?.email || 'Unknown'}
                     </span>
                     {(score.tee_time || score.event?.start_date) && (
                       <>
                         <span className="text-xs text-gray-300">&middot;</span>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-[var(--text-faint)]">
                           {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       </>
@@ -212,17 +212,17 @@ function ScoresContent() {
                 <div className="text-right ml-3">
                   {score.is_complete && score.gross_score ? (
                     <>
-                      <p className="text-lg font-bold text-gray-900">{score.gross_score}</p>
+                      <p className="text-lg font-bold text-[var(--text-primary)]">{score.gross_score}</p>
                       {score.net_strokes_over_par != null && (
                         <p className={`text-xs font-semibold ${
                           score.net_strokes_over_par < 0 ? 'text-red-600' :
-                          score.net_strokes_over_par === 0 ? 'text-emerald-600' :
-                          'text-gray-500'
+                          score.net_strokes_over_par === 0 ? 'text-green-600' :
+                          'text-[var(--text-muted)]'
                         }`}>
                           Net {formatNetScore(score.net_strokes_over_par)}
                         </p>
                       )}
-                      <p className="text-xs text-gray-400 mt-0.5">{score.holes_played}h</p>
+                      <p className="text-xs text-[var(--text-faint)] mt-0.5">{score.holes_played}h</p>
                     </>
                   ) : (
                     <span className="inline-block bg-amber-100 text-amber-700 text-xs font-medium px-2 py-1 rounded-lg">

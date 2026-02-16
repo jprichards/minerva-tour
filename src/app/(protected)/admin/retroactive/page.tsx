@@ -149,10 +149,10 @@ export default function AdminRetroactiveScoresPage() {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-gray-100">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-[var(--bg-subtle)]">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-muted)]" />
         </button>
-        <h1 className="text-xl font-bold text-gray-900">Retroactive Score Entry</h1>
+        <h1 className="text-xl font-bold text-[var(--text-primary)]">Retroactive Score Entry</h1>
       </div>
 
       <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
@@ -166,17 +166,17 @@ export default function AdminRetroactiveScoresPage() {
 
       {loading ? (
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => <div key={i} className="h-12 bg-gray-200 rounded-xl animate-pulse" />)}
+          {[1, 2, 3].map((i) => <div key={i} className="h-12 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />)}
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Member */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Member</label>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Member</label>
             <select
               value={memberId}
               onChange={(e) => setMemberId(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
             >
               <option value="">Select a member</option>
               {members.map((m) => (
@@ -189,11 +189,11 @@ export default function AdminRetroactiveScoresPage() {
 
           {/* Event */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Event</label>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Event</label>
             <select
               value={eventId}
               onChange={(e) => setEventId(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
             >
               <option value="">Select an event</option>
               {events.map((ev) => (
@@ -206,11 +206,11 @@ export default function AdminRetroactiveScoresPage() {
 
           {/* Course */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Course</label>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Course</label>
             <select
               value={courseId}
               onChange={(e) => setCourseId(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
             >
               <option value="">Select a course</option>
               {courses.map((c) => (
@@ -223,19 +223,19 @@ export default function AdminRetroactiveScoresPage() {
 
           {/* Gross Score */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Gross Score</label>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Gross Score</label>
             <input
               type="number"
               value={grossScore}
               onChange={(e) => setGrossScore(e.target.value)}
               placeholder="e.g. 85"
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
             />
           </div>
 
           {/* Holes Played */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Holes Played</label>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Holes Played</label>
             <input
               type="number"
               min="1"
@@ -243,7 +243,7 @@ export default function AdminRetroactiveScoresPage() {
               value={holesPlayed}
               onChange={(e) => setHolesPlayed(e.target.value)}
               placeholder="e.g. 18"
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
             />
           </div>
 
@@ -254,7 +254,7 @@ export default function AdminRetroactiveScoresPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-emerald-600 text-white rounded-xl px-4 py-3 text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50"
+            className="w-full bg-minerva-600 text-white rounded-xl px-4 py-3 text-sm font-semibold hover:bg-minerva-700 transition-colors disabled:opacity-50"
           >
             {submitting ? 'Submitting...' : 'Submit Retroactive Score'}
           </button>

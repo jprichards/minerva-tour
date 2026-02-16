@@ -9,10 +9,10 @@ describe('Login Page', () => {
     vi.clearAllMocks();
   });
 
-  it('renders the app name', () => {
+  it('renders the app name and owl logo', () => {
     render(<LoginPage />);
     expect(screen.getByText('Minerva Tour')).toBeInTheDocument();
-    expect(screen.getByText('Golf Club Management')).toBeInTheDocument();
+    expect(screen.getByAltText('Minerva Tour')).toBeInTheDocument();
   });
 
   it('renders welcome message', () => {

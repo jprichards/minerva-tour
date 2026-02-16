@@ -89,8 +89,8 @@ export default function CourseDetailPage() {
   if (loading) {
     return (
       <div className="p-4 space-y-4">
-        <div className="h-6 bg-gray-200 rounded animate-pulse w-32" />
-        <div className="h-40 bg-gray-200 rounded-xl animate-pulse" />
+        <div className="h-6 bg-[var(--bg-skeleton)] rounded animate-pulse w-32" />
+        <div className="h-40 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
       </div>
     );
   }
@@ -98,8 +98,8 @@ export default function CourseDetailPage() {
   if (!course) {
     return (
       <div className="p-4 text-center">
-        <p className="text-gray-500">Course not found.</p>
-        <Link href="/courses" className="text-emerald-600 text-sm font-medium mt-2 inline-block">
+        <p className="text-[var(--text-muted)]">Course not found.</p>
+        <Link href="/courses" className="text-minerva-600 text-sm font-medium mt-2 inline-block">
           Back to courses
         </Link>
       </div>
@@ -110,48 +110,48 @@ export default function CourseDetailPage() {
     <div className="p-4 space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-gray-100">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-[var(--bg-subtle)]">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-muted)]" />
         </button>
         <div className="flex-1">
-          <h1 className="text-xl font-bold text-gray-900">{course.course_name}</h1>
-          <p className="text-sm text-gray-500">{course.tee_name} Tees</p>
+          <h1 className="text-xl font-bold text-[var(--text-primary)]">{course.course_name}</h1>
+          <p className="text-sm text-[var(--text-muted)]">{course.tee_name} Tees</p>
         </div>
       </div>
 
       {/* Course Info Card */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+      <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-5 space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Type</p>
-            <p className="text-sm font-semibold text-gray-900 mt-0.5">
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Type</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)] mt-0.5">
               {course.type.replace(/_/g, ' ')}
             </p>
           </div>
           <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Par</p>
-            <p className="text-sm font-semibold text-gray-900 mt-0.5">{course.par}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Par</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)] mt-0.5">{course.par}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Rating</p>
-            <p className="text-sm font-semibold text-gray-900 mt-0.5">{course.rating}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Rating</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)] mt-0.5">{course.rating}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Slope</p>
-            <p className="text-sm font-semibold text-gray-900 mt-0.5">{course.slope}</p>
+            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Slope</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)] mt-0.5">{course.slope}</p>
           </div>
         </div>
 
         {/* Audit info */}
-        <div className="border-t border-gray-100 pt-3 space-y-1">
+        <div className="border-t border-[var(--border-light)] pt-3 space-y-1">
           {createdByUser && (
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-[var(--text-faint)]">
               Added by {createdByUser.full_name || createdByUser.email} on{' '}
               {new Date(course.created_at).toLocaleDateString()}
             </p>
           )}
           {updatedByUser && course.updated_at !== course.created_at && (
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-[var(--text-faint)]">
               Last edited by {updatedByUser.full_name || updatedByUser.email} on{' '}
               {new Date(course.updated_at).toLocaleDateString()}
             </p>
@@ -163,7 +163,7 @@ export default function CourseDetailPage() {
       <div className="space-y-2">
         <Link
           href={`/courses/${course.id}/edit`}
-          className="flex items-center justify-center gap-2 w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          className="flex items-center justify-center gap-2 w-full bg-[var(--bg-card)] border border-[var(--border-default)] rounded-xl px-4 py-3 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-page)] transition-colors"
         >
           <Edit className="w-4 h-4" />
           Edit Course
@@ -171,7 +171,7 @@ export default function CourseDetailPage() {
 
         <Link
           href={`/courses/add?course_name=${encodeURIComponent(course.course_name)}&lock_name=true`}
-          className="flex items-center justify-center gap-2 w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          className="flex items-center justify-center gap-2 w-full bg-[var(--bg-card)] border border-[var(--border-default)] rounded-xl px-4 py-3 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-page)] transition-colors"
         >
           <Plus className="w-4 h-4" />
           Add Another Tee
@@ -179,7 +179,7 @@ export default function CourseDetailPage() {
 
         <Link
           href={`/scores/add?course_id=${course.id}`}
-          className="flex items-center justify-center gap-2 w-full bg-emerald-600 text-white rounded-xl px-4 py-3 text-sm font-semibold hover:bg-emerald-700 transition-colors"
+          className="flex items-center justify-center gap-2 w-full bg-minerva-600 text-white rounded-xl px-4 py-3 text-sm font-semibold hover:bg-minerva-700 transition-colors"
         >
           <Target className="w-4 h-4" />
           Start a Round
@@ -187,7 +187,7 @@ export default function CourseDetailPage() {
 
         <Link
           href={`/scores/add?course_id=${course.id}&tee_time_only=true`}
-          className="flex items-center justify-center gap-2 w-full bg-white border border-emerald-200 text-emerald-700 rounded-xl px-4 py-3 text-sm font-medium hover:bg-emerald-50 transition-colors"
+          className="flex items-center justify-center gap-2 w-full bg-[var(--bg-card)] border border-minerva-200 text-minerva-700 rounded-xl px-4 py-3 text-sm font-medium hover:bg-minerva-50 transition-colors"
         >
           <Clock className="w-4 h-4" />
           Add Tee Time

@@ -20,14 +20,14 @@ const typeIcons: Record<NotificationType, typeof Bell> = {
 };
 
 const typeColors: Record<NotificationType, string> = {
-  event_start: 'bg-emerald-100 text-emerald-600',
-  event_end: 'bg-gray-100 text-gray-600',
+  event_start: 'bg-green-100 text-green-600',
+  event_end: 'bg-[var(--bg-subtle)] text-[var(--text-muted)]',
   score_posted: 'bg-blue-100 text-blue-600',
   handicap_update: 'bg-purple-100 text-purple-600',
   admin_message: 'bg-red-100 text-red-600',
   season_mode: 'bg-amber-100 text-amber-600',
   tournament: 'bg-yellow-100 text-yellow-600',
-  general: 'bg-gray-100 text-gray-600',
+  general: 'bg-[var(--bg-subtle)] text-[var(--text-muted)]',
 };
 
 export default function NotificationsPage() {
@@ -67,10 +67,10 @@ export default function NotificationsPage() {
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-gray-100">
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-[var(--bg-subtle)]">
+            <ArrowLeft className="w-5 h-5 text-[var(--text-muted)]" />
           </button>
-          <h1 className="text-xl font-bold text-gray-900">Notifications</h1>
+          <h1 className="text-xl font-bold text-[var(--text-primary)]">Notifications</h1>
           {unreadCount > 0 && (
             <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
               {unreadCount}
@@ -80,7 +80,7 @@ export default function NotificationsPage() {
         {unreadCount > 0 && (
           <button
             onClick={markAllAsRead}
-            className="flex items-center gap-1 text-xs text-emerald-600 font-medium"
+            className="flex items-center gap-1 text-xs text-minerva-600 font-medium"
           >
             <CheckCheck className="w-3.5 h-3.5" />
             Mark all read
@@ -90,17 +90,17 @@ export default function NotificationsPage() {
 
       {/* Push Notification Opt-in */}
       {pushSupported && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+        <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-default)] shadow-[var(--shadow-sm)] p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-                pushSubscribed ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-500'
+                pushSubscribed ? 'bg-green-100 text-green-600' : 'bg-[var(--bg-subtle)] text-[var(--text-muted)]'
               }`}>
                 <BellRing className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900">Push Notifications</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-sm font-medium text-[var(--text-primary)]">Push Notifications</p>
+                <p className="text-xs text-[var(--text-muted)]">
                   {pushPermission === 'denied'
                     ? 'Blocked in browser settings'
                     : pushSubscribed
@@ -114,8 +114,8 @@ export default function NotificationsPage() {
               disabled={pushPermission === 'denied'}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 pushSubscribed
-                  ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  ? 'bg-[var(--bg-subtle)] text-[var(--text-muted)] hover:bg-[var(--bg-skeleton)]'
+                  : 'bg-minerva-600 text-white hover:bg-minerva-700'
               } disabled:opacity-40 disabled:cursor-not-allowed`}
             >
               {pushSubscribed ? 'Disable' : 'Enable'}
@@ -127,14 +127,14 @@ export default function NotificationsPage() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-16 bg-gray-200 rounded-xl animate-pulse" />
+            <div key={i} className="h-16 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
           ))}
         </div>
       ) : notifications.length === 0 ? (
         <div className="text-center py-12">
           <BellOff className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No notifications yet.</p>
-          <p className="text-xs text-gray-400 mt-1">You'll be notified about events, scores, and updates.</p>
+          <p className="text-sm text-[var(--text-muted)]">No notifications yet.</p>
+          <p className="text-xs text-[var(--text-faint)] mt-1">You'll be notified about events, scores, and updates.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -148,7 +148,7 @@ export default function NotificationsPage() {
                 key={notif.id}
                 className={`flex gap-3 p-3 rounded-xl border transition-colors ${
                   notif.is_read
-                    ? 'bg-white border-gray-100'
+                    ? 'bg-[var(--bg-card)] border-[var(--border-light)]'
                     : 'bg-blue-50/50 border-blue-100'
                 }`}
               >
@@ -163,23 +163,23 @@ export default function NotificationsPage() {
                       if (notif.link) router.push(notif.link);
                     }}
                   >
-                    <p className={`text-sm ${notif.is_read ? 'text-gray-700' : 'text-gray-900 font-semibold'}`}>
+                    <p className={`text-sm ${notif.is_read ? 'text-[var(--text-secondary)]' : 'text-[var(--text-primary)] font-semibold'}`}>
                       {notif.title}
                     </p>
                     {notif.body && (
-                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.body}</p>
+                      <p className="text-xs text-[var(--text-muted)] mt-0.5 line-clamp-2">{notif.body}</p>
                     )}
-                    <p className="text-[10px] text-gray-400 mt-1">{timeAgo}</p>
+                    <p className="text-[10px] text-[var(--text-faint)] mt-1">{timeAgo}</p>
                   </div>
                 </div>
                 <div className="flex flex-col gap-1 flex-shrink-0">
                   {!notif.is_read && (
                     <button
                       onClick={() => markAsRead(notif.id)}
-                      className="p-1 hover:bg-gray-100 rounded"
+                      className="p-1 hover:bg-[var(--bg-subtle)] rounded"
                       title="Mark as read"
                     >
-                      <Check className="w-3.5 h-3.5 text-gray-400" />
+                      <Check className="w-3.5 h-3.5 text-[var(--text-faint)]" />
                     </button>
                   )}
                   <button
@@ -187,7 +187,7 @@ export default function NotificationsPage() {
                     className="p-1 hover:bg-red-50 rounded"
                     title="Delete"
                   >
-                    <Trash2 className="w-3.5 h-3.5 text-gray-400" />
+                    <Trash2 className="w-3.5 h-3.5 text-[var(--text-faint)]" />
                   </button>
                 </div>
               </div>

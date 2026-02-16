@@ -85,48 +85,48 @@ export default function MemberProfilePage() {
   if (loading) {
     return (
       <div className="p-4 space-y-4">
-        <div className="h-6 bg-gray-200 rounded animate-pulse w-32" />
-        <div className="h-40 bg-gray-200 rounded-xl animate-pulse" />
+        <div className="h-6 bg-[var(--bg-skeleton)] rounded animate-pulse w-32" />
+        <div className="h-40 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
       </div>
     );
   }
 
   if (!member) {
-    return <div className="p-4 text-center text-gray-500">Member not found.</div>;
+    return <div className="p-4 text-center text-[var(--text-muted)]">Member not found.</div>;
   }
 
   return (
     <div className="p-4 space-y-5">
       <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-gray-100">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-[var(--bg-subtle)]">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-muted)]" />
         </button>
         <div className="flex items-center gap-3 flex-1">
-          <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center overflow-hidden">
+          <div className="w-12 h-12 bg-minerva-100 rounded-full flex items-center justify-center overflow-hidden">
             {member.profile_picture_url ? (
               <img src={member.profile_picture_url} alt="" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-lg font-bold text-emerald-600">
+              <span className="text-lg font-bold text-minerva-600">
                 {(member.full_name || '?')[0].toUpperCase()}
               </span>
             )}
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900">{member.full_name || 'Unnamed'}</h1>
-            <p className="text-xs text-gray-500 capitalize">{member.role.replace(/_/g, ' ')}</p>
+            <h1 className="text-lg font-bold text-[var(--text-primary)]">{member.full_name || 'Unnamed'}</h1>
+            <p className="text-xs text-[var(--text-muted)] capitalize">{member.role.replace(/_/g, ' ')}</p>
           </div>
         </div>
       </div>
 
       {/* Handicap */}
-      <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-2xl p-4 text-white flex items-center justify-between">
+      <div className="bg-gradient-to-br from-minerva-600 to-minerva-800 rounded-2xl p-4 text-white flex items-center justify-between">
         <div>
-          <p className="text-xs text-emerald-200 uppercase tracking-wide">Handicap</p>
+          <p className="text-xs text-minerva-200 uppercase tracking-wide">Handicap</p>
           <p className="text-3xl font-bold mt-0.5">{member.handicap_index ?? '--'}</p>
         </div>
         {member.ghin_number && (
           <div className="text-right">
-            <p className="text-xs text-emerald-200">GHIN</p>
+            <p className="text-xs text-minerva-200">GHIN</p>
             <p className="text-base font-semibold">{member.ghin_number}</p>
           </div>
         )}
@@ -134,31 +134,31 @@ export default function MemberProfilePage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-center">
-          <Target className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
-          <p className="text-lg font-bold text-gray-900">{stats.totalRounds}</p>
-          <p className="text-xs text-gray-500">Rounds</p>
+        <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
+          <Target className="w-5 h-5 text-minerva-600 mx-auto mb-1" />
+          <p className="text-lg font-bold text-[var(--text-primary)]">{stats.totalRounds}</p>
+          <p className="text-xs text-[var(--text-muted)]">Rounds</p>
         </div>
-        <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-center">
+        <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
           <TrendingUp className="w-5 h-5 text-blue-600 mx-auto mb-1" />
-          <p className="text-lg font-bold text-gray-900">
+          <p className="text-lg font-bold text-[var(--text-primary)]">
             {stats.avgNet !== 0 ? (stats.avgNet > 0 ? `+${stats.avgNet}` : stats.avgNet) : '--'}
           </p>
-          <p className="text-xs text-gray-500">Avg Net</p>
+          <p className="text-xs text-[var(--text-muted)]">Avg Net</p>
         </div>
-        <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-center">
+        <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
           <Trophy className="w-5 h-5 text-yellow-600 mx-auto mb-1" />
-          <p className="text-lg font-bold text-gray-900">
+          <p className="text-lg font-bold text-[var(--text-primary)]">
             {stats.bestNet != null ? formatNetScore(stats.bestNet) : '--'}
           </p>
-          <p className="text-xs text-gray-500">Best Net</p>
+          <p className="text-xs text-[var(--text-muted)]">Best Net</p>
         </div>
-        <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-center">
+        <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
           <BarChart3 className="w-5 h-5 text-red-500 mx-auto mb-1" />
-          <p className="text-lg font-bold text-gray-900">
+          <p className="text-lg font-bold text-[var(--text-primary)]">
             {stats.worstNet != null ? formatNetScore(stats.worstNet) : '--'}
           </p>
-          <p className="text-xs text-gray-500">Worst Net</p>
+          <p className="text-xs text-[var(--text-muted)]">Worst Net</p>
         </div>
       </div>
 
@@ -168,23 +168,23 @@ export default function MemberProfilePage() {
       {/* Recent Scores */}
       {scores.length > 0 && (
         <div>
-          <h3 className="text-base font-semibold text-gray-900 mb-3">Recent Rounds</h3>
+          <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Recent Rounds</h3>
           <div className="space-y-2">
             {scores.slice(0, 10).map((score) => (
               <Link
                 key={score.id}
                 href={`/scores/${score.id}`}
-                className="flex items-center justify-between bg-white rounded-xl p-3 border border-gray-100 shadow-sm"
+                className="flex items-center justify-between bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)]"
               >
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{score.course?.course_name}</p>
-                  <p className="text-xs text-gray-500">{score.course?.tee_name} &middot; {score.holes_played}h &middot; {new Date(score.created_at).toLocaleDateString()}</p>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">{score.course?.course_name}</p>
+                  <p className="text-xs text-[var(--text-muted)]">{score.course?.tee_name} &middot; {score.holes_played}h &middot; {new Date(score.created_at).toLocaleDateString()}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-gray-900">{score.gross_score}</p>
+                  <p className="text-sm font-bold text-[var(--text-primary)]">{score.gross_score}</p>
                   <p className={`text-xs font-medium ${
                     (score.net_strokes_over_par ?? 0) < 0 ? 'text-red-600' :
-                    (score.net_strokes_over_par ?? 0) === 0 ? 'text-emerald-600' : 'text-gray-500'
+                    (score.net_strokes_over_par ?? 0) === 0 ? 'text-green-600' : 'text-[var(--text-muted)]'
                   }`}>
                     Net {score.net_strokes_over_par != null ? formatNetScore(score.net_strokes_over_par) : '-'}
                   </p>
@@ -198,15 +198,15 @@ export default function MemberProfilePage() {
       {/* Handicap History */}
       {handicapHistory.length > 0 && (
         <div>
-          <h3 className="text-base font-semibold text-gray-900 mb-3">Handicap History</h3>
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Handicap History</h3>
+          <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
             {handicapHistory.map((h, idx) => (
-              <div key={h.id} className={`flex items-center justify-between px-4 py-3 ${idx < handicapHistory.length - 1 ? 'border-b border-gray-50' : ''}`}>
+              <div key={h.id} className={`flex items-center justify-between px-4 py-3 ${idx < handicapHistory.length - 1 ? 'border-b border-[var(--border-light)]' : ''}`}>
                 <div className="flex items-center gap-3">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <p className="text-sm text-gray-700">{new Date(h.effective_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
+                  <Calendar className="w-4 h-4 text-[var(--text-faint)]" />
+                  <p className="text-sm text-[var(--text-secondary)]">{new Date(h.effective_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
                 </div>
-                <p className="text-sm font-semibold text-gray-900">{h.handicap_index}</p>
+                <p className="text-sm font-semibold text-[var(--text-primary)]">{h.handicap_index}</p>
               </div>
             ))}
           </div>
@@ -215,7 +215,7 @@ export default function MemberProfilePage() {
 
       <Link
         href={`/stats/${id}`}
-        className="block text-center text-sm text-emerald-600 font-medium py-2"
+        className="block text-center text-sm text-minerva-600 font-medium py-2"
       >
         View Full Stats &rarr;
       </Link>

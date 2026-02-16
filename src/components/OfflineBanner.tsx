@@ -104,7 +104,7 @@ export function OfflineBanner() {
 
       {/* Success indicator */}
       {justSynced && (
-        <div className="bg-emerald-500 text-white px-4 py-2 flex items-center justify-center gap-2 text-sm animate-fade-in">
+        <div className="bg-green-500 text-white px-4 py-2 flex items-center justify-center gap-2 text-sm animate-fade-in">
           <Check className="w-4 h-4" />
           <span>All scores synced successfully!</span>
         </div>

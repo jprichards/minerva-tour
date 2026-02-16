@@ -124,9 +124,9 @@ describe('Scores Page - My Rounds Filter', () => {
   it('My Rounds button is not active by default (no player param)', () => {
     render(<ScoresPage />);
     const btn = screen.getByText('My Rounds');
-    // Not active: should have bg-white styling (inactive state)
-    expect(btn.className).toContain('bg-white');
-    expect(btn.className).not.toContain('bg-emerald-600');
+    // Not active: should have card bg styling (inactive state)
+    expect(btn.className).toContain('bg-[var(--bg-card)]');
+    expect(btn.className).not.toContain('bg-minerva-600');
   });
 
   it('shows all scores when My Rounds is not active', () => {
@@ -153,7 +153,7 @@ describe('Scores Page - My Rounds Filter', () => {
     render(<ScoresPage />);
     const btn = screen.getByText('My Rounds');
     // Active state
-    expect(btn.className).toContain('bg-emerald-600');
+    expect(btn.className).toContain('bg-minerva-600');
   });
 
   it('toggles My Rounds off after clicking twice', () => {

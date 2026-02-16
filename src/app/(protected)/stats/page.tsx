@@ -91,63 +91,63 @@ export default function StatsPage() {
   if (loading) {
     return (
       <div className="p-4 space-y-4">
-        <div className="h-8 bg-gray-200 rounded-lg animate-pulse w-32" />
-        <div className="h-40 bg-gray-200 rounded-xl animate-pulse" />
+        <div className="h-8 bg-[var(--bg-skeleton)] rounded-lg animate-pulse w-32" />
+        <div className="h-40 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
       </div>
     );
   }
 
   return (
     <div className="p-4 space-y-5">
-      <h1 className="text-2xl font-bold text-gray-900">Tour Stats</h1>
+      <h1 className="text-2xl font-bold text-[var(--text-primary)]">Tour Stats</h1>
 
       {!stats ? (
         <div className="text-center py-12">
           <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 text-sm">Play some rounds to see your stats!</p>
+          <p className="text-[var(--text-muted)] text-sm">Play some rounds to see your stats!</p>
         </div>
       ) : (
         <>
           {/* Overview */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-center">
-              <Target className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
-              <p className="text-xl font-bold text-gray-900">{stats.totalRounds}</p>
-              <p className="text-xs text-gray-500">Rounds Played</p>
+            <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
+              <Target className="w-5 h-5 text-minerva-600 mx-auto mb-1" />
+              <p className="text-xl font-bold text-[var(--text-primary)]">{stats.totalRounds}</p>
+              <p className="text-xs text-[var(--text-muted)]">Rounds Played</p>
             </div>
-            <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-center">
+            <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
               <TrendingUp className="w-5 h-5 text-blue-600 mx-auto mb-1" />
-              <p className="text-xl font-bold text-gray-900">
+              <p className="text-xl font-bold text-[var(--text-primary)]">
                 {stats.avgNet > 0 ? `+${stats.avgNet}` : stats.avgNet === 0 ? 'E' : stats.avgNet}
               </p>
-              <p className="text-xs text-gray-500">Avg Net</p>
+              <p className="text-xs text-[var(--text-muted)]">Avg Net</p>
             </div>
-            <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-center">
+            <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
               <Trophy className="w-5 h-5 text-yellow-600 mx-auto mb-1" />
-              <p className="text-xl font-bold text-gray-900">{formatNetScore(stats.bestNet)}</p>
-              <p className="text-xs text-gray-500">Best Net</p>
+              <p className="text-xl font-bold text-[var(--text-primary)]">{formatNetScore(stats.bestNet)}</p>
+              <p className="text-xs text-[var(--text-muted)]">Best Net</p>
             </div>
-            <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-center">
+            <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
               <BarChart3 className="w-5 h-5 text-red-500 mx-auto mb-1" />
-              <p className="text-xl font-bold text-gray-900">{formatNetScore(stats.worstNet)}</p>
-              <p className="text-xs text-gray-500">Worst Net</p>
+              <p className="text-xl font-bold text-[var(--text-primary)]">{formatNetScore(stats.worstNet)}</p>
+              <p className="text-xs text-[var(--text-muted)]">Worst Net</p>
             </div>
           </div>
 
           {/* Best/Worst Rounds */}
           <div>
-            <h3 className="text-base font-semibold text-gray-900 mb-3">Notable Rounds</h3>
+            <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Notable Rounds</h3>
             <div className="space-y-2">
               {stats.bestRound && (
-                <Link href={`/scores/${stats.bestRound.id}`} className="flex items-center justify-between bg-emerald-50 rounded-xl p-3 border border-emerald-100">
+                <Link href={`/scores/${stats.bestRound.id}`} className="flex items-center justify-between bg-green-50 rounded-xl p-3 border border-green-100">
                   <div>
-                    <p className="text-xs text-emerald-600 font-medium">Best Round</p>
-                    <p className="text-sm font-medium text-gray-900">{stats.bestRound.course?.course_name}</p>
-                    <p className="text-xs text-gray-500">{new Date(stats.bestRound.created_at).toLocaleDateString()}</p>
+                    <p className="text-xs text-green-600 font-medium">Best Round</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{stats.bestRound.course?.course_name}</p>
+                    <p className="text-xs text-[var(--text-muted)]">{new Date(stats.bestRound.created_at).toLocaleDateString()}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-emerald-700">{formatNetScore(stats.bestRound.net_strokes_over_par!)}</p>
-                    <p className="text-xs text-gray-500">Gross: {stats.bestRound.gross_score}</p>
+                    <p className="text-lg font-bold text-green-700">{formatNetScore(stats.bestRound.net_strokes_over_par!)}</p>
+                    <p className="text-xs text-[var(--text-muted)]">Gross: {stats.bestRound.gross_score}</p>
                   </div>
                 </Link>
               )}
@@ -155,12 +155,12 @@ export default function StatsPage() {
                 <Link href={`/scores/${stats.worstRound.id}`} className="flex items-center justify-between bg-red-50 rounded-xl p-3 border border-red-100">
                   <div>
                     <p className="text-xs text-red-600 font-medium">Worst Round</p>
-                    <p className="text-sm font-medium text-gray-900">{stats.worstRound.course?.course_name}</p>
-                    <p className="text-xs text-gray-500">{new Date(stats.worstRound.created_at).toLocaleDateString()}</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{stats.worstRound.course?.course_name}</p>
+                    <p className="text-xs text-[var(--text-muted)]">{new Date(stats.worstRound.created_at).toLocaleDateString()}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-bold text-red-700">{formatNetScore(stats.worstRound.net_strokes_over_par!)}</p>
-                    <p className="text-xs text-gray-500">Gross: {stats.worstRound.gross_score}</p>
+                    <p className="text-xs text-[var(--text-muted)]">Gross: {stats.worstRound.gross_score}</p>
                   </div>
                 </Link>
               )}
@@ -170,22 +170,22 @@ export default function StatsPage() {
           {/* Scoring Trends */}
           {stats.trends.length > 1 && (
             <div>
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Scoring Trend</h3>
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Scoring Trend</h3>
+              <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-4">
                 <div className="flex items-end gap-1 h-32">
                   {stats.trends.map((t, idx) => {
                     const maxVal = Math.max(...stats.trends.map((x) => Math.abs(x.avgNet)), 1);
                     const height = Math.max((Math.abs(t.avgNet) / maxVal) * 100, 10);
                     return (
                       <div key={idx} className="flex-1 flex flex-col items-center justify-end gap-1">
-                        <span className="text-[10px] font-medium text-gray-600">
+                        <span className="text-[10px] font-medium text-[var(--text-muted)]">
                           {t.avgNet > 0 ? `+${t.avgNet}` : t.avgNet}
                         </span>
                         <div
-                          className={`w-full rounded-t ${t.avgNet <= 0 ? 'bg-emerald-400' : 'bg-gray-300'}`}
+                          className={`w-full rounded-t ${t.avgNet <= 0 ? 'bg-green-400' : 'bg-gray-300'}`}
                           style={{ height: `${height}%` }}
                         />
-                        <span className="text-[9px] text-gray-400">{t.month}</span>
+                        <span className="text-[9px] text-[var(--text-faint)]">{t.month}</span>
                       </div>
                     );
                   })}
@@ -197,14 +197,14 @@ export default function StatsPage() {
           {/* Courses Played Most */}
           {stats.topCourses.length > 0 && (
             <div>
-              <h3 className="text-base font-semibold text-gray-900 mb-3">
+              <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">
                 Courses Played Most ({stats.uniqueCourses} total)
               </h3>
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
                 {stats.topCourses.map((c, idx) => (
-                  <div key={c.name} className={`flex items-center justify-between px-4 py-3 ${idx < stats.topCourses.length - 1 ? 'border-b border-gray-50' : ''}`}>
-                    <p className="text-sm text-gray-900">{c.name}</p>
-                    <span className="text-sm font-semibold text-gray-600">{c.count} round{c.count !== 1 ? 's' : ''}</span>
+                  <div key={c.name} className={`flex items-center justify-between px-4 py-3 ${idx < stats.topCourses.length - 1 ? 'border-b border-[var(--border-light)]' : ''}`}>
+                    <p className="text-sm text-[var(--text-primary)]">{c.name}</p>
+                    <span className="text-sm font-semibold text-[var(--text-muted)]">{c.count} round{c.count !== 1 ? 's' : ''}</span>
                   </div>
                 ))}
               </div>
@@ -213,21 +213,21 @@ export default function StatsPage() {
 
           {/* Head-to-Head: Link to other members */}
           <div>
-            <h3 className="text-base font-semibold text-gray-900 mb-3">Compare with Members</h3>
+            <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Compare with Members</h3>
             <div className="space-y-2">
               {allMembers.filter((m) => m.id !== profile?.id).slice(0, 5).map((m) => (
                 <Link
                   key={m.id}
                   href={`/stats/${m.id}`}
-                  className="flex items-center justify-between bg-white rounded-xl p-3 border border-gray-100 shadow-sm"
+                  className="flex items-center justify-between bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)]"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-bold text-gray-600">{(m.full_name || '?')[0].toUpperCase()}</span>
+                    <div className="w-8 h-8 bg-[var(--bg-subtle)] rounded-full flex items-center justify-center">
+                      <span className="text-xs font-bold text-[var(--text-muted)]">{(m.full_name || '?')[0].toUpperCase()}</span>
                     </div>
-                    <p className="text-sm font-medium text-gray-900">{m.full_name || 'Unnamed'}</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{m.full_name || 'Unnamed'}</p>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-gray-400" />
+                  <ArrowRight className="w-4 h-4 text-[var(--text-faint)]" />
                 </Link>
               ))}
             </div>

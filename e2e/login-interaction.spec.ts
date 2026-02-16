@@ -32,7 +32,7 @@ test.describe('Login Page Interactions', () => {
   });
 
   test('has proper gradient background', async ({ page }) => {
-    // The login page should have the emerald gradient
+    // The login page should have the minerva gradient
     const body = page.locator('body');
     await expect(body).toBeVisible();
   });

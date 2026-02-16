@@ -35,9 +35,9 @@ export default function BridgeScoresPage() {
     return (
       <div className="p-4 text-center py-16">
         <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-        <h2 className="text-lg font-semibold text-gray-900">Bridging Not Available</h2>
-        <p className="text-sm text-gray-500 mt-1">Major and playoff events require full 18-hole rounds. 9-hole scores cannot be combined for these events.</p>
-        <button onClick={() => router.back()} className="mt-4 text-emerald-600 text-sm font-medium">Go back</button>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Bridging Not Available</h2>
+        <p className="text-sm text-[var(--text-muted)] mt-1">Major and playoff events require full 18-hole rounds. 9-hole scores cannot be combined for these events.</p>
+        <button onClick={() => router.back()} className="mt-4 text-minerva-600 text-sm font-medium">Go back</button>
       </div>
     );
   }
@@ -162,10 +162,10 @@ export default function BridgeScoresPage() {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-gray-100">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-[var(--bg-subtle)]">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-muted)]" />
         </button>
-        <h1 className="text-xl font-bold text-gray-900">Bridge 9-Hole Scores</h1>
+        <h1 className="text-xl font-bold text-[var(--text-primary)]">Bridge 9-Hole Scores</h1>
       </div>
 
       <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
@@ -177,13 +177,13 @@ export default function BridgeScoresPage() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 bg-gray-200 rounded-xl animate-pulse" />
+            <div key={i} className="h-16 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
           ))}
         </div>
       ) : nineHoleScores.length < 2 ? (
         <div className="text-center py-12">
           <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[var(--text-muted)]">
             You need at least two unbridged 9-hole scores to bridge.
           </p>
         </div>
@@ -192,7 +192,7 @@ export default function BridgeScoresPage() {
           {/* Selection */}
           <div className="space-y-3">
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">First 9</h3>
+              <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">First 9</h3>
               <div className="space-y-2">
                 {nineHoleScores
                   .filter((s) => s.id !== selectedSecond?.id)
@@ -202,19 +202,19 @@ export default function BridgeScoresPage() {
                       onClick={() => setSelectedFirst(selectedFirst?.id === score.id ? null : score)}
                       className={`w-full flex items-center justify-between rounded-xl p-3 border transition-colors text-left ${
                         selectedFirst?.id === score.id
-                          ? 'border-emerald-500 bg-emerald-50'
-                          : 'border-gray-100 bg-white hover:border-gray-300'
+                          ? 'border-minerva-500 bg-minerva-50'
+                          : 'border-[var(--border-light)] bg-[var(--bg-card)] hover:bg-[var(--input-bg)] border-[var(--input-border)]'
                       }`}
                     >
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{score.course.course_name}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-sm font-medium text-[var(--text-primary)]">{score.course.course_name}</p>
+                        <p className="text-xs text-[var(--text-muted)]">
                           {score.course.tee_name} &middot; {score.course.type.replace(/_/g, ' ')} &middot; {new Date(score.created_at).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="text-right flex items-center gap-2">
-                        <span className="text-sm font-bold text-gray-900">{score.gross_score}</span>
-                        {selectedFirst?.id === score.id && <CheckCircle className="w-4 h-4 text-emerald-600" />}
+                        <span className="text-sm font-bold text-[var(--text-primary)]">{score.gross_score}</span>
+                        {selectedFirst?.id === score.id && <CheckCircle className="w-4 h-4 text-minerva-600" />}
                       </div>
                     </button>
                   ))}
@@ -222,11 +222,11 @@ export default function BridgeScoresPage() {
             </div>
 
             <div className="flex justify-center">
-              <Link2 className="w-5 h-5 text-gray-400" />
+              <Link2 className="w-5 h-5 text-[var(--text-faint)]" />
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Second 9</h3>
+              <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Second 9</h3>
               <div className="space-y-2">
                 {nineHoleScores
                   .filter((s) => s.id !== selectedFirst?.id)
@@ -236,19 +236,19 @@ export default function BridgeScoresPage() {
                       onClick={() => setSelectedSecond(selectedSecond?.id === score.id ? null : score)}
                       className={`w-full flex items-center justify-between rounded-xl p-3 border transition-colors text-left ${
                         selectedSecond?.id === score.id
-                          ? 'border-emerald-500 bg-emerald-50'
-                          : 'border-gray-100 bg-white hover:border-gray-300'
+                          ? 'border-minerva-500 bg-minerva-50'
+                          : 'border-[var(--border-light)] bg-[var(--bg-card)] hover:bg-[var(--input-bg)] border-[var(--input-border)]'
                       }`}
                     >
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{score.course.course_name}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-sm font-medium text-[var(--text-primary)]">{score.course.course_name}</p>
+                        <p className="text-xs text-[var(--text-muted)]">
                           {score.course.tee_name} &middot; {score.course.type.replace(/_/g, ' ')} &middot; {new Date(score.created_at).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="text-right flex items-center gap-2">
-                        <span className="text-sm font-bold text-gray-900">{score.gross_score}</span>
-                        {selectedSecond?.id === score.id && <CheckCircle className="w-4 h-4 text-emerald-600" />}
+                        <span className="text-sm font-bold text-[var(--text-primary)]">{score.gross_score}</span>
+                        {selectedSecond?.id === score.id && <CheckCircle className="w-4 h-4 text-minerva-600" />}
                       </div>
                     </button>
                   ))}
@@ -258,18 +258,18 @@ export default function BridgeScoresPage() {
 
           {/* Preview */}
           {canBridge && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Combined Score Preview</h3>
+            <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-default)] shadow-[var(--shadow-sm)] p-4">
+              <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Combined Score Preview</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-gray-500">Gross</p>
-                  <p className="text-xl font-bold text-gray-900">
+                  <p className="text-xs text-[var(--text-muted)]">Gross</p>
+                  <p className="text-xl font-bold text-[var(--text-primary)]">
                     {(selectedFirst!.gross_score || 0) + (selectedSecond!.gross_score || 0)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Combined Par</p>
-                  <p className="text-xl font-bold text-gray-900">
+                  <p className="text-xs text-[var(--text-muted)]">Combined Par</p>
+                  <p className="text-xl font-bold text-[var(--text-primary)]">
                     {selectedFirst!.course.par + selectedSecond!.course.par}
                   </p>
                 </div>
@@ -281,7 +281,7 @@ export default function BridgeScoresPage() {
           <button
             onClick={handleBridge}
             disabled={!canBridge || submitting}
-            className="w-full py-3 bg-emerald-600 text-white font-semibold rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-700 transition-colors"
+            className="w-full py-3 bg-minerva-600 text-white font-semibold rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-minerva-700 transition-colors"
           >
             {submitting ? 'Bridging...' : 'Bridge Scores'}
           </button>

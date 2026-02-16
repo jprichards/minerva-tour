@@ -47,7 +47,7 @@ describe('Admin Page Access Control', () => {
 
     render(<AdminPage />);
     const links = screen.getAllByRole('link');
-    expect(links.length).toBe(9);
+    expect(links.length).toBe(10);
   });
 
   it('has correct links for admin sections', () => {

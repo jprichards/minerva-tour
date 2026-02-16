@@ -186,20 +186,20 @@ export default function AdminTournamentsPage() {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-gray-100">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-[var(--bg-subtle)]">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-muted)]" />
         </button>
-        <h1 className="text-xl font-bold text-gray-900">Tournaments</h1>
+        <h1 className="text-xl font-bold text-[var(--text-primary)]">Tournaments</h1>
       </div>
 
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-[var(--text-muted)]">
         Create and manage tournaments. Activating a tournament will switch the season to tournament mode.
       </p>
 
       {/* Add button */}
       <button
         onClick={() => { setShowAdd(!showAdd); resetForm(); }}
-        className="flex items-center gap-1.5 bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-xl"
+        className="flex items-center gap-1.5 bg-minerva-600 text-white text-sm font-medium px-4 py-2 rounded-xl"
       >
         <Plus className="w-4 h-4" />
         New Tournament
@@ -207,25 +207,25 @@ export default function AdminTournamentsPage() {
 
       {/* Add Form */}
       {showAdd && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
+        <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-default)] shadow-[var(--shadow-sm)] p-4 space-y-3">
           <div>
-            <label className="text-xs text-gray-500">Name *</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Annual Championship" className="w-full mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm" />
+            <label className="text-xs text-[var(--text-muted)]">Name *</label>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Annual Championship" className="w-full mt-1 px-3 py-2 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-gray-500">Start Date *</label>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm" />
+              <label className="text-xs text-[var(--text-muted)]">Start Date *</label>
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full mt-1 px-3 py-2 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm" />
             </div>
             <div>
-              <label className="text-xs text-gray-500">End Date *</label>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm" />
+              <label className="text-xs text-[var(--text-muted)]">End Date *</label>
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full mt-1 px-3 py-2 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-gray-500">Format</label>
-              <select value={format} onChange={(e) => setFormat(e.target.value)} className="w-full mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+              <label className="text-xs text-[var(--text-muted)]">Format</label>
+              <select value={format} onChange={(e) => setFormat(e.target.value)} className="w-full mt-1 px-3 py-2 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm">
                 <option value="stroke_play">Stroke Play</option>
                 <option value="match_play">Match Play</option>
                 <option value="best_ball">Best Ball</option>
@@ -233,16 +233,16 @@ export default function AdminTournamentsPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500">Season</label>
-              <select value={seasonId} onChange={(e) => setSeasonId(e.target.value)} className="w-full mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+              <label className="text-xs text-[var(--text-muted)]">Season</label>
+              <select value={seasonId} onChange={(e) => setSeasonId(e.target.value)} className="w-full mt-1 px-3 py-2 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm">
                 <option value="">None</option>
                 {seasons.map((s) => <option key={s.id} value={s.id}>{s.year}</option>)}
               </select>
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={handleCreate} className="flex-1 bg-emerald-600 text-white rounded-lg py-2 text-sm font-medium">Create</button>
-            <button onClick={() => { setShowAdd(false); resetForm(); }} className="flex-1 bg-gray-100 text-gray-600 rounded-lg py-2 text-sm font-medium">Cancel</button>
+            <button onClick={handleCreate} className="flex-1 bg-minerva-600 text-white rounded-lg py-2 text-sm font-medium">Create</button>
+            <button onClick={() => { setShowAdd(false); resetForm(); }} className="flex-1 bg-[var(--bg-subtle)] text-[var(--text-muted)] rounded-lg py-2 text-sm font-medium">Cancel</button>
           </div>
         </div>
       )}
@@ -250,29 +250,29 @@ export default function AdminTournamentsPage() {
       {/* Tournaments List */}
       {loading ? (
         <div className="space-y-3">
-          {[1, 2].map((i) => <div key={i} className="h-20 bg-gray-200 rounded-xl animate-pulse" />)}
+          {[1, 2].map((i) => <div key={i} className="h-20 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />)}
         </div>
       ) : tournaments.length === 0 ? (
         <div className="text-center py-12">
           <Trophy className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No tournaments yet.</p>
+          <p className="text-sm text-[var(--text-muted)]">No tournaments yet.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {tournaments.map((t) => (
-            <div key={t.id} className={`bg-white rounded-xl border shadow-sm p-4 ${t.is_active ? 'border-green-300 bg-green-50/30' : 'border-gray-100'}`}>
+            <div key={t.id} className={`bg-[var(--bg-card)] rounded-xl border shadow-[var(--shadow-sm)] p-4 ${t.is_active ? 'border-green-300 bg-green-50/30' : 'border-[var(--border-light)]'}`}>
               {editingId === t.id ? (
                 <div className="space-y-3">
-                  <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm" />
+                  <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full px-3 py-2 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm" />
                   <div className="grid grid-cols-2 gap-2">
-                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm" />
-                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm" />
+                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-3 py-2 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm" />
+                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-3 py-2 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm" />
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => handleSaveEdit(t.id)} className="flex items-center gap-1 bg-emerald-600 text-white rounded-lg px-3 py-1.5 text-xs font-medium">
+                    <button onClick={() => handleSaveEdit(t.id)} className="flex items-center gap-1 bg-minerva-600 text-white rounded-lg px-3 py-1.5 text-xs font-medium">
                       <Save className="w-3 h-3" /> Save
                     </button>
-                    <button onClick={() => { setEditingId(null); resetForm(); }} className="flex items-center gap-1 bg-gray-100 text-gray-600 rounded-lg px-3 py-1.5 text-xs font-medium">
+                    <button onClick={() => { setEditingId(null); resetForm(); }} className="flex items-center gap-1 bg-[var(--bg-subtle)] text-[var(--text-muted)] rounded-lg px-3 py-1.5 text-xs font-medium">
                       <X className="w-3 h-3" /> Cancel
                     </button>
                   </div>
@@ -281,10 +281,10 @@ export default function AdminTournamentsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-gray-900">{t.name}</span>
+                      <span className="text-sm font-bold text-[var(--text-primary)]">{t.name}</span>
                       {t.is_active && <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full font-medium">Active</span>}
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5">
                       {t.format?.replace(/_/g, ' ') || 'Stroke play'} &middot; {new Date(t.start_date).toLocaleDateString()} &ndash; {new Date(t.end_date).toLocaleDateString()}
                     </p>
                   </div>
@@ -296,8 +296,8 @@ export default function AdminTournamentsPage() {
                     >
                       {t.is_active ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
                     </button>
-                    <button onClick={() => handleEdit(t)} className="p-2 hover:bg-gray-100 rounded-lg">
-                      <Edit className="w-4 h-4 text-gray-400" />
+                    <button onClick={() => handleEdit(t)} className="p-2 hover:bg-[var(--bg-subtle)] rounded-lg">
+                      <Edit className="w-4 h-4 text-[var(--text-faint)]" />
                     </button>
                     <button onClick={() => handleDelete(t.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-400">
                       <Trash2 className="w-4 h-4" />

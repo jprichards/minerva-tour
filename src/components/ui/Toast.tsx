@@ -55,7 +55,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
 
   const Icon = toast.type === 'success' ? CheckCircle : toast.type === 'error' ? AlertCircle : Info;
   const colors = {
-    success: 'bg-emerald-600',
+    success: 'bg-green-600',
     error: 'bg-red-600',
     info: 'bg-blue-600',
   };

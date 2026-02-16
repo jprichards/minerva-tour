@@ -150,16 +150,16 @@ export default function PlayoffsAdminPage() {
   };
 
   if (!isAdmin) {
-    return <div className="p-4 text-center text-gray-500">Admin access required.</div>;
+    return <div className="p-4 text-center text-[var(--text-muted)]">Admin access required.</div>;
   }
 
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-gray-100">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-[var(--bg-subtle)]">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-muted)]" />
         </button>
-        <h1 className="text-xl font-bold text-gray-900">Playoff Brackets</h1>
+        <h1 className="text-xl font-bold text-[var(--text-primary)]">Playoff Brackets</h1>
       </div>
 
       {/* Season Selector */}
@@ -169,7 +169,7 @@ export default function PlayoffsAdminPage() {
             key={s.id}
             onClick={() => setSelectedSeason(s)}
             className={`text-xs font-medium px-3 py-1.5 rounded-full whitespace-nowrap ${
-              selectedSeason?.id === s.id ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600'
+              selectedSeason?.id === s.id ? 'bg-minerva-600 text-white' : 'bg-[var(--bg-subtle)] text-[var(--text-muted)]'
             }`}
           >
             {s.year}
@@ -184,7 +184,7 @@ export default function PlayoffsAdminPage() {
             key={f}
             onClick={() => setSelectedFlight(f)}
             className={`text-xs font-medium px-3 py-1.5 rounded-lg ${
-              selectedFlight === f ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600'
+              selectedFlight === f ? 'bg-purple-600 text-white' : 'bg-[var(--bg-subtle)] text-[var(--text-muted)]'
             }`}
           >
             {flightLabels[f]}
@@ -194,7 +194,7 @@ export default function PlayoffsAdminPage() {
 
       {loading ? (
         <div className="space-y-3">
-          {[1, 2].map((i) => <div key={i} className="h-20 bg-gray-200 rounded-xl animate-pulse" />)}
+          {[1, 2].map((i) => <div key={i} className="h-20 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />)}
         </div>
       ) : (
         <>
@@ -202,7 +202,7 @@ export default function PlayoffsAdminPage() {
           {rounds.length === 0 ? (
             <div className="text-center py-8">
               <Trophy className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">No brackets yet for {flightLabels[selectedFlight]}.</p>
+              <p className="text-sm text-[var(--text-muted)]">No brackets yet for {flightLabels[selectedFlight]}.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -210,36 +210,36 @@ export default function PlayoffsAdminPage() {
                 const roundMatchups = flightBrackets.filter((b) => b.round === round);
                 return (
                   <div key={round}>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                    <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">
                       Round {round} ({roundMatchups.length} matchup{roundMatchups.length !== 1 ? 's' : ''})
                     </h3>
                     <div className="space-y-2">
                       {roundMatchups.map((match) => (
-                        <div key={match.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-3">
+                        <div key={match.id} className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-3">
                           <div className="flex items-center justify-between">
                             <div className="flex-1 space-y-1.5">
                               {/* Player 1 */}
                               <button
                                 onClick={() => match.player1_id && handleSetWinner(match.id, match.player1_id)}
                                 className={`w-full flex items-center gap-2 p-2 rounded-lg text-left ${
-                                  match.winner_id === match.player1_id ? 'bg-emerald-50 border border-emerald-200' : 'hover:bg-gray-50'
+                                  match.winner_id === match.player1_id ? 'bg-minerva-50 border border-minerva-200' : 'hover:bg-[var(--bg-page)]'
                                 }`}
                               >
-                                {match.winner_id === match.player1_id && <CheckCircle className="w-4 h-4 text-emerald-600" />}
-                                <span className="text-sm font-medium text-gray-900">
+                                {match.winner_id === match.player1_id && <CheckCircle className="w-4 h-4 text-minerva-600" />}
+                                <span className="text-sm font-medium text-[var(--text-primary)]">
                                   {match.player1?.full_name || 'TBD'}
                                 </span>
                               </button>
-                              <div className="text-center text-xs text-gray-400">vs</div>
+                              <div className="text-center text-xs text-[var(--text-faint)]">vs</div>
                               {/* Player 2 */}
                               <button
                                 onClick={() => match.player2_id && handleSetWinner(match.id, match.player2_id)}
                                 className={`w-full flex items-center gap-2 p-2 rounded-lg text-left ${
-                                  match.winner_id === match.player2_id ? 'bg-emerald-50 border border-emerald-200' : 'hover:bg-gray-50'
+                                  match.winner_id === match.player2_id ? 'bg-minerva-50 border border-minerva-200' : 'hover:bg-[var(--bg-page)]'
                                 }`}
                               >
-                                {match.winner_id === match.player2_id && <CheckCircle className="w-4 h-4 text-emerald-600" />}
-                                <span className="text-sm font-medium text-gray-900">
+                                {match.winner_id === match.player2_id && <CheckCircle className="w-4 h-4 text-minerva-600" />}
+                                <span className="text-sm font-medium text-[var(--text-primary)]">
                                   {match.player2?.full_name || 'TBD'}
                                 </span>
                               </button>
@@ -262,36 +262,36 @@ export default function PlayoffsAdminPage() {
 
           {/* Add Matchup */}
           {addingMatchup ? (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
-              <h3 className="text-sm font-semibold text-gray-900">New Matchup</h3>
+            <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-default)] shadow-[var(--shadow-sm)] p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">New Matchup</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500">Round</label>
+                  <label className="text-xs text-[var(--text-muted)]">Round</label>
                   <input
                     type="number"
                     min={1}
                     value={newRound}
                     onChange={(e) => setNewRound(Number(e.target.value))}
-                    className="w-full mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                    className="w-full mt-1 px-3 py-2 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500">Matchup #</label>
+                  <label className="text-xs text-[var(--text-muted)]">Matchup #</label>
                   <input
                     type="number"
                     min={1}
                     value={newMatchup}
                     onChange={(e) => setNewMatchup(Number(e.target.value))}
-                    className="w-full mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                    className="w-full mt-1 px-3 py-2 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm"
                   />
                 </div>
               </div>
               <div>
-                <label className="text-xs text-gray-500">Player 1</label>
+                <label className="text-xs text-[var(--text-muted)]">Player 1</label>
                 <select
                   value={newPlayer1}
                   onChange={(e) => setNewPlayer1(e.target.value)}
-                  className="w-full mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                  className="w-full mt-1 px-3 py-2 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm"
                 >
                   <option value="">TBD</option>
                   {members.map((m) => (
@@ -300,11 +300,11 @@ export default function PlayoffsAdminPage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs text-gray-500">Player 2</label>
+                <label className="text-xs text-[var(--text-muted)]">Player 2</label>
                 <select
                   value={newPlayer2}
                   onChange={(e) => setNewPlayer2(e.target.value)}
-                  className="w-full mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                  className="w-full mt-1 px-3 py-2 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm"
                 >
                   <option value="">TBD</option>
                   {members.map((m) => (
@@ -315,13 +315,13 @@ export default function PlayoffsAdminPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setAddingMatchup(false)}
-                  className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium"
+                  className="flex-1 py-2 bg-[var(--bg-subtle)] text-[var(--text-secondary)] rounded-lg text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAddMatchup}
-                  className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700"
+                  className="flex-1 py-2 bg-minerva-600 text-white rounded-lg text-sm font-medium hover:bg-minerva-700"
                 >
                   Add
                 </button>
@@ -330,7 +330,7 @@ export default function PlayoffsAdminPage() {
           ) : (
             <button
               onClick={() => setAddingMatchup(true)}
-              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-emerald-400 hover:text-emerald-600 transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed bg-[var(--input-bg)] border-[var(--input-border)] rounded-xl text-sm text-[var(--text-muted)] hover:border-minerva-400 hover:text-minerva-600 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Add Matchup

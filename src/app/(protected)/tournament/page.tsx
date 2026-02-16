@@ -97,8 +97,8 @@ export default function TournamentPage() {
   if (loading) {
     return (
       <div className="p-4 space-y-4">
-        <div className="h-8 bg-gray-200 rounded-lg animate-pulse w-48" />
-        <div className="h-40 bg-gray-200 rounded-xl animate-pulse" />
+        <div className="h-8 bg-[var(--bg-skeleton)] rounded-lg animate-pulse w-48" />
+        <div className="h-40 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
       </div>
     );
   }
@@ -129,65 +129,65 @@ export default function TournamentPage() {
           )}
         </div>
       ) : (
-        <div className="bg-gray-100 rounded-2xl p-5 text-center">
+        <div className="bg-[var(--bg-subtle)] rounded-2xl p-5 text-center">
           <Trophy className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-          <p className="text-gray-500 text-sm">No tournament found.</p>
+          <p className="text-[var(--text-muted)] text-sm">No tournament found.</p>
         </div>
       )}
 
       {/* Tournament Stats */}
       {scores.length > 0 && (
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-center">
+          <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
             <Users className="w-4 h-4 text-blue-600 mx-auto mb-1" />
-            <p className="text-lg font-bold text-gray-900">{leaderboard.length}</p>
-            <p className="text-[10px] text-gray-500">Players</p>
+            <p className="text-lg font-bold text-[var(--text-primary)]">{leaderboard.length}</p>
+            <p className="text-[10px] text-[var(--text-muted)]">Players</p>
           </div>
-          <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-center">
-            <Target className="w-4 h-4 text-emerald-600 mx-auto mb-1" />
-            <p className="text-lg font-bold text-gray-900">{scores.length}</p>
-            <p className="text-[10px] text-gray-500">Rounds</p>
+          <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
+            <Target className="w-4 h-4 text-minerva-600 mx-auto mb-1" />
+            <p className="text-lg font-bold text-[var(--text-primary)]">{scores.length}</p>
+            <p className="text-[10px] text-[var(--text-muted)]">Rounds</p>
           </div>
-          <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm text-center">
+          <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
             <Calendar className="w-4 h-4 text-amber-600 mx-auto mb-1" />
-            <p className="text-lg font-bold text-gray-900">
+            <p className="text-lg font-bold text-[var(--text-primary)]">
               {tournament ? Math.ceil((new Date(tournament.end_date).getTime() - new Date(tournament.start_date).getTime()) / (1000 * 60 * 60 * 24)) + 1 : 0}
             </p>
-            <p className="text-[10px] text-gray-500">Days</p>
+            <p className="text-[10px] text-[var(--text-muted)]">Days</p>
           </div>
         </div>
       )}
 
       {/* Tournament Leaderboard */}
       <div>
-        <h2 className="text-lg font-bold text-gray-900 mb-3">Tournament Leaderboard</h2>
+        <h2 className="text-lg font-bold text-[var(--text-primary)] mb-3">Tournament Leaderboard</h2>
 
         {leaderboard.length === 0 ? (
-          <p className="text-center text-gray-400 text-sm py-6">No tournament scores yet.</p>
+          <p className="text-center text-[var(--text-faint)] text-sm py-6">No tournament scores yet.</p>
         ) : (
           <div className="space-y-2">
             {leaderboard.map((player, idx) => (
-              <div key={player.userId} className="flex items-center gap-3 bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
+              <div key={player.userId} className="flex items-center gap-3 bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)]">
                 <div className="w-7 h-7 flex items-center justify-center">
                   {idx === 0 ? <Medal className="w-5 h-5 text-yellow-500" /> :
-                   idx === 1 ? <Medal className="w-5 h-5 text-gray-400" /> :
+                   idx === 1 ? <Medal className="w-5 h-5 text-[var(--text-faint)]" /> :
                    idx === 2 ? <Medal className="w-5 h-5 text-amber-700" /> :
-                   <span className="text-sm font-bold text-gray-400">{idx + 1}</span>}
+                   <span className="text-sm font-bold text-[var(--text-faint)]">{idx + 1}</span>}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{player.name}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm font-medium text-[var(--text-primary)] truncate">{player.name}</p>
+                  <p className="text-xs text-[var(--text-muted)]">
                     {player.rounds} round{player.rounds !== 1 ? 's' : ''} &middot; {player.holesPlayed}h
                   </p>
                 </div>
                 <div className="text-right">
                   <p className={`text-lg font-bold ${
                     player.totalNet < 0 ? 'text-red-600' :
-                    player.totalNet === 0 ? 'text-emerald-600' : 'text-gray-900'
+                    player.totalNet === 0 ? 'text-minerva-600' : 'text-[var(--text-primary)]'
                   }`}>
                     {formatNetScore(player.totalNet)}
                   </p>
-                  <p className="text-xs text-gray-400">Gross: {player.totalGross}</p>
+                  <p className="text-xs text-[var(--text-faint)]">Gross: {player.totalGross}</p>
                 </div>
               </div>
             ))}

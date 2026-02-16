@@ -68,7 +68,7 @@ export default function SchedulePage() {
 
   return (
     <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-bold text-gray-900">Schedule</h1>
+      <h1 className="text-2xl font-bold text-[var(--text-primary)]">Schedule</h1>
 
       {/* Season + View Toggle */}
       <div className="flex items-center justify-between">
@@ -78,25 +78,25 @@ export default function SchedulePage() {
               key={s.id}
               onClick={() => setSelectedSeason(s)}
               className={`text-xs font-medium px-3 py-1.5 rounded-full whitespace-nowrap ${
-                selectedSeason?.id === s.id ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600'
+                selectedSeason?.id === s.id ? 'bg-minerva-600 text-white' : 'bg-[var(--bg-subtle)] text-[var(--text-muted)]'
               }`}
             >
               {s.year}
             </button>
           ))}
         </div>
-        <div className="flex bg-gray-100 rounded-lg p-0.5">
+        <div className="flex bg-[var(--bg-subtle)] rounded-lg p-0.5">
           <button
             onClick={() => setView('list')}
-            className={`p-1.5 rounded ${view === 'list' ? 'bg-white shadow-sm' : ''}`}
+            className={`p-1.5 rounded ${view === 'list' ? 'bg-[var(--bg-card)] shadow-[var(--shadow-sm)]' : ''}`}
           >
-            <List className="w-4 h-4 text-gray-600" />
+            <List className="w-4 h-4 text-[var(--text-muted)]" />
           </button>
           <button
             onClick={() => setView('calendar')}
-            className={`p-1.5 rounded ${view === 'calendar' ? 'bg-white shadow-sm' : ''}`}
+            className={`p-1.5 rounded ${view === 'calendar' ? 'bg-[var(--bg-card)] shadow-[var(--shadow-sm)]' : ''}`}
           >
-            <Calendar className="w-4 h-4 text-gray-600" />
+            <Calendar className="w-4 h-4 text-[var(--text-muted)]" />
           </button>
         </div>
       </div>
@@ -104,14 +104,14 @@ export default function SchedulePage() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 bg-gray-200 rounded-xl animate-pulse" />
+            <div key={i} className="h-16 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
           ))}
         </div>
       ) : view === 'list' ? (
         /* List View */
         <div className="space-y-2">
           {events.length === 0 ? (
-            <p className="text-center text-gray-400 text-sm py-8">No events scheduled.</p>
+            <p className="text-center text-[var(--text-faint)] text-sm py-8">No events scheduled.</p>
           ) : (
             events.map((event) => {
               const isActive = event.start_date <= todayStr && event.end_date >= todayStr;
@@ -119,28 +119,28 @@ export default function SchedulePage() {
               return (
                 <div
                   key={event.id}
-                  className={`bg-white rounded-xl border shadow-sm p-4 ${
-                    isActive ? 'border-emerald-300 bg-emerald-50/30' : 'border-gray-100'
+                  className={`bg-[var(--bg-card)] rounded-xl border shadow-[var(--shadow-sm)] p-4 ${
+                    isActive ? 'border-minerva-300 bg-minerva-50/30' : 'border-[var(--border-light)]'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-gray-600">
+                        <span className="w-6 h-6 bg-[var(--bg-subtle)] rounded flex items-center justify-center text-xs font-bold text-[var(--text-muted)]">
                           {event.event_number}
                         </span>
-                        <span className="text-sm font-semibold text-gray-900">
+                        <span className="text-sm font-semibold text-[var(--text-primary)]">
                           {event.name || `Event ${event.event_number}`}
                         </span>
                         {event.is_major && <span className="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-medium">Major</span>}
                         {event.is_playoff && <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-medium">Playoff</span>}
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-[var(--text-muted)] mt-1">
                         {event.holes} holes &middot; {new Date(event.start_date).toLocaleDateString()} &ndash; {new Date(event.end_date).toLocaleDateString()}
                       </p>
                     </div>
-                    {isActive && <span className="text-xs bg-emerald-600 text-white px-2 py-0.5 rounded-full font-medium">Active</span>}
-                    {isPast && <span className="text-xs text-gray-400">Completed</span>}
+                    {isActive && <span className="text-xs bg-minerva-600 text-white px-2 py-0.5 rounded-full font-medium">Active</span>}
+                    {isPast && <span className="text-xs text-[var(--text-faint)]">Completed</span>}
                   </div>
                 </div>
               );
@@ -149,28 +149,28 @@ export default function SchedulePage() {
         </div>
       ) : (
         /* Calendar View */
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+        <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-4">
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1))}
-              className="p-1 hover:bg-gray-100 rounded"
+              className="p-1 hover:bg-[var(--bg-subtle)] rounded"
             >
-              <ChevronLeft className="w-5 h-5 text-gray-600" />
+              <ChevronLeft className="w-5 h-5 text-[var(--text-muted)]" />
             </button>
-            <h3 className="text-sm font-semibold text-gray-900">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">
               {calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </h3>
             <button
               onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1))}
-              className="p-1 hover:bg-gray-100 rounded"
+              className="p-1 hover:bg-[var(--bg-subtle)] rounded"
             >
-              <ChevronRight className="w-5 h-5 text-gray-600" />
+              <ChevronRight className="w-5 h-5 text-[var(--text-muted)]" />
             </button>
           </div>
 
           <div className="grid grid-cols-7 gap-1">
             {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
-              <div key={d} className="text-center text-xs font-medium text-gray-400 py-1">{d}</div>
+              <div key={d} className="text-center text-xs font-medium text-[var(--text-faint)] py-1">{d}</div>
             ))}
             {calendarDays.map((day, idx) => {
               if (day === null) return <div key={idx} />;
@@ -181,14 +181,14 @@ export default function SchedulePage() {
                 <div
                   key={idx}
                   className={`text-center py-1.5 rounded-lg text-xs relative ${
-                    isToday ? 'bg-emerald-600 text-white font-bold' :
-                    dayEvents.length > 0 ? 'bg-emerald-50 text-emerald-800 font-medium' :
-                    'text-gray-700'
+                    isToday ? 'bg-minerva-600 text-white font-bold' :
+                    dayEvents.length > 0 ? 'bg-minerva-50 text-minerva-800 font-medium' :
+                    'text-[var(--text-secondary)]'
                   }`}
                 >
                   {day}
                   {dayEvents.length > 0 && !isToday && (
-                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-emerald-500 rounded-full" />
+                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-minerva-500 rounded-full" />
                   )}
                 </div>
               );
@@ -196,7 +196,7 @@ export default function SchedulePage() {
           </div>
 
           {/* Events in this month */}
-          <div className="mt-4 space-y-1 border-t border-gray-100 pt-3">
+          <div className="mt-4 space-y-1 border-t border-[var(--border-light)] pt-3">
             {events
               .filter((e) => {
                 const startMonth = new Date(e.start_date).getMonth();
@@ -206,9 +206,9 @@ export default function SchedulePage() {
               })
               .map((e) => (
                 <div key={e.id} className="flex items-center gap-2 text-xs">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+                  <div className="w-2 h-2 bg-minerva-500 rounded-full" />
                   <span className="font-medium text-gray-800">{e.name || `Event ${e.event_number}`}</span>
-                  <span className="text-gray-400">
+                  <span className="text-[var(--text-faint)]">
                     {new Date(e.start_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} &ndash; {new Date(e.end_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                   </span>
                 </div>

@@ -78,7 +78,7 @@ export default function PlayoffsPage() {
 
   return (
     <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-bold text-gray-900">Playoffs</h1>
+      <h1 className="text-2xl font-bold text-[var(--text-primary)]">Playoffs</h1>
 
       {/* Season Selector */}
       <div className="flex gap-2 overflow-x-auto">
@@ -87,7 +87,7 @@ export default function PlayoffsPage() {
             key={s.id}
             onClick={() => setSelectedSeason(s)}
             className={`text-xs font-medium px-3 py-1.5 rounded-full whitespace-nowrap ${
-              selectedSeason?.id === s.id ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600'
+              selectedSeason?.id === s.id ? 'bg-minerva-600 text-white' : 'bg-[var(--bg-subtle)] text-[var(--text-muted)]'
             }`}
           >
             {s.year}
@@ -104,7 +104,7 @@ export default function PlayoffsPage() {
               key={f}
               onClick={() => setSelectedFlight(f)}
               className={`text-xs font-medium px-3 py-1.5 rounded-lg flex items-center gap-1 ${
-                selectedFlight === f ? flightColors[f] : 'bg-gray-100 text-gray-600'
+                selectedFlight === f ? flightColors[f] : 'bg-[var(--bg-subtle)] text-[var(--text-muted)]'
               }`}
             >
               {flightLabels[f]}
@@ -116,12 +116,12 @@ export default function PlayoffsPage() {
 
       {loading ? (
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => <div key={i} className="h-20 bg-gray-200 rounded-xl animate-pulse" />)}
+          {[1, 2, 3].map((i) => <div key={i} className="h-20 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />)}
         </div>
       ) : flightBrackets.length === 0 ? (
         <div className="text-center py-12">
           <Trophy className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No playoff brackets yet for {flightLabels[selectedFlight]}.</p>
+          <p className="text-sm text-[var(--text-muted)]">No playoff brackets yet for {flightLabels[selectedFlight]}.</p>
         </div>
       ) : (
         /* Bracket Tree - scrollable horizontal layout */
@@ -131,18 +131,18 @@ export default function PlayoffsPage() {
               const roundMatchups = flightBrackets.filter((b) => b.round === round);
               return (
                 <div key={round} className="flex-shrink-0 w-56">
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 text-center">
+                  <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-3 text-center">
                     {roundLabels[round]}
                   </h3>
                   <div className="space-y-3">
                     {roundMatchups.map((match) => (
-                      <div key={match.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                      <div key={match.id} className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
                         <PlayerSlot
                           player={match.player1}
                           isWinner={match.winner_id !== null && match.winner_id === match.player1_id}
                           isLoser={match.winner_id !== null && match.winner_id !== match.player1_id}
                         />
-                        <div className="border-t border-gray-100" />
+                        <div className="border-t border-[var(--border-light)]" />
                         <PlayerSlot
                           player={match.player2}
                           isWinner={match.winner_id !== null && match.winner_id === match.player2_id}
@@ -163,20 +163,20 @@ export default function PlayoffsPage() {
 
 function PlayerSlot({ player, isWinner, isLoser }: { player?: User | null; isWinner: boolean; isLoser: boolean }) {
   return (
-    <div className={`flex items-center gap-2 px-3 py-2.5 ${isWinner ? 'bg-emerald-50' : isLoser ? 'bg-gray-50 opacity-60' : ''}`}>
-      <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+    <div className={`flex items-center gap-2 px-3 py-2.5 ${isWinner ? 'bg-green-50' : isLoser ? 'bg-[var(--bg-page)] opacity-60' : ''}`}>
+      <div className="w-7 h-7 rounded-full bg-[var(--bg-subtle)] flex items-center justify-center overflow-hidden flex-shrink-0">
         {player?.profile_picture_url ? (
           <img src={player.profile_picture_url} alt="" className="w-full h-full object-cover" />
         ) : (
-          <span className="text-[10px] font-bold text-gray-500">
+          <span className="text-[10px] font-bold text-[var(--text-muted)]">
             {player?.full_name?.[0]?.toUpperCase() || '?'}
           </span>
         )}
       </div>
-      <span className={`text-sm truncate ${isWinner ? 'font-bold text-emerald-700' : 'font-medium text-gray-700'}`}>
+      <span className={`text-sm truncate ${isWinner ? 'font-bold text-green-700' : 'font-medium text-[var(--text-secondary)]'}`}>
         {player?.full_name || 'TBD'}
       </span>
-      {isWinner && <ChevronRight className="w-4 h-4 text-emerald-600 ml-auto" />}
+      {isWinner && <ChevronRight className="w-4 h-4 text-green-600 ml-auto" />}
     </div>
   );
 }

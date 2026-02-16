@@ -146,24 +146,24 @@ export default function AdminProvisionsPage() {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-gray-100">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-[var(--bg-subtle)]">
+          <ArrowLeft className="w-5 h-5 text-[var(--text-muted)]" />
         </button>
-        <h1 className="text-xl font-bold text-gray-900">User Provisioning</h1>
+        <h1 className="text-xl font-bold text-[var(--text-primary)]">User Provisioning</h1>
       </div>
 
       {/* Actions */}
       <div className="flex gap-2">
         <button
           onClick={() => { setShowAdd(!showAdd); setShowBulk(false); }}
-          className="flex items-center gap-1.5 bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-xl"
+          className="flex items-center gap-1.5 bg-minerva-600 text-white text-sm font-medium px-4 py-2 rounded-xl"
         >
           <Plus className="w-4 h-4" />
           Add One
         </button>
         <button
           onClick={() => { setShowBulk(!showBulk); setShowAdd(false); }}
-          className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-xl"
+          className="flex items-center gap-1.5 bg-[var(--bg-card)] border border-[var(--border-default)] text-[var(--text-secondary)] text-sm font-medium px-4 py-2 rounded-xl"
         >
           <UserPlus className="w-4 h-4" />
           Bulk Import
@@ -172,24 +172,24 @@ export default function AdminProvisionsPage() {
 
       {/* Single Add Form */}
       {showAdd && (
-        <form onSubmit={handleAddSingle} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 space-y-3">
+        <form onSubmit={handleAddSingle} className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-4 space-y-3">
           <div>
-            <label className="text-xs text-gray-500 font-medium">Email</label>
+            <label className="text-xs text-[var(--text-muted)] font-medium">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="user@example.com"
-              className="w-full mt-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full mt-1 rounded-lg border bg-[var(--input-bg)] border-[var(--input-border)] px-3 py-2 text-sm"
               required
             />
           </div>
           <div>
-            <label className="text-xs text-gray-500 font-medium">Role</label>
+            <label className="text-xs text-[var(--text-muted)] font-medium">Role</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as UserRole)}
-              className="w-full mt-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full mt-1 rounded-lg border bg-[var(--input-bg)] border-[var(--input-border)] px-3 py-2 text-sm"
             >
               {roles.map((r) => (
                 <option key={r.value} value={r.value}>{r.label}</option>
@@ -198,7 +198,7 @@ export default function AdminProvisionsPage() {
           </div>
           <button
             type="submit"
-            className="w-full bg-emerald-600 text-white rounded-lg px-3 py-2 text-sm font-medium"
+            className="w-full bg-minerva-600 text-white rounded-lg px-3 py-2 text-sm font-medium"
           >
             Provision User
           </button>
@@ -207,23 +207,23 @@ export default function AdminProvisionsPage() {
 
       {/* Bulk Add */}
       {showBulk && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 space-y-3">
+        <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-4 space-y-3">
           <div>
-            <label className="text-xs text-gray-500 font-medium">Emails (comma or newline separated)</label>
+            <label className="text-xs text-[var(--text-muted)] font-medium">Emails (comma or newline separated)</label>
             <textarea
               value={bulkEmails}
               onChange={(e) => setBulkEmails(e.target.value)}
               placeholder="user1@example.com, user2@example.com"
               rows={4}
-              className="w-full mt-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full mt-1 rounded-lg border bg-[var(--input-bg)] border-[var(--input-border)] px-3 py-2 text-sm"
             />
           </div>
           <div>
-            <label className="text-xs text-gray-500 font-medium">Role for all</label>
+            <label className="text-xs text-[var(--text-muted)] font-medium">Role for all</label>
             <select
               value={bulkRole}
               onChange={(e) => setBulkRole(e.target.value as UserRole)}
-              className="w-full mt-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full mt-1 rounded-lg border bg-[var(--input-bg)] border-[var(--input-border)] px-3 py-2 text-sm"
             >
               {roles.map((r) => (
                 <option key={r.value} value={r.value}>{r.label}</option>
@@ -232,7 +232,7 @@ export default function AdminProvisionsPage() {
           </div>
           <button
             onClick={handleBulkAdd}
-            className="w-full bg-emerald-600 text-white rounded-lg px-3 py-2 text-sm font-medium"
+            className="w-full bg-minerva-600 text-white rounded-lg px-3 py-2 text-sm font-medium"
           >
             Import Users
           </button>
@@ -241,27 +241,27 @@ export default function AdminProvisionsPage() {
 
       {/* Provisions List */}
       <div className="space-y-2">
-        <p className="text-xs text-gray-400">{provisions.length} provisions</p>
+        <p className="text-xs text-[var(--text-faint)]">{provisions.length} provisions</p>
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-16 bg-gray-200 rounded-xl animate-pulse" />
+              <div key={i} className="h-16 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
             ))}
           </div>
         ) : provisions.length === 0 ? (
-          <p className="text-center text-gray-400 text-sm py-8">No provisions yet.</p>
+          <p className="text-center text-[var(--text-faint)] text-sm py-8">No provisions yet.</p>
         ) : (
           provisions.map((p) => (
-            <div key={p.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 flex items-center justify-between">
+            <div key={p.id} className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-3 flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
                 {p.claimed_by ? (
-                  <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-minerva-500 flex-shrink-0" />
                 ) : (
                   <Clock className="w-5 h-5 text-amber-500 flex-shrink-0" />
                 )}
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{p.email}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm font-medium text-[var(--text-primary)] truncate">{p.email}</p>
+                  <p className="text-xs text-[var(--text-muted)]">
                     {p.role.replace(/_/g, ' ')} &middot;{' '}
                     {p.claimed_by
                       ? `Claimed ${new Date(p.claimed_at!).toLocaleDateString()}`

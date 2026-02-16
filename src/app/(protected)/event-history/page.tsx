@@ -65,7 +65,7 @@ export default function EventHistoryPage() {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Event History</h1>
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Event History</h1>
         <button
           onClick={() => {
             const exportData = events.map((e) => ({
@@ -80,7 +80,7 @@ export default function EventHistoryPage() {
             }));
             downloadCSV(exportData, `event-history-${selectedSeason?.year || 'all'}`);
           }}
-          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 text-[var(--text-faint)] hover:text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] rounded-lg transition-colors"
           title="Export CSV"
         >
           <Download className="w-4 h-4" />
@@ -95,8 +95,8 @@ export default function EventHistoryPage() {
             onClick={() => setSelectedSeason(s)}
             className={`text-sm font-medium px-4 py-2 rounded-xl whitespace-nowrap transition-colors ${
               selectedSeason?.id === s.id
-                ? 'bg-emerald-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-minerva-600 text-white'
+                : 'bg-[var(--bg-subtle)] text-[var(--text-muted)] hover:bg-[var(--bg-skeleton)]'
             }`}
           >
             {s.year}
@@ -107,13 +107,13 @@ export default function EventHistoryPage() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-gray-200 rounded-xl animate-pulse" />
+            <div key={i} className="h-20 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
           ))}
         </div>
       ) : events.length === 0 ? (
         <div className="text-center py-12">
           <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 text-sm">No events found for this season.</p>
+          <p className="text-[var(--text-muted)] text-sm">No events found for this season.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -132,14 +132,14 @@ export default function EventHistoryPage() {
             );
 
             return (
-              <div key={event.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+              <div key={event.id} className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
                 <button
                   onClick={() => setExpandedEvent(isExpanded ? null : event.id)}
                   className="w-full p-4 flex items-center justify-between text-left"
                 >
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-gray-900">
+                      <span className="text-sm font-bold text-[var(--text-primary)]">
                         {event.name || `Event ${event.event_number}`}
                       </span>
                       {event.is_major && (
@@ -149,43 +149,43 @@ export default function EventHistoryPage() {
                         <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-medium">Playoff</span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5">
                       {event.holes}h &middot; {new Date(event.start_date).toLocaleDateString()} &ndash; {new Date(event.end_date).toLocaleDateString()}
                       &middot; {ranked.length} player{ranked.length !== 1 ? 's' : ''}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     {ranked.length > 0 && (
-                      <span className="text-sm font-semibold text-emerald-600">
+                      <span className="text-sm font-semibold text-minerva-600">
                         {ranked[0].user?.full_name?.split(' ')[0] || 'Winner'}
                       </span>
                     )}
-                    {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                    {isExpanded ? <ChevronUp className="w-4 h-4 text-[var(--text-faint)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-faint)]" />}
                   </div>
                 </button>
 
                 {isExpanded && (
-                  <div className="border-t border-gray-100 px-4 pb-3">
+                  <div className="border-t border-[var(--border-light)] px-4 pb-3">
                     {ranked.length === 0 ? (
-                      <p className="text-xs text-gray-400 py-3">No completed scores.</p>
+                      <p className="text-xs text-[var(--text-faint)] py-3">No completed scores.</p>
                     ) : (
                       <div className="space-y-1 pt-2">
                         {ranked.map((score, idx) => (
                           <div key={score.id} className="flex items-center gap-3 py-1.5">
                             <div className="w-6 text-center">
                               {idx === 0 ? <Medal className="w-4 h-4 text-yellow-500 mx-auto" /> :
-                               idx === 1 ? <Medal className="w-4 h-4 text-gray-400 mx-auto" /> :
+                               idx === 1 ? <Medal className="w-4 h-4 text-[var(--text-faint)] mx-auto" /> :
                                idx === 2 ? <Medal className="w-4 h-4 text-amber-700 mx-auto" /> :
-                               <span className="text-xs text-gray-400">{idx + 1}</span>}
+                               <span className="text-xs text-[var(--text-faint)]">{idx + 1}</span>}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-900 truncate">{score.user?.full_name || score.user?.email}</p>
-                              <p className="text-xs text-gray-400">{score.course?.course_name} &middot; {score.holes_played}h</p>
+                              <p className="text-sm text-[var(--text-primary)] truncate">{score.user?.full_name || score.user?.email}</p>
+                              <p className="text-xs text-[var(--text-faint)]">{score.course?.course_name} &middot; {score.holes_played}h</p>
                             </div>
                             <div className="text-right">
                               <p className={`text-sm font-bold ${
                                 (score.net_strokes_over_par ?? 0) < 0 ? 'text-red-600' :
-                                (score.net_strokes_over_par ?? 0) === 0 ? 'text-emerald-600' : 'text-gray-900'
+                                (score.net_strokes_over_par ?? 0) === 0 ? 'text-green-600' : 'text-[var(--text-primary)]'
                               }`}>
                                 {score.net_strokes_over_par != null ? formatNetScore(score.net_strokes_over_par) : '-'}
                               </p>

@@ -89,9 +89,9 @@ export default function HomePage() {
   if (userLoading || loading) {
     return (
       <div className="p-4 space-y-4">
-        <div className="h-8 bg-gray-200 rounded-lg animate-pulse w-48" />
-        <div className="h-40 bg-gray-200 rounded-2xl animate-pulse" />
-        <div className="h-32 bg-gray-200 rounded-2xl animate-pulse" />
+        <div className="h-8 bg-[var(--bg-skeleton)] rounded-lg animate-pulse w-48" />
+        <div className="h-40 bg-[var(--bg-skeleton)] rounded-2xl animate-pulse" />
+        <div className="h-32 bg-[var(--bg-skeleton)] rounded-2xl animate-pulse" />
       </div>
     );
   }
@@ -101,10 +101,10 @@ export default function HomePage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">
             Hey, {profile?.full_name?.split(' ')[0] || 'Golfer'}
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm text-[var(--text-muted)] mt-0.5">
             {currentSeason
               ? `${currentSeason.year} Season — ${currentSeason.mode.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}`
               : 'Welcome to the Minerva Tour'}
@@ -115,10 +115,10 @@ export default function HomePage() {
 
       {/* Current Event Card */}
       {currentEvent ? (
-        <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-2xl p-5 text-white">
+        <div className="bg-gradient-to-br from-minerva-600 to-minerva-800 rounded-2xl p-5 text-white">
           <div className="flex items-center gap-2 mb-2">
-            <Calendar className="w-4 h-4 text-emerald-300" />
-            <span className="text-xs font-medium text-emerald-200 uppercase tracking-wide">
+            <Calendar className="w-4 h-4 text-minerva-300" />
+            <span className="text-xs font-medium text-minerva-200 uppercase tracking-wide">
               Current Event
             </span>
           </div>
@@ -130,7 +130,7 @@ export default function HomePage() {
               </span>
             )}
           </h2>
-          <p className="text-emerald-200 text-sm mt-1">
+          <p className="text-minerva-200 text-sm mt-1">
             {currentEvent.holes} holes &middot;{' '}
             {new Date(currentEvent.start_date).toLocaleDateString()} &ndash;{' '}
             {new Date(currentEvent.end_date).toLocaleDateString()}
@@ -151,10 +151,10 @@ export default function HomePage() {
           </div>
         </div>
       ) : (
-        <div className="bg-gray-100 rounded-2xl p-5">
-          <p className="text-gray-500 text-sm">No active event right now.</p>
+        <div className="bg-[var(--bg-subtle)] rounded-2xl p-5">
+          <p className="text-[var(--text-muted)] text-sm">No active event right now.</p>
           {currentSeason?.mode === 'off_season' && (
-            <p className="text-gray-400 text-xs mt-1">The season hasn&apos;t started yet. Check back soon!</p>
+            <p className="text-[var(--text-faint)] text-xs mt-1">The season hasn&apos;t started yet. Check back soon!</p>
           )}
         </div>
       )}
@@ -163,68 +163,68 @@ export default function HomePage() {
       <div className="grid grid-cols-2 gap-3">
         <Link
           href="/scores/add"
-          className="flex items-center gap-3 bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+          className="flex items-center gap-3 bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border-light)] shadow-[var(--shadow-sm)] hover:shadow-md transition-shadow"
         >
-          <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-            <Target className="w-5 h-5 text-emerald-600" />
+          <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+            <Target className="w-5 h-5 text-green-600" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-900">Start Round</p>
-            <p className="text-xs text-gray-500">Submit a score</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)]">Start Round</p>
+            <p className="text-xs text-[var(--text-muted)]">Submit a score</p>
           </div>
         </Link>
         <Link
           href="/scores?tab=teetimes"
-          className="flex items-center gap-3 bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+          className="flex items-center gap-3 bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border-light)] shadow-[var(--shadow-sm)] hover:shadow-md transition-shadow"
         >
           <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
             <Clock className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-900">Tee Times</p>
-            <p className="text-xs text-gray-500">View / add</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)]">Tee Times</p>
+            <p className="text-xs text-[var(--text-muted)]">View / add</p>
           </div>
         </Link>
         <Link
           href="/leaderboard"
-          className="flex items-center gap-3 bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+          className="flex items-center gap-3 bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border-light)] shadow-[var(--shadow-sm)] hover:shadow-md transition-shadow"
         >
           <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
             <Trophy className="w-5 h-5 text-yellow-600" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-900">Standings</p>
-            <p className="text-xs text-gray-500">Leaderboard</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)]">Standings</p>
+            <p className="text-xs text-[var(--text-muted)]">Leaderboard</p>
           </div>
         </Link>
         <Link
           href="/courses"
-          className="flex items-center gap-3 bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+          className="flex items-center gap-3 bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border-light)] shadow-[var(--shadow-sm)] hover:shadow-md transition-shadow"
         >
           <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
             <MapPin className="w-5 h-5 text-purple-600" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-900">Courses</p>
-            <p className="text-xs text-gray-500">Browse / add</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)]">Courses</p>
+            <p className="text-xs text-[var(--text-muted)]">Browse / add</p>
           </div>
         </Link>
       </div>
 
       {/* Handicap Card */}
       {profile?.handicap_index != null && (
-        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+        <div className="bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border-light)] shadow-[var(--shadow-sm)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-emerald-600" />
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Current Handicap</p>
-                <p className="text-xl font-bold text-gray-900">{profile.handicap_index}</p>
+                <p className="text-xs text-[var(--text-muted)]">Current Handicap</p>
+                <p className="text-xl font-bold text-[var(--text-primary)]">{profile.handicap_index}</p>
               </div>
             </div>
-            <Link href="/profile" className="text-emerald-600 text-sm font-medium">
+            <Link href="/profile" className="text-minerva-600 text-sm font-medium">
               View Profile
             </Link>
           </div>
@@ -235,8 +235,8 @@ export default function HomePage() {
       {recentScores.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-base font-semibold text-gray-900">Recent Rounds</h3>
-            <Link href={`/scores?player=${profile?.id || ''}`} className="text-sm text-emerald-600 font-medium">
+            <h3 className="text-base font-semibold text-[var(--text-primary)]">Recent Rounds</h3>
+            <Link href={`/scores?player=${profile?.id || ''}`} className="text-sm text-minerva-600 font-medium">
               View all
             </Link>
           </div>
@@ -245,14 +245,14 @@ export default function HomePage() {
               <Link
                 key={score.id}
                 href={`/scores/${score.id}`}
-                className="block bg-white rounded-xl p-3 border border-gray-100 shadow-sm"
+                className="block bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)]"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-[var(--text-primary)]">
                       {score.course?.course_name || 'Unknown Course'}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-[var(--text-muted)]">
                       {score.course?.tee_name} &middot; {score.holes_played} holes
                       {(score.tee_time || score.event?.start_date) && (
                         <> &middot; {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</>
@@ -261,13 +261,13 @@ export default function HomePage() {
                   </div>
                   <div className="text-right">
                     {score.gross_score && (
-                      <p className="text-sm font-bold text-gray-900">{score.gross_score}</p>
+                      <p className="text-sm font-bold text-[var(--text-primary)]">{score.gross_score}</p>
                     )}
                     {score.net_strokes_over_par != null && (
                       <p className={`text-xs font-medium ${
                         score.net_strokes_over_par < 0 ? 'text-red-600' :
-                        score.net_strokes_over_par === 0 ? 'text-emerald-600' :
-                        'text-gray-600'
+                        score.net_strokes_over_par === 0 ? 'text-green-600' :
+                        'text-[var(--text-muted)]'
                       }`}>
                         Net: {score.net_strokes_over_par === 0 ? 'E' :
                           score.net_strokes_over_par > 0 ? `+${score.net_strokes_over_par}` :
@@ -284,24 +284,24 @@ export default function HomePage() {
 
       {/* Quick Links */}
       <div className="space-y-2">
-        <h3 className="text-base font-semibold text-gray-900">Quick Links</h3>
+        <h3 className="text-base font-semibold text-[var(--text-primary)]">Quick Links</h3>
         <div className="grid grid-cols-2 gap-2">
           <a
             href="https://minervatour.wordpress.com/rules/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 bg-white rounded-xl p-3 border border-gray-100 text-sm text-gray-700"
+            className="flex items-center gap-2 bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] text-sm text-[var(--text-secondary)]"
           >
-            <ExternalLink className="w-4 h-4 text-gray-400" />
+            <ExternalLink className="w-4 h-4 text-[var(--text-faint)]" />
             Rules
           </a>
           <a
             href="https://ncrdb.usga.org"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 bg-white rounded-xl p-3 border border-gray-100 text-sm text-gray-700"
+            className="flex items-center gap-2 bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] text-sm text-[var(--text-secondary)]"
           >
-            <ExternalLink className="w-4 h-4 text-gray-400" />
+            <ExternalLink className="w-4 h-4 text-[var(--text-faint)]" />
             USGA NCRDB
           </a>
           {googlePhotosUrl && (
@@ -309,7 +309,7 @@ export default function HomePage() {
               href={googlePhotosUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-white rounded-xl p-3 border border-gray-100 text-sm text-gray-700 col-span-2"
+              className="flex items-center gap-2 bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] text-sm text-[var(--text-secondary)] col-span-2"
             >
               <Image className="w-4 h-4 text-green-500" />
               Tour Photos
