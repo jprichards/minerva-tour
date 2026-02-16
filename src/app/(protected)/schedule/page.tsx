@@ -66,6 +66,14 @@ export default function SchedulePage() {
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
+  const getEventColor = (e: Event) => {
+    if (e.is_playoff) return { dot: '#9333ea', bg: '#f3e8ff', text: '#7e22ce' };
+    if (e.is_major) return { dot: '#d97706', bg: '#fef3c7', text: '#b45309' };
+    if (e.event_number === 0) return { dot: '#0d9488', bg: '#ccfbf1', text: '#0f766e' };
+    if (e.holes === 9) return { dot: '#2563eb', bg: '#dbeafe', text: '#1d4ed8' };
+    return { dot: '#6652A3', bg: '#ede9f6', text: '#6652A3' };
+  };
+
   return (
     <div className="p-4 space-y-4">
       <h1 className="text-2xl font-bold text-[var(--text-primary)]">Schedule</h1>
@@ -182,13 +190,14 @@ export default function SchedulePage() {
                   key={idx}
                   className={`text-center py-1.5 rounded-lg text-xs relative ${
                     isToday ? 'bg-minerva-600 text-white font-bold' :
-                    dayEvents.length > 0 ? 'bg-minerva-50 text-minerva-800 font-medium' :
+                    dayEvents.length > 0 ? 'font-medium' :
                     'text-[var(--text-secondary)]'
                   }`}
+                  style={!isToday && dayEvents.length > 0 ? { backgroundColor: getEventColor(dayEvents[0]).bg, color: getEventColor(dayEvents[0]).text } : undefined}
                 >
                   {day}
                   {dayEvents.length > 0 && !isToday && (
-                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-minerva-500 rounded-full" />
+                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full" style={{ backgroundColor: getEventColor(dayEvents[0]).dot }} />
                   )}
                 </div>
               );
@@ -204,15 +213,18 @@ export default function SchedulePage() {
                 const cm = calendarMonth.getMonth();
                 return startMonth === cm || endMonth === cm;
               })
-              .map((e) => (
-                <div key={e.id} className="flex items-center gap-2 text-xs">
-                  <div className="w-2 h-2 bg-minerva-500 rounded-full" />
-                  <span className="font-medium text-gray-800">{e.name || `Event ${e.event_number}`}</span>
-                  <span className="text-[var(--text-faint)]">
-                    {new Date(e.start_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} &ndash; {new Date(e.end_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                  </span>
-                </div>
-              ))}
+              .map((e) => {
+                const color = getEventColor(e);
+                return (
+                  <div key={e.id} className="flex items-center gap-2 text-xs">
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color.dot }} />
+                    <span className="font-medium" style={{ color: color.text }}>{e.name || `Event ${e.event_number}`}</span>
+                    <span className="text-[var(--text-faint)]">
+                      {!e.is_playoff && e.event_number !== 0 && `${e.holes}H · `}{new Date(e.start_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} &ndash; {new Date(e.end_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                );
+              })}
           </div>
         </div>
       )}
