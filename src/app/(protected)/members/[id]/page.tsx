@@ -113,7 +113,12 @@ export default function MemberProfilePage() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-[var(--text-primary)]">{member.full_name || 'Unnamed'}</h1>
-            <p className="text-xs text-[var(--text-muted)] capitalize">{member.role.replace(/_/g, ' ')}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-xs text-[var(--text-muted)] capitalize">{member.role.replace(/_/g, ' ')}</p>
+              {member.is_commissioner && (
+                <span className="text-[10px] font-semibold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">Commish</span>
+              )}
+            </div>
           </div>
         </div>
       </div>

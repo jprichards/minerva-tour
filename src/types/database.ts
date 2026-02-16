@@ -44,6 +44,7 @@ export interface User {
   handicap_index: number | null;
   ghin_number: string | null;
   profile_picture_url: string | null;
+  is_commissioner: boolean;
   created_at: string;
   updated_at: string;
 }
