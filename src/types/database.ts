@@ -202,6 +202,28 @@ export interface SeasonFinish {
   user?: User;
 }
 
+export type FeedbackType = 'bug' | 'feature_request' | 'other';
+
+export type FeedbackStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
+
+export interface Feedback {
+  id: string;
+  user_id: string;
+  type: FeedbackType;
+  title: string;
+  description: string;
+  attachments: string[];
+  status: FeedbackStatus;
+  admin_response: string | null;
+  responded_by: string | null;
+  responded_at: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  user?: User;
+  responder?: User;
+}
+
 export type NotificationType = 'event_start' | 'event_end' | 'score_posted' | 'handicap_update' | 'admin_message' | 'season_mode' | 'tournament' | 'general';
 
 export interface Notification {

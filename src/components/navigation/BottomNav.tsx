@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Target, Trophy, User, Shield, Menu, X, MapPin, Calendar, BarChart3, Users, Clock, Swords, Award, Eye, EyeOff } from 'lucide-react';
+import { Home, Target, Trophy, User, Shield, Menu, X, MapPin, Calendar, BarChart3, Users, Clock, Swords, Award, Eye, EyeOff, MessageSquare } from 'lucide-react';
 import { useUser } from '@/lib/hooks/useUser';
 import { useAdminMode } from '@/lib/hooks/useAdminMode';
 
@@ -23,6 +23,7 @@ const menuItems = [
   { href: '/hall-of-fame', label: 'Hall of Fame', icon: Award },
   { href: '/playoffs', label: 'Playoffs', icon: Swords },
   { href: '/tournament', label: 'Tournament', icon: Trophy },
+  { href: '/feedback', label: 'Feedback', icon: MessageSquare },
 ];
 
 const adminItem = { href: '/admin', label: 'Admin', icon: Shield };

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
-import { Edit, LogOut, Camera, TrendingUp, Trophy, Target, Calendar, Sun, Moon, Monitor } from 'lucide-react';
+import { Edit, LogOut, Camera, TrendingUp, Trophy, Target, Calendar, Sun, Moon, Monitor, MessageSquare } from 'lucide-react';
 import TrophyCase from '@/components/TrophyCase';
 import { useThemeContext } from '@/components/ThemeProvider';
 import type { ThemePreference } from '@/lib/hooks/useTheme';
@@ -267,6 +267,20 @@ export default function ProfilePage() {
           ))}
         </div>
       </div>
+
+      {/* Send Feedback */}
+      <Link
+        href="/feedback"
+        className="flex items-center gap-3 bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-4 hover:shadow-md transition-shadow"
+      >
+        <div className="w-10 h-10 bg-minerva-100 rounded-xl flex items-center justify-center">
+          <MessageSquare className="w-5 h-5 text-minerva-600" />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-[var(--text-primary)]">Send Feedback</p>
+          <p className="text-xs text-[var(--text-muted)]">Report bugs or request features</p>
+        </div>
+      </Link>
 
       {/* Sign Out */}
       <button

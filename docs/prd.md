@@ -857,3 +857,30 @@ The following features have been built and should be considered part of the app'
 - events (with season_id, dates, type, is_major)
 - seasons (with year, mode)
 - audit_logs (for all actions)
+- feedback (bug reports, feature requests, general feedback)
+
+---
+
+## **Feedback System:**
+
+### **Overview:**
+Users can submit bug reports, feature requests, or general feedback directly within the app. Admins manage an inbox to review, respond to, and close out submissions.
+
+### **User Features:**
+- Submit feedback with a type (Bug Report, Feature Request, Other), title, and description
+- Attach up to 3 screenshots or videos (max 10MB each) to any submission
+- View "My Submissions" list with status badges (Open, In Progress, Resolved, Closed)
+- Expand submissions to see full description and admin response
+- Accessible from Profile page ("Send Feedback" card) and More menu ("Feedback" link)
+
+### **Admin Features:**
+- Dedicated "Feedback Inbox" in the admin section
+- Filter by status (Open, In Progress, Resolved, Closed) and type (Bug, Feature, Other)
+- Expand any entry to view description, attachments, and write a response
+- Change feedback status with one tap
+- **Attachment cleanup**: When feedback is closed, all uploaded files are deleted from storage and the attachments array is cleared to prevent indefinite storage growth
+
+### **Database:**
+- `feedback` table with RLS policies (users insert/read own, admins read/update all)
+- `feedback-attachments` Supabase Storage bucket (private, authenticated access)
+- File path convention: `{user_id}/{feedback_id}/{filename}`
