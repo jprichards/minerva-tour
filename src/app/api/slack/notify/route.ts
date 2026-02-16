@@ -58,8 +58,11 @@ export async function POST(request: NextRequest) {
       await enrichWithProjectedPoints(supabase, payload);
     }
 
+    // Load chirp templates from DB (best-effort, falls back to hardcoded)
+    const dbTemplates = await loadChirpTemplates(supabase);
+
     // Format the message
-    const message = formatSlackMessage(payload);
+    const message = formatSlackMessage(payload, dbTemplates);
 
     // Post to Slack
     const slackResponse = await fetch('https://slack.com/api/chat.postMessage', {
@@ -217,5 +220,31 @@ async function enrichWithProjectedPoints(
   } catch (err) {
     // Silently skip — projected points are nice-to-have
     console.error('Error calculating projected points:', err);
+  }
+}
+
+/**
+ * Load chirp templates from the database, grouped by bucket.
+ * Returns undefined if the query fails or returns empty results,
+ * which causes the formatter to fall back to hardcoded templates.
+ */
+async function loadChirpTemplates(
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<Record<string, string[]> | undefined> {
+  try {
+    const { data, error } = await supabase
+      .from('chirp_templates')
+      .select('bucket, template');
+
+    if (error || !data || data.length === 0) return undefined;
+
+    const grouped: Record<string, string[]> = {};
+    for (const row of data) {
+      if (!grouped[row.bucket]) grouped[row.bucket] = [];
+      grouped[row.bucket].push(row.template);
+    }
+    return grouped;
+  } catch {
+    return undefined;
   }
 }

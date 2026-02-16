@@ -4,8 +4,10 @@ import type { SlackNotifyPayload } from '@/types/database';
 
 // Mock chirps to return deterministic values
 vi.mock('@/lib/chirps', () => ({
-  getChirp: (netOverPar: number, firstName: string) =>
-    `Mock chirp for ${firstName} at ${netOverPar > 0 ? '+' : ''}${netOverPar}`,
+  getChirp: (netOverPar: number, ctx: { firstName: string }) =>
+    `Mock chirp for ${ctx.firstName} at ${netOverPar > 0 ? '+' : ''}${netOverPar}`,
+  getChirpFromTemplates: (_db: unknown, netOverPar: number, ctx: { firstName: string }) =>
+    `Mock chirp for ${ctx.firstName} at ${netOverPar > 0 ? '+' : ''}${netOverPar}`,
 }));
 
 const basePayload: SlackNotifyPayload = {

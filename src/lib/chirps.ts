@@ -5,7 +5,9 @@
  * selected from the matching performance bucket and personalized with
  * the player's first name.
  *
- * Ported from the original Glide app's Chirps sheet.
+ * Templates are stored in the `chirp_templates` Supabase table and can
+ * be managed by any member. The hardcoded CHIRP_TEMPLATES constant serves
+ * as the fallback when the DB is unavailable.
  */
 
 export type ChirpBucket =
@@ -17,9 +19,23 @@ export type ChirpBucket =
   | 'bad'         // +10 to +19
   | 'terrible';   // +20 or worse
 
+export const BUCKET_LABELS: Record<ChirpBucket, string> = {
+  legendary: 'Legendary (-10 or better)',
+  excellent: 'Excellent (-9 to -5)',
+  solid: 'Solid (-4 to +1)',
+  mediocre: 'Mediocre (+2 to +4)',
+  rough: 'Rough (+5 to +9)',
+  bad: 'Bad (+10 to +19)',
+  terrible: 'Terrible (+20 or worse)',
+};
+
+export const ALL_BUCKETS: ChirpBucket[] = [
+  'legendary', 'excellent', 'solid', 'mediocre', 'rough', 'bad', 'terrible',
+];
+
 /**
- * Chirp templates by performance bucket.
- * Use $first_name as a placeholder for the player's first name.
+ * Hardcoded chirp templates — used as fallback when DB is unavailable
+ * and as the initial seed data source.
  */
 export const CHIRP_TEMPLATES: Record<ChirpBucket, string[]> = {
   legendary: [
@@ -110,16 +126,70 @@ export function getChirpBucket(netStrokesOverPar: number): ChirpBucket {
 }
 
 /**
- * Get a personalized chirp for a player's score
- *
- * @param netStrokesOverPar - The player's net strokes over par
- * @param firstName - The player's first name (for template substitution)
- * @returns A personalized chirp string
+ * Context passed to chirp template substitution.
+ * All fields beyond firstName are optional — if absent the
+ * placeholder is left as-is (harmless in output).
  */
-export function getChirp(netStrokesOverPar: number, firstName: string): string {
-  const bucket = getChirpBucket(netStrokesOverPar);
-  const templates = CHIRP_TEMPLATES[bucket];
+export interface ChirpContext {
+  firstName: string;
+  course?: string | null;
+  gross?: number | null;
+  net?: number | null;       // net strokes over par with sign, e.g. "+7" or "-2"
+  holes?: number | null;
+  handicap?: number | null;
+}
+
+/** All supported wildcards for reference in the UI. */
+export const CHIRP_WILDCARDS: { token: string; description: string }[] = [
+  { token: '$first_name', description: "Player's first name" },
+  { token: '$course', description: 'Course name' },
+  { token: '$gross', description: 'Gross score (e.g. 82)' },
+  { token: '$net', description: 'Net strokes over par (e.g. +7, -2)' },
+  { token: '$holes', description: 'Holes played (e.g. 14)' },
+  { token: '$handicap', description: 'Handicap index (e.g. 24.2)' },
+];
+
+function formatNetSign(n: number): string {
+  if (n === 0) return 'E';
+  return n > 0 ? `+${n}` : `${n}`;
+}
+
+/**
+ * Pick a random template and substitute all wildcards from context.
+ */
+function applyTemplate(templates: string[], ctx: ChirpContext): string {
   const idx = Math.floor(Math.random() * templates.length);
-  const template = templates[idx];
-  return template.replace(/\$first_name/g, firstName);
+  let result = templates[idx];
+  result = result.replace(/\$first_name/g, ctx.firstName);
+  if (ctx.course != null) result = result.replace(/\$course/g, ctx.course);
+  if (ctx.gross != null) result = result.replace(/\$gross/g, String(ctx.gross));
+  if (ctx.net != null) result = result.replace(/\$net/g, formatNetSign(ctx.net));
+  if (ctx.holes != null) result = result.replace(/\$holes/g, String(ctx.holes));
+  if (ctx.handicap != null) result = result.replace(/\$handicap/g, String(ctx.handicap));
+  return result;
+}
+
+/**
+ * Get a personalized chirp using hardcoded fallback templates.
+ * Used when DB templates are not available.
+ */
+export function getChirp(netStrokesOverPar: number, ctx: ChirpContext): string {
+  const bucket = getChirpBucket(netStrokesOverPar);
+  return applyTemplate(CHIRP_TEMPLATES[bucket], ctx);
+}
+
+/**
+ * Get a personalized chirp from a pre-fetched set of DB templates.
+ * Falls back to hardcoded templates if the bucket has no DB entries.
+ */
+export function getChirpFromTemplates(
+  dbTemplates: Record<string, string[]>,
+  netStrokesOverPar: number,
+  ctx: ChirpContext
+): string {
+  const bucket = getChirpBucket(netStrokesOverPar);
+  const templates = dbTemplates[bucket]?.length
+    ? dbTemplates[bucket]
+    : CHIRP_TEMPLATES[bucket];
+  return applyTemplate(templates, ctx);
 }

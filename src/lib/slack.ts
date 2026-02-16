@@ -5,7 +5,7 @@
  * Integrates with the chirps system for completed rounds.
  */
 
-import { getChirp } from '@/lib/chirps';
+import { getChirp, getChirpFromTemplates, type ChirpContext } from '@/lib/chirps';
 import { formatNetScore, formatGrossScore, calculatePartialPar } from '@/lib/scoring';
 import type { SlackEventType, SlackNotifyPayload, CourseType } from '@/types/database';
 
@@ -21,6 +21,17 @@ export interface SlackMessage {
 
 function sectionBlock(markdown: string): SlackBlock {
   return { type: 'section', text: { type: 'mrkdwn', text: markdown } };
+}
+
+function buildChirpContext(p: SlackNotifyPayload): ChirpContext {
+  return {
+    firstName: getFirstName(p.player_name),
+    course: p.course_name || null,
+    gross: p.gross_score ?? null,
+    net: p.net_strokes_over_par ?? null,
+    holes: p.holes_played ?? null,
+    handicap: p.handicap_index ?? null,
+  };
 }
 
 /**
@@ -110,16 +121,24 @@ function scoreLineMarkdown(payload: SlackNotifyPayload): string {
   return parts.join('  |  ');
 }
 
-export function formatSlackMessage(payload: SlackNotifyPayload): SlackMessage {
+/**
+ * Format a Slack message for the given payload.
+ * @param dbTemplates - Optional DB-loaded chirp templates grouped by bucket.
+ *   When provided, chirps are selected from these instead of the hardcoded fallback.
+ */
+export function formatSlackMessage(
+  payload: SlackNotifyPayload,
+  dbTemplates?: Record<string, string[]>
+): SlackMessage {
   const { event_type } = payload;
 
   switch (event_type) {
     case 'tee_time':
       return formatTeeTime(payload);
     case 'score_in_progress':
-      return formatScoreInProgress(payload);
+      return formatScoreInProgress(payload, dbTemplates);
     case 'round_complete':
-      return formatRoundComplete(payload);
+      return formatRoundComplete(payload, dbTemplates);
     case 'score_edit':
       return formatScoreEdit(payload);
     case 'retroactive':
@@ -152,7 +171,7 @@ function formatTeeTime(p: SlackNotifyPayload): SlackMessage {
   return { text: fallbackText, blocks };
 }
 
-function formatScoreInProgress(p: SlackNotifyPayload): SlackMessage {
+function formatScoreInProgress(p: SlackNotifyPayload, dbTemplates?: Record<string, string[]>): SlackMessage {
   const fallbackText = `Score Update — ${p.player_name} at ${p.course_name}`;
 
   const lines: string[] = [
@@ -177,14 +196,17 @@ function formatScoreInProgress(p: SlackNotifyPayload): SlackMessage {
   ];
 
   if (p.net_strokes_over_par != null) {
-    const chirp = getChirp(p.net_strokes_over_par, getFirstName(p.player_name));
+    const ctx = buildChirpContext(p);
+    const chirp = dbTemplates
+      ? getChirpFromTemplates(dbTemplates, p.net_strokes_over_par, ctx)
+      : getChirp(p.net_strokes_over_par, ctx);
     blocks.push(sectionBlock(`:studio_microphone: _"${chirp}"_`));
   }
 
   return { text: fallbackText, blocks };
 }
 
-function formatRoundComplete(p: SlackNotifyPayload): SlackMessage {
+function formatRoundComplete(p: SlackNotifyPayload, dbTemplates?: Record<string, string[]>): SlackMessage {
   const fallbackText = `Round Complete — ${p.player_name} at ${p.course_name}`;
 
   const lines: string[] = [
@@ -209,7 +231,10 @@ function formatRoundComplete(p: SlackNotifyPayload): SlackMessage {
   ];
 
   if (p.net_strokes_over_par != null) {
-    const chirp = getChirp(p.net_strokes_over_par, getFirstName(p.player_name));
+    const ctx = buildChirpContext(p);
+    const chirp = dbTemplates
+      ? getChirpFromTemplates(dbTemplates, p.net_strokes_over_par, ctx)
+      : getChirp(p.net_strokes_over_par, ctx);
     blocks.push(sectionBlock(`:studio_microphone: _"${chirp}"_`));
   }
 

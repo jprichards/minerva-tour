@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useUser } from '@/lib/hooks/useUser';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { Users, UserPlus, FileText, Calendar, Settings, Shield, Database, Swords, Trophy, Cog, RotateCcw, Award, MessageSquare } from 'lucide-react';
+import { Users, UserPlus, FileText, Calendar, Settings, Shield, Database, Swords, Trophy, Cog, RotateCcw, Award, MessageSquare, Mic } from 'lucide-react';
 
 const adminLinks = [
   {
@@ -48,6 +48,13 @@ const adminLinks = [
     description: 'Award trophies, manage member achievements',
     icon: Award,
     color: 'bg-yellow-100 text-yellow-600',
+  },
+  {
+    href: '/chirps',
+    label: 'Chirps',
+    description: 'Manage automated score commentary templates',
+    icon: Mic,
+    color: 'bg-pink-100 text-pink-600',
   },
   {
     href: '/admin/feedback',

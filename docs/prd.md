@@ -365,13 +365,18 @@ The app is mobile-first (used on phones, often outdoors). Layout and visual desi
   - On the event leaderboard (next to each player's entry)
 - Chirps add personality and social engagement to the app, inspired by the original Glide app's chirps feature.
 - Chirps are purely entertainment — they have no effect on scoring or standings.
-- **Chirp Management (TODO — Future Feature):**
-  - All members can add new chirp templates to any performance bucket.
-  - All members can edit existing chirp templates.
-  - All members can delete chirp templates.
-  - Admin UI in the app to browse chirps by bucket, with add/edit/delete controls.
-  - Changes take effect immediately for future score submissions.
-  - Stored in the database (e.g. `chirp_templates` table) rather than hardcoded, so any member can contribute without a code change.
+- **Chirp Management (Implemented):**
+  - All members can add new chirp templates to any performance bucket via `/chirps`.
+  - All members can edit existing chirp templates (inline editing).
+  - All members can delete chirp templates (with confirmation).
+  - Management page accessible from the More menu and Admin dashboard.
+  - 7 bucket accordions show chirp counts and templates with add/edit/delete controls.
+  - `$first_name` placeholder hint shown on the page.
+  - Changes take effect immediately for future score submissions and Slack notifications.
+  - Stored in the `chirp_templates` database table with RLS policies for authenticated members.
+  - Hardcoded templates in `src/lib/chirps.ts` serve as fallback when DB is unavailable and as seed data source.
+  - Seed script (`scripts/seed-chirps.mjs`) imports existing hardcoded templates into the database.
+  - Both Slack notify route (server-side) and leaderboard (client-side) use DB-backed templates with automatic fallback.
 
 ### **Betting/Wagering (Deferred — Future Phase):**
 

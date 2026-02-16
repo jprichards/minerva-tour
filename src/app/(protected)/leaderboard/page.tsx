@@ -8,7 +8,7 @@ import { Trophy, Medal, TrendingUp, AlertCircle, Download } from 'lucide-react';
 import { downloadCSV, downloadPDF, generateLeaderboardHTML } from '@/lib/export';
 import { useSeason } from '@/lib/hooks/useSeason';
 import { calculateRegularEventPoints, calculateMajorEventPoints, splitTiedPoints, formatNetScore, calculateScratchScore, getMaxHoles } from '@/lib/scoring';
-import { getChirp } from '@/lib/chirps';
+import { getChirp, getChirpFromTemplates, type ChirpContext } from '@/lib/chirps';
 import type { Score, Event, Season } from '@/types/database';
 
 type ViewMode = 'event' | 'season';
@@ -123,6 +123,23 @@ export default function LeaderboardPage() {
     { revalidateOnFocus: true, dedupingInterval: 5000 }
   );
 
+  const { data: chirpTemplates } = useSWR(
+    'chirp-templates',
+    async () => {
+      const { data } = await supabase
+        .from('chirp_templates')
+        .select('bucket, template');
+      if (!data || data.length === 0) return undefined;
+      const grouped: Record<string, string[]> = {};
+      for (const row of data) {
+        if (!grouped[row.bucket]) grouped[row.bucket] = [];
+        grouped[row.bucket].push(row.template);
+      }
+      return grouped;
+    },
+    { revalidateOnFocus: false, dedupingInterval: 60000 }
+  );
+
   const { mutate: globalMutate } = useSWRConfig();
 
   const currentSeason = leaderboardData?.currentSeason ?? null;
@@ -221,7 +238,17 @@ export default function LeaderboardPage() {
         const chirpScore = bestScore.is_complete
           ? (scoringMode === 'net' ? bestScore.net_strokes_over_par : scratchResult?.scratchStrokesOverRating)
           : null;
-        const chirpText = chirpScore != null ? getChirp(chirpScore, playerFirstName) : null;
+        const chirpCtx: ChirpContext = {
+          firstName: playerFirstName,
+          course: bestScore.course?.course_name || null,
+          gross: bestScore.gross_score ?? null,
+          net: bestScore.net_strokes_over_par ?? null,
+          holes: bestScore.holes_played ?? null,
+          handicap: null,
+        };
+        const chirpText = chirpScore != null
+          ? (chirpTemplates ? getChirpFromTemplates(chirpTemplates, chirpScore, chirpCtx) : getChirp(chirpScore, chirpCtx))
+          : null;
 
         entries.push({
           userId,
