@@ -1,11 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import useSWR from 'swr';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { Search, Users, TrendingUp } from 'lucide-react';
+import { Search, Users, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { getHandicapTrend } from '@/lib/handicap-trend';
 import type { User } from '@/types/database';
+
+type HandicapHistoryEntry = {
+  user_id: string;
+  handicap_index: number;
+  effective_date: string;
+};
 
 export default function MembersPage() {
   const [search, setSearch] = useState('');
@@ -23,6 +30,32 @@ export default function MembersPage() {
     },
     { revalidateOnFocus: true, dedupingInterval: 5000 }
   );
+
+  const { data: handicapHistory = [] } = useSWR<HandicapHistoryEntry[]>(
+    'handicap-history-trends',
+    async () => {
+      const { data } = await supabase
+        .from('handicap_history')
+        .select('user_id, handicap_index, effective_date')
+        .order('effective_date', { ascending: false });
+      return data || [];
+    },
+    { revalidateOnFocus: false, dedupingInterval: 30000 }
+  );
+
+  // Build a map of user_id -> previous handicap (second most recent entry)
+  const previousHandicapMap = useMemo(() => {
+    const map: Record<string, number | null> = {};
+    const seen: Record<string, number> = {};
+    for (const entry of handicapHistory) {
+      seen[entry.user_id] = (seen[entry.user_id] || 0) + 1;
+      // The second entry (index 2) is the previous handicap
+      if (seen[entry.user_id] === 2) {
+        map[entry.user_id] = Number(entry.handicap_index);
+      }
+    }
+    return map;
+  }, [handicapHistory]);
 
   const filtered = members.filter((m) => {
     if (!search) return true;
@@ -84,12 +117,24 @@ export default function MembersPage() {
                 </p>
                 <p className="text-xs text-gray-500 capitalize">{member.role.replace(/_/g, ' ')}</p>
               </div>
-              {member.handicap_index != null && (
-                <div className="flex items-center gap-1 text-right">
-                  <TrendingUp className="w-3 h-3 text-gray-400" />
-                  <span className="text-sm font-medium text-gray-600">{member.handicap_index}</span>
-                </div>
-              )}
+              {member.handicap_index != null && (() => {
+                const trend = getHandicapTrend(
+                  Number(member.handicap_index),
+                  previousHandicapMap[member.id] ?? null
+                );
+                return (
+                  <div className="flex items-center gap-1 text-right">
+                    {trend === 'improved' ? (
+                      <TrendingDown className="w-3 h-3 text-emerald-500" />
+                    ) : trend === 'worsened' ? (
+                      <TrendingUp className="w-3 h-3 text-red-500" />
+                    ) : (
+                      <Minus className="w-3 h-3 text-gray-400" />
+                    )}
+                    <span className="text-sm font-medium text-gray-600">{member.handicap_index}</span>
+                  </div>
+                );
+              })()}
             </Link>
           ))}
         </div>
