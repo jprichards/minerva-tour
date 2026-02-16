@@ -39,6 +39,7 @@ export default function AdminTrophiesPage() {
   const [customEmoji, setCustomEmoji] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
   const [description, setDescription] = useState('');
+  const [bjcTeam, setBjcTeam] = useState<'magnolia' | 'azalea'>('magnolia');
 
   useEffect(() => {
     if (!userLoading && !isAdmin) {
@@ -72,8 +73,12 @@ export default function AdminTrophiesPage() {
     }
 
     const awardName = isCustom ? customName.trim() : currentPreset?.name;
-    const emoji = isCustom ? customEmoji.trim() : currentPreset?.emoji;
+    let emoji = isCustom ? customEmoji.trim() : currentPreset?.emoji;
     const awardType = isCustom ? 'custom' : selectedPreset;
+
+    if (awardType === 'bobby_jones_cup') {
+      emoji = bjcTeam === 'magnolia' ? '🌳' : '🌺';
+    }
 
     if (!awardName || !emoji) {
       showToast('Please fill in all required fields', 'error');
@@ -107,6 +112,7 @@ export default function AdminTrophiesPage() {
     setCustomEmoji('');
     setYear(new Date().getFullYear());
     setDescription('');
+    setBjcTeam('magnolia');
   };
 
   const handleDelete = async (id: string) => {
@@ -246,17 +252,39 @@ export default function AdminTrophiesPage() {
                 <option value="">Select an award...</option>
                 {PRESET_AWARDS.map((a) => (
                   <option key={a.type} value={a.type}>
-                    {a.emoji} {a.name}
+                    {a.type === 'bobby_jones_cup' ? '🌳 🌺' : a.emoji} {a.name}
                   </option>
                 ))}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-faint)] pointer-events-none" />
             </div>
-            {currentPreset && (
+            {currentPreset && selectedPreset === 'bobby_jones_cup' ? (
+              <div className="mt-2">
+                <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Winning Team</label>
+                <div className="flex gap-1 bg-[var(--bg-subtle)] p-1 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setBjcTeam('magnolia')}
+                    className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-2 rounded-md transition-colors"
+                    style={bjcTeam === 'magnolia' ? { backgroundColor: '#16a34a', color: '#fff' } : { color: 'var(--text-muted)' }}
+                  >
+                    🌳 Magnolia
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBjcTeam('azalea')}
+                    className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-2 rounded-md transition-colors"
+                    style={bjcTeam === 'azalea' ? { backgroundColor: '#db2777', color: '#fff' } : { color: 'var(--text-muted)' }}
+                  >
+                    🌺 Azalea
+                  </button>
+                </div>
+              </div>
+            ) : currentPreset ? (
               <p className="text-xs text-[var(--text-faint)] mt-1">
                 Emoji: {currentPreset.emoji}
               </p>
-            )}
+            ) : null}
           </div>
         ) : (
           /* Custom award fields */
@@ -351,27 +379,62 @@ export default function AdminTrophiesPage() {
                       <span className="text-xs font-semibold text-minerva-600">Editing</span>
                       <span className="text-xs text-[var(--text-faint)]">({trophy.user?.full_name || 'Unknown'})</span>
                     </div>
-                    <div className="grid grid-cols-[3rem_1fr] gap-2">
-                      <div>
-                        <label className="block text-[10px] font-medium text-[var(--text-faint)] mb-0.5">Emoji</label>
-                        <input
-                          type="text"
-                          value={editFields.emoji}
-                          onChange={(e) => setEditFields({ ...editFields, emoji: e.target.value })}
-                          className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg px-2 py-1.5 text-sm text-center"
-                          maxLength={4}
-                        />
+                    {trophy.award_type === 'bobby_jones_cup' ? (
+                      <div className="space-y-2">
+                        <div>
+                          <label className="block text-[10px] font-medium text-[var(--text-faint)] mb-0.5">Award Name</label>
+                          <input
+                            type="text"
+                            value={editFields.award_name}
+                            onChange={(e) => setEditFields({ ...editFields, award_name: e.target.value })}
+                            className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg px-2 py-1.5 text-sm text-[var(--text-primary)]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-medium text-[var(--text-faint)] mb-0.5">Winning Team</label>
+                          <div className="flex gap-1 bg-[var(--bg-subtle)] p-1 rounded-lg">
+                            <button
+                              type="button"
+                              onClick={() => setEditFields({ ...editFields, emoji: '🌳' })}
+                              className="flex-1 flex items-center justify-center gap-1 text-xs font-medium py-1.5 rounded-md transition-colors"
+                              style={editFields.emoji === '🌳' ? { backgroundColor: '#16a34a', color: '#fff' } : { color: 'var(--text-muted)' }}
+                            >
+                              🌳 Magnolia
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditFields({ ...editFields, emoji: '🌺' })}
+                              className="flex-1 flex items-center justify-center gap-1 text-xs font-medium py-1.5 rounded-md transition-colors"
+                              style={editFields.emoji === '🌺' ? { backgroundColor: '#db2777', color: '#fff' } : { color: 'var(--text-muted)' }}
+                            >
+                              🌺 Azalea
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-[10px] font-medium text-[var(--text-faint)] mb-0.5">Award Name</label>
-                        <input
-                          type="text"
-                          value={editFields.award_name}
-                          onChange={(e) => setEditFields({ ...editFields, award_name: e.target.value })}
-                          className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg px-2 py-1.5 text-sm text-[var(--text-primary)]"
-                        />
+                    ) : (
+                      <div className="grid grid-cols-[3rem_1fr] gap-2">
+                        <div>
+                          <label className="block text-[10px] font-medium text-[var(--text-faint)] mb-0.5">Emoji</label>
+                          <input
+                            type="text"
+                            value={editFields.emoji}
+                            onChange={(e) => setEditFields({ ...editFields, emoji: e.target.value })}
+                            className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg px-2 py-1.5 text-sm text-center"
+                            maxLength={4}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-medium text-[var(--text-faint)] mb-0.5">Award Name</label>
+                          <input
+                            type="text"
+                            value={editFields.award_name}
+                            onChange={(e) => setEditFields({ ...editFields, award_name: e.target.value })}
+                            className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg px-2 py-1.5 text-sm text-[var(--text-primary)]"
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
                     <div className="grid grid-cols-[5rem_1fr] gap-2">
                       <div>
                         <label className="block text-[10px] font-medium text-[var(--text-faint)] mb-0.5">Year</label>
