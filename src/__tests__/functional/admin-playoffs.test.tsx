@@ -225,4 +225,116 @@ describe('Admin Playoffs Page', () => {
     expect(screen.getByText('Admin access required.')).toBeInTheDocument();
     expect(screen.queryByText('Playoff Brackets')).not.toBeInTheDocument();
   });
+
+  it('shows round dropdown with labeled options in add matchup form', async () => {
+    render(<AdminPlayoffsPage />);
+    await screen.findByText('Arnold Palmer');
+
+    fireEvent.click(screen.getByText('Add Matchup'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Round 1')).toBeInTheDocument();
+      expect(screen.getByText('Round 2 (Semifinal)')).toBeInTheDocument();
+      expect(screen.getByText('Round 3 (Final)')).toBeInTheDocument();
+    });
+  });
+
+  it('hides matchup selector when Round 3 (Final) is selected', async () => {
+    render(<AdminPlayoffsPage />);
+    await screen.findByText('Arnold Palmer');
+
+    fireEvent.click(screen.getByText('Add Matchup'));
+
+    await waitFor(() => expect(screen.getByText('New Matchup')).toBeInTheDocument());
+
+    const roundSelect = screen.getByDisplayValue('Round 1');
+    fireEvent.change(roundSelect, { target: { value: '3' } });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Matchup \d/)).not.toBeInTheDocument();
+    });
+  });
+
+  it('shows BYE badge only for seeds 1-2 and 7-8 in seed panel', async () => {
+    // Mock seeds with entries across all flights
+    const seedsWithAll = [
+      { id: 's1', season_id: 's2', user_id: 'u1', seed_number: 1, user: { id: 'u1', full_name: 'Tiger Woods' } },
+      { id: 's2', season_id: 's2', user_id: 'u2', seed_number: 2, user: { id: 'u2', full_name: 'Jack Nicklaus' } },
+      { id: 's3', season_id: 's2', user_id: 'u3', seed_number: 7, user: { id: 'u3', full_name: 'Arnold Palmer' } },
+      { id: 's4', season_id: 's2', user_id: 'u4', seed_number: 8, user: { id: 'u4', full_name: 'Ben Hogan' } },
+    ];
+
+    mockSupabaseClient.from.mockImplementation((table: string) => {
+      if (table === 'seasons') return createChainProxy(mockSeasons);
+      if (table === 'users') return createChainProxy(mockMembers);
+      if (table === 'playoff_brackets') return createChainProxy([]);
+      if (table === 'playoff_seeds') return createChainProxy(seedsWithAll);
+      return createChainProxy([]);
+    });
+
+    render(<AdminPlayoffsPage />);
+    await screen.findByText('Playoff Brackets');
+
+    fireEvent.click(screen.getByText(/Manage Seeds/));
+
+    await waitFor(() => {
+      const byeBadges = screen.getAllByText('BYE');
+      // Seeds 1, 2, 7, 8 all get BYE badges (Championship + Consolation)
+      expect(byeBadges.length).toBe(4);
+    });
+  });
+
+  it('does not show BYE badge for Unicorn seeds 13-14', async () => {
+    const unicornSeeds = [
+      { id: 's1', season_id: 's2', user_id: 'u1', seed_number: 13, user: { id: 'u1', full_name: 'Tiger Woods' } },
+      { id: 's2', season_id: 's2', user_id: 'u2', seed_number: 14, user: { id: 'u2', full_name: 'Jack Nicklaus' } },
+    ];
+
+    mockSupabaseClient.from.mockImplementation((table: string) => {
+      if (table === 'seasons') return createChainProxy(mockSeasons);
+      if (table === 'users') return createChainProxy(mockMembers);
+      if (table === 'playoff_brackets') return createChainProxy([]);
+      if (table === 'playoff_seeds') return createChainProxy(unicornSeeds);
+      return createChainProxy([]);
+    });
+
+    render(<AdminPlayoffsPage />);
+    await screen.findByText('Playoff Brackets');
+
+    fireEvent.click(screen.getByText(/Manage Seeds/));
+
+    await waitFor(() => {
+      expect(screen.queryByText('BYE')).not.toBeInTheDocument();
+    });
+  });
+
+  it('displays matchups in correct order (matchup 1 before matchup 2)', async () => {
+    const orderedBrackets = [
+      {
+        id: 'b1', season_id: 's2', flight: 'championship', round: 1, matchup_number: 1,
+        player1_id: 'u1', player2_id: 'u2', winner_id: null, player1_result: null, player2_result: null,
+        event_id: null, player1: { id: 'u1', full_name: 'Tiger Woods' }, player2: { id: 'u2', full_name: 'Jack Nicklaus' }, winner: null,
+      },
+      {
+        id: 'b2', season_id: 's2', flight: 'championship', round: 1, matchup_number: 2,
+        player1_id: 'u3', player2_id: 'u4', winner_id: null, player1_result: null, player2_result: null,
+        event_id: null, player1: { id: 'u3', full_name: 'Arnold Palmer' }, player2: { id: 'u4', full_name: 'Ben Hogan' }, winner: null,
+      },
+    ];
+
+    mockSupabaseClient.from.mockImplementation((table: string) => {
+      if (table === 'seasons') return createChainProxy(mockSeasons);
+      if (table === 'users') return createChainProxy(mockMembers);
+      if (table === 'playoff_brackets') return createChainProxy(orderedBrackets);
+      if (table === 'playoff_seeds') return createChainProxy([]);
+      return createChainProxy([]);
+    });
+
+    render(<AdminPlayoffsPage />);
+    const tiger = await screen.findByText('Tiger Woods');
+    const arnold = screen.getByText('Arnold Palmer');
+
+    // Tiger (matchup 1) should appear before Arnold (matchup 2) in the DOM
+    expect(tiger.compareDocumentPosition(arnold) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 });

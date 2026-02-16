@@ -220,4 +220,28 @@ describe('Admin Trophies Page', () => {
     await screen.findByText('Award a Trophy');
     expect(screen.getByPlaceholderText('e.g. Hole 7 at Pinehurst No. 2')).toBeInTheDocument();
   });
+
+  it('shows BJC team selector when Bobby Jones Cup preset is selected', async () => {
+    render(<AdminTrophiesPage />);
+    await screen.findByText('Award a Trophy');
+
+    const awardSelect = screen.getByText('Select an award...').closest('select')!;
+    fireEvent.change(awardSelect, { target: { value: 'bobby_jones_cup' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Winning Team')).toBeInTheDocument();
+      expect(screen.getByText(/Magnolia/)).toBeInTheDocument();
+      expect(screen.getByText(/Azalea/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows both emojis for BJC in preset dropdown', async () => {
+    render(<AdminTrophiesPage />);
+    await screen.findByText('Award a Trophy');
+
+    const options = screen.getAllByRole('option');
+    const bjcOption = options.find((o) => o.textContent?.includes('Bobby Jones Cup'));
+    expect(bjcOption?.textContent).toContain('🌳');
+    expect(bjcOption?.textContent).toContain('🌺');
+  });
 });
