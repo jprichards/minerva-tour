@@ -301,6 +301,7 @@ The app is mobile-first (used on phones, often outdoors). Layout and visual desi
 **Playoff Management:**
 
 - Admin manually sets playoff bracket matchups and advancement.
+- Admin can inline-edit existing matchups to change Player 1, Player 2, and Winner via dropdown selectors, enabling retroactive entry of historical bracket data.
 - For the "top 2 seeds compete for right to select round 2 opponent" scenario, the admin manually selects the opponent after it is determined outside of the app (via Slack, text message, etc.).
 - Playoff coordination and communication between matched players happens externally (not in the app).
 
