@@ -113,15 +113,18 @@ export default function PlayoffsAdminPage() {
           .from('playoff_brackets')
           .select('*, player1:users!playoff_brackets_player1_id_fkey(id, full_name), player2:users!playoff_brackets_player2_id_fkey(id, full_name), winner:users!playoff_brackets_winner_id_fkey(id, full_name)')
           .eq('season_id', selectedSeason.id)
-          .order('round')
-          .order('matchup_number'),
+          .order('round', { ascending: true })
+          .order('matchup_number', { ascending: true }),
         supabase
           .from('playoff_seeds')
           .select('*, user:users(id, full_name)')
           .eq('season_id', selectedSeason.id)
-          .order('seed_number'),
+          .order('seed_number', { ascending: true }),
       ]);
-      setBrackets((bracketsRes.data as PlayoffBracket[]) || []);
+      const bracketData = ((bracketsRes.data as PlayoffBracket[]) || []).sort((a, b) =>
+        a.round !== b.round ? a.round - b.round : a.matchup_number - b.matchup_number
+      );
+      setBrackets(bracketData);
       const seedData = (seedsRes.data as PlayoffSeed[]) || [];
       setSeeds(seedData);
       setSeedEntries(seedData.map((s) => ({ seed_number: s.seed_number, user_id: s.user_id })));
@@ -136,9 +139,12 @@ export default function PlayoffsAdminPage() {
       .from('playoff_brackets')
       .select('*, player1:users!playoff_brackets_player1_id_fkey(id, full_name), player2:users!playoff_brackets_player2_id_fkey(id, full_name), winner:users!playoff_brackets_winner_id_fkey(id, full_name)')
       .eq('season_id', selectedSeason.id)
-      .order('round')
-      .order('matchup_number');
-    setBrackets((data as PlayoffBracket[]) || []);
+      .order('round', { ascending: true })
+      .order('matchup_number', { ascending: true });
+    const sorted = ((data as PlayoffBracket[]) || []).sort((a, b) =>
+      a.round !== b.round ? a.round - b.round : a.matchup_number - b.matchup_number
+    );
+    setBrackets(sorted);
   };
 
   const seedMap = new Map<string, number>();
@@ -765,7 +771,24 @@ export default function PlayoffsAdminPage() {
             );
           })() : (
             <button
-              onClick={() => setAddingMatchup(true)}
+              onClick={() => {
+                const maxPerRound: Record<number, number> = { 1: 3, 2: 2, 3: 1 };
+                let defaultRound = 1;
+                let defaultMatchup = 1;
+                for (const r of [1, 2, 3]) {
+                  const existing = flightBrackets.filter((b) => b.round === r).map((b) => b.matchup_number);
+                  const max = maxPerRound[r] || 3;
+                  const avail = Array.from({ length: max }, (_, i) => i + 1).filter((n) => !existing.includes(n));
+                  if (avail.length > 0) {
+                    defaultRound = r;
+                    defaultMatchup = avail[0];
+                    break;
+                  }
+                }
+                setNewRound(defaultRound);
+                setNewMatchup(defaultMatchup);
+                setAddingMatchup(true);
+              }}
               className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed bg-[var(--input-bg)] border-[var(--input-border)] rounded-xl text-sm text-[var(--text-muted)] hover:border-minerva-400 hover:text-minerva-600 transition-colors"
             >
               <Plus className="w-4 h-4" />
