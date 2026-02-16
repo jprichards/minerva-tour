@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, TrendingUp, Trophy, Target, Calendar, BarChart3 } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Minus, Trophy, Target, Calendar, BarChart3 } from 'lucide-react';
 import { formatNetScore } from '@/lib/scoring';
+import { getHandicapTrend } from '@/lib/handicap-trend';
 import TrophyCase from '@/components/TrophyCase';
 import type { User, Score, HandicapHistory, Trophy as TrophyType, SeasonFinish } from '@/types/database';
 
@@ -211,7 +212,16 @@ export default function MemberProfilePage() {
                   <Calendar className="w-4 h-4 text-[var(--text-faint)]" />
                   <p className="text-sm text-[var(--text-secondary)]">{new Date(h.effective_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
                 </div>
-                <p className="text-sm font-semibold text-[var(--text-primary)]">{h.handicap_index}</p>
+                <div className="flex items-center gap-1.5">
+                  {(() => {
+                    const prev = idx < handicapHistory.length - 1 ? Number(handicapHistory[idx + 1].handicap_index) : null;
+                    const trend = getHandicapTrend(Number(h.handicap_index), prev);
+                    if (trend === 'improved') return <TrendingDown className="w-3.5 h-3.5 text-green-500" />;
+                    if (trend === 'worsened') return <TrendingUp className="w-3.5 h-3.5 text-red-500" />;
+                    return <Minus className="w-3.5 h-3.5 text-[var(--text-faint)]" />;
+                  })()}
+                  <p className="text-sm font-semibold text-[var(--text-primary)]">{h.handicap_index}</p>
+                </div>
               </div>
             ))}
           </div>

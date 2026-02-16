@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
-import { Edit, LogOut, Camera, TrendingUp, Trophy, Target, Calendar, Sun, Moon, Monitor, MessageSquare } from 'lucide-react';
+import { Edit, LogOut, Camera, TrendingUp, TrendingDown, Minus, Trophy, Target, Calendar, Sun, Moon, Monitor, MessageSquare } from 'lucide-react';
 import TrophyCase from '@/components/TrophyCase';
+import { getHandicapTrend } from '@/lib/handicap-trend';
 import { useThemeContext } from '@/components/ThemeProvider';
 import type { ThemePreference } from '@/lib/hooks/useTheme';
 import type { HandicapHistory, Score, Trophy as TrophyType, SeasonFinish } from '@/types/database';
@@ -238,7 +239,16 @@ export default function ProfilePage() {
                     {new Date(h.effective_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                   </p>
                 </div>
-                <p className="text-sm font-semibold text-[var(--text-primary)]">{h.handicap_index}</p>
+                <div className="flex items-center gap-1.5">
+                  {(() => {
+                    const prev = idx < handicapHistory.length - 1 ? Number(handicapHistory[idx + 1].handicap_index) : null;
+                    const trend = getHandicapTrend(Number(h.handicap_index), prev);
+                    if (trend === 'improved') return <TrendingDown className="w-3.5 h-3.5 text-green-500" />;
+                    if (trend === 'worsened') return <TrendingUp className="w-3.5 h-3.5 text-red-500" />;
+                    return <Minus className="w-3.5 h-3.5 text-[var(--text-faint)]" />;
+                  })()}
+                  <p className="text-sm font-semibold text-[var(--text-primary)]">{h.handicap_index}</p>
+                </div>
               </div>
             ))}
           </div>
