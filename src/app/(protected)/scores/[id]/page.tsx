@@ -7,6 +7,7 @@ import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
 import { calculateNetScore, getMaxHoles, formatNetScore, formatGrossScore } from '@/lib/scoring';
+import { notifySlack } from '@/lib/slack-notify';
 import { ArrowLeft, Edit, Trash2, Save } from 'lucide-react';
 import type { Score, Event } from '@/types/database';
 
@@ -125,6 +126,47 @@ export default function ScoreDetailPage() {
     await logAuditEvent('score_edit', 'score', score.id, {
       before: { gross_score: score.gross_score, holes_played: score.holes_played },
       after: { gross_score: grossScoreNum, holes_played: holesPlayedNum },
+    });
+
+    // Determine the right Slack event type based on round state:
+    // - Still mid-round (holes < max) → score_in_progress
+    // - Just finished all holes for the first time → round_complete
+    // - Updating a score on a finished round → score_edit
+    const hadScoreBefore = score.gross_score != null;
+    const isFullRound = holesPlayedNum != null && holesPlayedNum >= maxHoles;
+    const playerUser = score.user as unknown as { full_name: string | null; email: string | null; handicap_index: number | null };
+
+    let slackEventType: 'score_in_progress' | 'round_complete' | 'score_edit';
+    if (!isFullRound) {
+      // Mid-round: still on the course, updating score as they play
+      slackEventType = 'score_in_progress';
+    } else if (isFullRound && !hadScoreBefore) {
+      // Just finished: had no score before, now all holes are in
+      slackEventType = 'round_complete';
+    } else if (isFullRound && hadScoreBefore) {
+      // Revising a completed round's score
+      slackEventType = 'score_edit';
+    } else {
+      slackEventType = 'score_edit';
+    }
+
+    notifySlack({
+      event_type: slackEventType,
+      player_name: playerUser?.full_name || playerUser?.email || 'Unknown',
+      handicap_index: playerUser?.handicap_index,
+      course_name: score.course?.course_name || 'Unknown',
+      tee_name: score.course?.tee_name || '',
+      course_type: score.course?.type,
+      par: score.course?.par || 72,
+      gross_score: grossScoreNum,
+      net_score: netScoreVal,
+      net_strokes_over_par: netStrokesOverPar,
+      holes_played: holesPlayedNum,
+      max_holes: maxHoles,
+      tee_time: score.tee_time,
+      event_name: score.event?.name || (score.event ? `Event ${score.event.event_number}` : null),
+      old_gross_score: score.gross_score,
+      old_net_score: score.net_strokes_over_par,
     });
 
     showToast('Score updated!');

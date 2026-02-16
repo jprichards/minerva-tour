@@ -197,6 +197,76 @@ export function splitTiedPoints(points: number[], numTied: number): number {
 }
 
 /**
+ * Calculate projected points for a player within an event.
+ *
+ * Given a player's score and all completed best-per-user scores in the event,
+ * determines the player's rank (with tie handling) and returns projected
+ * net and scratch points.
+ *
+ * Only completed scores count toward the participant pool. An in-progress
+ * player is ranked as if their current score were final.
+ */
+export function calculateProjectedPoints(
+  playerNetOverPar: number | null,
+  playerScratchOverRating: number | null,
+  allBestNetScores: number[],
+  allBestScratchScores: number[],
+  isMajor: boolean
+): { netPoints: number | null; scratchPoints: number | null } {
+  const calcPoints = (
+    playerScore: number | null,
+    allScores: number[]
+  ): number | null => {
+    if (playerScore == null || allScores.length === 0) return null;
+
+    const sorted = [...allScores].sort((a, b) => a - b);
+    const numParticipants = sorted.length;
+
+    // Find the rank group this player falls into
+    let rankStart = 0;
+    while (rankStart < sorted.length && sorted[rankStart] < playerScore) {
+      rankStart++;
+    }
+    let rankEnd = rankStart;
+    while (rankEnd < sorted.length && sorted[rankEnd] === playerScore) {
+      rankEnd++;
+    }
+
+    const numTied = rankEnd - rankStart;
+    if (numTied <= 0) {
+      // Player's score isn't in the list (shouldn't happen if caller includes it)
+      // Treat as last place
+      const place = numParticipants;
+      return isMajor
+        ? calculateMajorEventPoints(numParticipants, place)
+        : calculateRegularEventPoints(numParticipants, place);
+    }
+
+    if (numTied > 1) {
+      const tiedPoints: number[] = [];
+      for (let k = rankStart; k < rankEnd; k++) {
+        tiedPoints.push(
+          isMajor
+            ? calculateMajorEventPoints(numParticipants, k + 1)
+            : calculateRegularEventPoints(numParticipants, k + 1)
+        );
+      }
+      return splitTiedPoints(tiedPoints, numTied);
+    }
+
+    const place = rankStart + 1;
+    return isMajor
+      ? calculateMajorEventPoints(numParticipants, place)
+      : calculateRegularEventPoints(numParticipants, place);
+  };
+
+  return {
+    netPoints: calcPoints(playerNetOverPar, allBestNetScores),
+    scratchPoints: calcPoints(playerScratchOverRating, allBestScratchScores),
+  };
+}
+
+/**
  * Format net score for display (e.g. +3, -2, E for even)
  */
 export function formatNetScore(netStrokesOverPar: number): string {

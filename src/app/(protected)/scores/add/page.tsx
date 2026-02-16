@@ -7,6 +7,7 @@ import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
 import { calculateNetScore, getMaxHoles, formatNetScore } from '@/lib/scoring';
+import { notifySlack } from '@/lib/slack-notify';
 import { useSeason } from '@/lib/hooks/useSeason';
 import { ArrowLeft, Search, ChevronRight, User as UserIcon, AlertCircle } from 'lucide-react';
 import type { Course, User } from '@/types/database';
@@ -29,30 +30,6 @@ function AddScoreContent() {
 
   const { profile, isPlayingGuest } = useUser();
   const { canSubmitScores, isOffSeason, isRegularSeason, currentEvent } = useSeason();
-
-  // Block off-season submissions
-  if (isOffSeason) {
-    return (
-      <div className="p-4 text-center py-16">
-        <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Off Season</h2>
-        <p className="text-sm text-[var(--text-muted)] mt-1">Score submissions are not available during the off-season.</p>
-        <button onClick={() => router.back()} className="mt-4 text-minerva-600 text-sm font-medium">Go back</button>
-      </div>
-    );
-  }
-
-  // Block playing guests from regular season
-  if (isPlayingGuest && isRegularSeason) {
-    return (
-      <div className="p-4 text-center py-16">
-        <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Tournament Only</h2>
-        <p className="text-sm text-[var(--text-muted)] mt-1">Playing guests can only submit scores during tournaments.</p>
-        <button onClick={() => router.back()} className="mt-4 text-minerva-600 text-sm font-medium">Go back</button>
-      </div>
-    );
-  }
   const { showToast } = useToast();
   const supabase = createClient();
 
@@ -102,6 +79,30 @@ function AddScoreContent() {
 
     fetchData();
   }, [preselectedCourseId, supabase]);
+
+  // Block off-season submissions
+  if (isOffSeason) {
+    return (
+      <div className="p-4 text-center py-16">
+        <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Off Season</h2>
+        <p className="text-sm text-[var(--text-muted)] mt-1">Score submissions are not available during the off-season.</p>
+        <button onClick={() => router.back()} className="mt-4 text-minerva-600 text-sm font-medium">Go back</button>
+      </div>
+    );
+  }
+
+  // Block playing guests from regular season
+  if (isPlayingGuest && isRegularSeason) {
+    return (
+      <div className="p-4 text-center py-16">
+        <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Tournament Only</h2>
+        <p className="text-sm text-[var(--text-muted)] mt-1">Playing guests can only submit scores during tournaments.</p>
+        <button onClick={() => router.back()} className="mt-4 text-minerva-600 text-sm font-medium">Go back</button>
+      </div>
+    );
+  }
 
   const filteredCourses = courses.filter((c) =>
     c.course_name.toLowerCase().includes(courseSearch.toLowerCase()) ||
@@ -214,6 +215,31 @@ function AddScoreContent() {
       net_strokes_over_par: netStrokesOverPar,
       holes_played: holesPlayedNum,
       submitted_for_self: playingForSelf,
+    });
+
+    // Fire Slack notification (fire-and-forget)
+    const slackEventType = !isComplete
+      ? 'tee_time' as const
+      : (holesPlayedNum != null && holesPlayedNum < maxHoles)
+      ? 'score_in_progress' as const
+      : 'round_complete' as const;
+
+    notifySlack({
+      event_type: slackEventType,
+      player_name: selectedPlayer.full_name || selectedPlayer.email || 'Unknown',
+      handicap_index: selectedPlayer.handicap_index,
+      course_name: selectedCourse.course_name,
+      tee_name: selectedCourse.tee_name,
+      course_type: selectedCourse.type,
+      par: selectedCourse.par,
+      gross_score: grossScoreNum,
+      net_score: netScore,
+      net_strokes_over_par: netStrokesOverPar,
+      holes_played: holesPlayedNum,
+      max_holes: maxHoles,
+      tee_time: teeTime ? new Date(teeTime).toISOString() : null,
+      event_name: currentEvent?.name || (currentEvent ? `Event ${currentEvent.event_number}` : null),
+      is_complete: isComplete,
     });
 
     showToast(isComplete ? 'Score submitted!' : 'Tee time saved!');

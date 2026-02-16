@@ -9,6 +9,7 @@ import {
   calculateRegularEventPoints,
   calculateMajorEventPoints,
   splitTiedPoints,
+  calculateProjectedPoints,
   formatNetScore,
   formatGrossScore,
 } from '@/lib/scoring';
@@ -373,6 +374,113 @@ describe('splitTiedPoints', () => {
 
   it('handles single player (no real tie)', () => {
     expect(splitTiedPoints([10], 1)).toBe(10);
+  });
+});
+
+// ============================================
+// calculateProjectedPoints
+// ============================================
+describe('calculateProjectedPoints', () => {
+  it('returns null when player score is null', () => {
+    const result = calculateProjectedPoints(null, null, [1, 2, 3], [5, 6, 7], false);
+    expect(result.netPoints).toBeNull();
+    expect(result.scratchPoints).toBeNull();
+  });
+
+  it('returns null when score arrays are empty', () => {
+    const result = calculateProjectedPoints(3, 5, [], [], false);
+    expect(result.netPoints).toBeNull();
+    expect(result.scratchPoints).toBeNull();
+  });
+
+  it('calculates points for a solo player (regular event)', () => {
+    // 1 participant, 1st place → 1 point
+    const result = calculateProjectedPoints(3, 5, [3], [5], false);
+    expect(result.netPoints).toBe(1);
+    expect(result.scratchPoints).toBe(1);
+  });
+
+  it('calculates points for a solo player (major event)', () => {
+    // 1 participant, 1st place → 10 points (minimum for major)
+    const result = calculateProjectedPoints(3, 5, [3], [5], true);
+    expect(result.netPoints).toBe(10);
+    expect(result.scratchPoints).toBe(10);
+  });
+
+  it('ranks player correctly among multiple scores (regular)', () => {
+    // 4 participants, scores: -2, 0, 3, 5 → player at 0 is 2nd → 3 points
+    const result = calculateProjectedPoints(0, null, [-2, 0, 3, 5], [], false);
+    expect(result.netPoints).toBe(3);
+    expect(result.scratchPoints).toBeNull();
+  });
+
+  it('ranks first place correctly (regular)', () => {
+    // 5 participants, player has best score → 1st → 5 points
+    const result = calculateProjectedPoints(-5, null, [-5, -2, 0, 3, 5], [], false);
+    expect(result.netPoints).toBe(5);
+  });
+
+  it('ranks last place correctly (regular)', () => {
+    // 4 participants, player has worst score → 4th → 1 point
+    const result = calculateProjectedPoints(10, null, [-2, 0, 3, 10], [], false);
+    expect(result.netPoints).toBe(1);
+  });
+
+  it('handles tied scores with point splitting (regular)', () => {
+    // 4 participants: -2, 0, 0, 5
+    // Two players tied at 0 share 2nd + 3rd place → (3 + 2) / 2 = 2.5
+    const result = calculateProjectedPoints(0, null, [-2, 0, 0, 5], [], false);
+    expect(result.netPoints).toBe(2.5);
+  });
+
+  it('handles three-way tie (regular)', () => {
+    // 5 participants: -3, 1, 1, 1, 7
+    // Three players tied at 1 share 2nd + 3rd + 4th → (4 + 3 + 2) / 3 = 3
+    const result = calculateProjectedPoints(1, null, [-3, 1, 1, 1, 7], [], false);
+    expect(result.netPoints).toBe(3);
+  });
+
+  it('handles tied for first (regular)', () => {
+    // 3 participants: 0, 0, 5
+    // Two tied for 1st share 1st + 2nd → (3 + 2) / 2 = 2.5
+    const result = calculateProjectedPoints(0, null, [0, 0, 5], [], false);
+    expect(result.netPoints).toBe(2.5);
+  });
+
+  it('handles tied for last (regular)', () => {
+    // 4 participants: -2, 0, 5, 5
+    // Two tied for 3rd share 3rd + 4th → (2 + 1) / 2 = 1.5
+    const result = calculateProjectedPoints(5, null, [-2, 0, 5, 5], [], false);
+    expect(result.netPoints).toBe(1.5);
+  });
+
+  it('calculates major points correctly for multiple participants', () => {
+    // 7 participants, player is 1st → max(7*1.33, 10) = max(9.3, 10) = 10
+    const result = calculateProjectedPoints(-5, null, [-5, -2, 0, 1, 3, 5, 8], [], true);
+    expect(result.netPoints).toBe(10);
+  });
+
+  it('calculates net and scratch independently', () => {
+    // Net: player at 0, among [-2, 0, 3] → 2nd of 3 → 2 pts
+    // Scratch: player at 5, among [3, 5, 8] → 2nd of 3 → 2 pts
+    const result = calculateProjectedPoints(0, 5, [-2, 0, 3], [3, 5, 8], false);
+    expect(result.netPoints).toBe(2);
+    expect(result.scratchPoints).toBe(2);
+  });
+
+  it('can return different net and scratch rankings', () => {
+    // Net: player at -3, among [-3, 0, 2] → 1st of 3 → 3 pts
+    // Scratch: player at 8, among [2, 5, 8] → 3rd of 3 → 1 pt
+    const result = calculateProjectedPoints(-3, 8, [-3, 0, 2], [2, 5, 8], false);
+    expect(result.netPoints).toBe(3);
+    expect(result.scratchPoints).toBe(1);
+  });
+
+  it('handles unsorted input arrays', () => {
+    // Input: [5, -2, 3, 0] should be sorted internally
+    // Player at 0 → 2nd of 4 → 3 pts
+    const result = calculateProjectedPoints(0, null, [5, -2, 3, 0], [], false);
+    expect(result.netPoints).toBe(3);
   });
 });
 

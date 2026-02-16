@@ -225,6 +225,37 @@ export interface Feedback {
   responder?: User;
 }
 
+export type SlackEventType = 'tee_time' | 'score_in_progress' | 'round_complete' | 'score_edit' | 'retroactive';
+
+export interface SlackConfig {
+  bot_token: string;
+  channel_id: string;
+  channel_name: string;
+  events: Record<SlackEventType, boolean>;
+}
+
+export interface SlackNotifyPayload {
+  event_type: SlackEventType;
+  player_name: string;
+  handicap_index?: number | null;
+  course_name: string;
+  tee_name: string;
+  course_type?: CourseType;
+  par: number;
+  gross_score?: number | null;
+  net_score?: number | null;
+  net_strokes_over_par?: number | null;
+  holes_played?: number | null;
+  max_holes?: number;
+  tee_time?: string | null;
+  event_name?: string | null;
+  is_complete?: boolean;
+  old_gross_score?: number | null;
+  old_net_score?: number | null;
+  projected_net_points?: number | null;
+  projected_scratch_points?: number | null;
+}
+
 export type NotificationType = 'event_start' | 'event_end' | 'score_posted' | 'handicap_update' | 'admin_message' | 'season_mode' | 'tournament' | 'general';
 
 export interface Notification {

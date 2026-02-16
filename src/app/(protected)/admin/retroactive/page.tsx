@@ -7,6 +7,7 @@ import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
 import { calculateNetScore, getMaxHoles } from '@/lib/scoring';
+import { notifySlack } from '@/lib/slack-notify';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import type { User, Event, Course } from '@/types/database';
 
@@ -136,6 +137,24 @@ export default function AdminRetroactiveScoresPage() {
       player: member.full_name || member.email,
       course: course.course_name,
       gross_score: grossNum,
+    });
+
+    // Fire Slack notification for retroactive score (fire-and-forget)
+    const selectedEvent = events.find((ev) => ev.id === eventId);
+    notifySlack({
+      event_type: 'retroactive',
+      player_name: member.full_name || member.email || 'Unknown',
+      handicap_index: member.handicap_index,
+      course_name: course.course_name,
+      tee_name: course.tee_name,
+      course_type: course.type,
+      par: course.par,
+      gross_score: grossNum,
+      net_score: netScore,
+      net_strokes_over_par: netStrokesOverPar,
+      holes_played: holesNum,
+      max_holes: maxHoles,
+      event_name: selectedEvent?.name || (selectedEvent ? `Event ${selectedEvent.event_number}` : null),
     });
 
     showToast('Retroactive score submitted!', 'success');

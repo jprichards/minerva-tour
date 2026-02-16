@@ -365,6 +365,13 @@ The app is mobile-first (used on phones, often outdoors). Layout and visual desi
   - On the event leaderboard (next to each player's entry)
 - Chirps add personality and social engagement to the app, inspired by the original Glide app's chirps feature.
 - Chirps are purely entertainment — they have no effect on scoring or standings.
+- **Chirp Management (TODO — Future Feature):**
+  - All members can add new chirp templates to any performance bucket.
+  - All members can edit existing chirp templates.
+  - All members can delete chirp templates.
+  - Admin UI in the app to browse chirps by bucket, with add/edit/delete controls.
+  - Changes take effect immediately for future score submissions.
+  - Stored in the database (e.g. `chirp_templates` table) rather than hardcoded, so any member can contribute without a code change.
 
 ### **Betting/Wagering (Deferred — Future Phase):**
 
@@ -817,6 +824,21 @@ The following features have been built and should be considered part of the app'
 - **Hall of Fame page** (`/hall-of-fame`): Dedicated page listing all award categories with winners by year, grouped by award type (Champions, Scratch Champions, Bobby Jones Cup, etc.), showing player photos and emoji badges.
 - **Data migration** (`scripts/import-trophies.mjs`): Import script that parses the Glide xlsx Profile sheet's "Champ Year" column and season finish columns (2017-2023) to populate trophy and finish data.
 - **Emoji mapping**: 🏆 Minerva Tour Champion, 🥇 Scratch Champion, 📉 Most Improved, 🌳 Bobby Jones Cup (Team Magnolia), 🌺 Bobby Jones Cup (Team Azalea), 🇺🇸 Bobby Jones Cup (Hilton Head, pre-team era), 🍻 Member-Guest, 🦄 Unicorn, 🎖 Playoffs Winner, 🥈 Consolation Winner, 📀 Edge Solutions Cup, 1️⃣ Hole in One.
+
+**Slack Integration:**
+- **Slack Bot integration** (`src/lib/slack.ts`, `src/lib/slack-notify.ts`, `src/app/api/slack/`): Posts rich notifications to a configured Slack channel when key events occur.
+- **Admin configuration** (extended in `/admin/settings`): Admins paste a Slack Bot Token, select a channel from a dropdown (populated via Slack API), and toggle which events fire notifications.
+- **Event types**:
+  - `tee_time` — New tee time created (player, course/tee, date/time)
+  - `score_in_progress` — Score posted for an in-progress round (gross, net, holes played)
+  - `round_complete` — Round finished (gross, net, holes, chirp commentary)
+  - `score_edit` — Score edited (before/after values)
+  - `retroactive` — Retroactive score entered by admin (player, course, event)
+- **Architecture**: Client fires a fire-and-forget POST to `/api/slack/notify` after score operations. The API route reads the Slack config from `app_settings` server-side (bot token never exposed to browser), checks if the event type is enabled, formats a Slack Block Kit message (including chirp for completed rounds), and posts via `chat.postMessage`.
+- **Projected points**: For `score_in_progress`, `round_complete`, and `retroactive` events, the API route queries the current event's completed scores from the database, ranks the player among all participants (handling ties with point splitting), and includes both projected net and scratch points in the Slack message. Points are calculated server-side using the same formulas as the leaderboard (`calculateProjectedPoints` in `src/lib/scoring.ts`). Tee time notifications show "Points: -" since no score exists yet.
+- **Message format**: Compact single-section Slack blocks with no header/title blocks. Chirps appear as regular-sized italic text with a `:studio_microphone:` emoji. No event-type emojis on player lines.
+- **Configuration stored in** `app_settings` table with key `slack_config` (JSONB): bot_token, channel_id, channel_name, and per-event-type enabled flags.
+- **Error handling**: Slack notifications are best-effort — failures are silent and never block score submission.
 
 **Testing:**
 - **Comprehensive test suite**: 360+ tests covering unit, component, integration, functional, and E2E testing using Vitest, React Testing Library, and Playwright. TDD workflow enforced via workspace rules.
