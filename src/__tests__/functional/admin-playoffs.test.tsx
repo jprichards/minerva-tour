@@ -40,8 +40,8 @@ function createChainProxy(resolvedData: unknown = []) {
 }
 
 const mockSeasons = [
-  { id: 's1', year: 2025, name: '2025 Season', start_date: '2025-03-01', end_date: '2025-10-31' },
-  { id: 's2', year: 2026, name: '2026 Season', start_date: '2026-03-01', end_date: '2026-10-31' },
+  { id: 's1', year: 2025, mode: 'off_season', current_event_id: null },
+  { id: 's2', year: 2026, mode: 'regular_season', current_event_id: null },
 ];
 
 const mockMembers = [
@@ -51,6 +51,12 @@ const mockMembers = [
   { id: 'u4', full_name: 'Ben Hogan', email: 'ben@test.com', role: 'admin' },
 ];
 
+const mockSeeds = [
+  { id: 'seed1', season_id: 's2', user_id: 'u1', seed_number: 1, user: { id: 'u1', full_name: 'Tiger Woods' } },
+  { id: 'seed2', season_id: 's2', user_id: 'u2', seed_number: 2, user: { id: 'u2', full_name: 'Jack Nicklaus' } },
+  { id: 'seed3', season_id: 's2', user_id: 'u3', seed_number: 3, user: { id: 'u3', full_name: 'Arnold Palmer' } },
+];
+
 const mockBrackets = [
   {
     id: 'b1',
@@ -58,27 +64,31 @@ const mockBrackets = [
     flight: 'championship',
     round: 1,
     matchup_number: 1,
-    player1_id: 'u1',
-    player2_id: 'u2',
-    winner_id: 'u1',
+    player1_id: 'u3',
+    player2_id: 'u4',
+    winner_id: 'u3',
+    player1_result: '-1',
+    player2_result: '+3',
     event_id: null,
-    player1: { id: 'u1', full_name: 'Tiger Woods' },
-    player2: { id: 'u2', full_name: 'Jack Nicklaus' },
-    winner: { id: 'u1', full_name: 'Tiger Woods' },
+    player1: { id: 'u3', full_name: 'Arnold Palmer' },
+    player2: { id: 'u4', full_name: 'Ben Hogan' },
+    winner: { id: 'u3', full_name: 'Arnold Palmer' },
   },
   {
     id: 'b2',
     season_id: 's2',
     flight: 'championship',
-    round: 1,
-    matchup_number: 2,
-    player1_id: null,
+    round: 2,
+    matchup_number: 1,
+    player1_id: 'u1',
     player2_id: null,
-    winner_id: null,
+    winner_id: 'u1',
+    player1_result: null,
+    player2_result: null,
     event_id: null,
-    player1: null,
+    player1: { id: 'u1', full_name: 'Tiger Woods' },
     player2: null,
-    winner: null,
+    winner: { id: 'u1', full_name: 'Tiger Woods' },
   },
 ];
 
@@ -91,6 +101,7 @@ describe('Admin Playoffs Page', () => {
       if (table === 'seasons') return createChainProxy(mockSeasons);
       if (table === 'users') return createChainProxy(mockMembers);
       if (table === 'playoff_brackets') return createChainProxy(mockBrackets);
+      if (table === 'playoff_seeds') return createChainProxy(mockSeeds);
       return createChainProxy([]);
     });
   });
@@ -112,62 +123,76 @@ describe('Admin Playoffs Page', () => {
 
   it('renders bracket matchups with player names', async () => {
     render(<AdminPlayoffsPage />);
-    expect(await screen.findByText('Tiger Woods')).toBeInTheDocument();
-    expect(screen.getByText('Jack Nicklaus')).toBeInTheDocument();
+    expect(await screen.findByText('Arnold Palmer')).toBeInTheDocument();
+    expect(screen.getByText('Ben Hogan')).toBeInTheDocument();
   });
 
-  it('shows TBD for matchups without players', async () => {
+  it('shows BYE for matchups with one player', async () => {
     render(<AdminPlayoffsPage />);
     await screen.findByText('Tiger Woods');
-    const tbdElements = screen.getAllByText('TBD');
-    expect(tbdElements.length).toBeGreaterThanOrEqual(2);
+    const byeElements = screen.getAllByText('BYE');
+    expect(byeElements.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('displays match results next to player names', async () => {
+    render(<AdminPlayoffsPage />);
+    await screen.findByText('Arnold Palmer');
+    expect(screen.getByText('-1')).toBeInTheDocument();
+    expect(screen.getByText('+3')).toBeInTheDocument();
+  });
+
+  it('shows seed badges for seeded players', async () => {
+    render(<AdminPlayoffsPage />);
+    await screen.findByText('Arnold Palmer');
+    const seedBadges = screen.getAllByText('#3');
+    expect(seedBadges.length).toBeGreaterThanOrEqual(1);
+    const seed1Badges = screen.getAllByText('#1');
+    expect(seed1Badges.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renders Manage Seeds toggle button', async () => {
+    render(<AdminPlayoffsPage />);
+    await screen.findByText('Playoff Brackets');
+    expect(screen.getByText(/Manage Seeds/)).toBeInTheDocument();
+  });
+
+  it('opens seed panel when Manage Seeds is clicked', async () => {
+    render(<AdminPlayoffsPage />);
+    await screen.findByText('Playoff Brackets');
+
+    fireEvent.click(screen.getByText(/Manage Seeds/));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Seeds 1-6 = Championship/)).toBeInTheDocument();
+      expect(screen.getByText('Save Seeds')).toBeInTheDocument();
+      expect(screen.getByText('Add Seed')).toBeInTheDocument();
+    });
   });
 
   it('renders pencil edit icon on each matchup', async () => {
     render(<AdminPlayoffsPage />);
-    await screen.findByText('Tiger Woods');
+    await screen.findByText('Arnold Palmer');
     const editButtons = screen.getAllByTitle('Edit matchup');
     expect(editButtons.length).toBe(2);
   });
 
-  it('opens inline edit form when pencil icon is clicked', async () => {
+  it('opens inline edit form with result fields when pencil icon is clicked', async () => {
     render(<AdminPlayoffsPage />);
-    await screen.findByText('Tiger Woods');
+    await screen.findByText('Arnold Palmer');
 
     const editButtons = screen.getAllByTitle('Edit matchup');
     fireEvent.click(editButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText(/Editing Matchup #1/)).toBeInTheDocument();
-      expect(screen.getByText('Player 1')).toBeInTheDocument();
-      expect(screen.getByText('Player 2')).toBeInTheDocument();
-      expect(screen.getByText('Winner')).toBeInTheDocument();
-      expect(screen.getByText('Save')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('e.g. -1, 1UP, DNP')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('e.g. +3, 1DN, DNP')).toBeInTheDocument();
     });
-  });
-
-  it('pre-populates edit form with existing player selections', async () => {
-    render(<AdminPlayoffsPage />);
-    await screen.findByText('Tiger Woods');
-
-    const editButtons = screen.getAllByTitle('Edit matchup');
-    fireEvent.click(editButtons[0]);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Editing Matchup #1/)).toBeInTheDocument();
-    });
-
-    const selects = screen.getAllByRole('combobox');
-    const player1Select = selects.find((s) => s.closest('div')?.textContent?.includes('Player 1'));
-    const player2Select = selects.find((s) => s.closest('div')?.textContent?.includes('Player 2'));
-
-    expect(player1Select).toHaveValue('u1');
-    expect(player2Select).toHaveValue('u2');
   });
 
   it('cancels edit and returns to display mode', async () => {
     render(<AdminPlayoffsPage />);
-    await screen.findByText('Tiger Woods');
+    await screen.findByText('Arnold Palmer');
 
     const editButtons = screen.getAllByTitle('Edit matchup');
     fireEvent.click(editButtons[0]);
@@ -181,22 +206,16 @@ describe('Admin Playoffs Page', () => {
     });
   });
 
-  it('shows Add Matchup button', async () => {
+  it('shows Add Matchup button and opens form with result fields', async () => {
     render(<AdminPlayoffsPage />);
-    await screen.findByText('Tiger Woods');
-    expect(screen.getByText('Add Matchup')).toBeInTheDocument();
-  });
-
-  it('opens new matchup form when Add Matchup is clicked', async () => {
-    render(<AdminPlayoffsPage />);
-    await screen.findByText('Tiger Woods');
+    await screen.findByText('Arnold Palmer');
 
     fireEvent.click(screen.getByText('Add Matchup'));
 
     await waitFor(() => {
       expect(screen.getByText('New Matchup')).toBeInTheDocument();
-      expect(screen.getByText('Round')).toBeInTheDocument();
-      expect(screen.getByText('Matchup #')).toBeInTheDocument();
+      expect(screen.getByText(/P1 Result/)).toBeInTheDocument();
+      expect(screen.getByText(/P2 Result/)).toBeInTheDocument();
     });
   });
 

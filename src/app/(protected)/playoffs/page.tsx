@@ -14,8 +14,17 @@ interface PlayoffBracket {
   player1_id: string | null;
   player2_id: string | null;
   winner_id: string | null;
+  player1_result: string | null;
+  player2_result: string | null;
   player1?: User | null;
   player2?: User | null;
+}
+
+interface PlayoffSeed {
+  id: string;
+  season_id: string;
+  user_id: string;
+  seed_number: number;
 }
 
 const FLIGHTS = ['championship', 'consolation', 'unicorn'] as const;
@@ -34,6 +43,7 @@ export default function PlayoffsPage() {
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [selectedSeason, setSelectedSeason] = useState<Season | null>(null);
   const [brackets, setBrackets] = useState<PlayoffBracket[]>([]);
+  const [seeds, setSeeds] = useState<PlayoffSeed[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<string>('championship');
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
@@ -50,19 +60,31 @@ export default function PlayoffsPage() {
 
   useEffect(() => {
     if (!selectedSeason) return;
-    const fetchBrackets = async () => {
+    const fetchData = async () => {
       setLoading(true);
-      const { data } = await supabase
+
+      const { data: bracketData } = await supabase
         .from('playoff_brackets')
         .select('*, player1:users!playoff_brackets_player1_id_fkey(id, full_name, profile_picture_url), player2:users!playoff_brackets_player2_id_fkey(id, full_name, profile_picture_url)')
         .eq('season_id', selectedSeason.id)
         .order('round')
         .order('matchup_number');
-      setBrackets((data as PlayoffBracket[]) || []);
+      setBrackets((bracketData as PlayoffBracket[]) || []);
+
+      const { data: seedData } = await supabase
+        .from('playoff_seeds')
+        .select('*')
+        .eq('season_id', selectedSeason.id)
+        .order('seed_number');
+      setSeeds((seedData as PlayoffSeed[]) || []);
+
       setLoading(false);
     };
-    fetchBrackets();
+    fetchData();
   }, [selectedSeason, supabase]);
+
+  const seedMap = new Map<string, number>();
+  seeds.forEach((s) => seedMap.set(s.user_id, s.seed_number));
 
   const flightBrackets = brackets.filter((b) => b.flight === selectedFlight);
   const rounds = [...new Set(flightBrackets.map((b) => b.round))].sort();
@@ -124,46 +146,74 @@ export default function PlayoffsPage() {
           <p className="text-sm text-[var(--text-muted)]">No playoff brackets yet for {flightLabels[selectedFlight]}.</p>
         </div>
       ) : (
-        /* Bracket Tree - scrollable horizontal layout */
-        <div className="overflow-x-auto">
-          <div className="flex gap-6 min-w-max pb-4">
-            {rounds.map((round) => {
-              const roundMatchups = flightBrackets.filter((b) => b.round === round);
-              return (
-                <div key={round} className="flex-shrink-0 w-56">
-                  <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-3 text-center">
-                    {roundLabels[round]}
-                  </h3>
-                  <div className="space-y-3">
-                    {roundMatchups.map((match) => (
+        /* Bracket - vertical on mobile, horizontal on wider screens */
+        <div className="space-y-4">
+          {rounds.map((round) => {
+            const roundMatchups = flightBrackets.filter((b) => b.round === round);
+            return (
+              <div key={round}>
+                <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">
+                  {roundLabels[round]}
+                  <span className="ml-1.5 normal-case tracking-normal opacity-60">
+                    ({roundMatchups.length} matchup{roundMatchups.length !== 1 ? 's' : ''})
+                  </span>
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {roundMatchups.map((match) => {
+                    const isBye = match.player1_id && !match.player2_id;
+                    return (
                       <div key={match.id} className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
                         <PlayerSlot
                           player={match.player1}
+                          seed={match.player1_id ? seedMap.get(match.player1_id) : undefined}
+                          result={match.player1_result}
                           isWinner={match.winner_id !== null && match.winner_id === match.player1_id}
                           isLoser={match.winner_id !== null && match.winner_id !== match.player1_id}
                         />
                         <div className="border-t border-[var(--border-light)]" />
-                        <PlayerSlot
-                          player={match.player2}
-                          isWinner={match.winner_id !== null && match.winner_id === match.player2_id}
-                          isLoser={match.winner_id !== null && match.winner_id !== match.player2_id}
-                        />
+                        {isBye ? (
+                          <div className="flex items-center gap-2 px-3 py-2.5 bg-[var(--bg-page)] opacity-50">
+                            <div className="w-7 h-7 rounded-full bg-[var(--bg-subtle)] flex items-center justify-center flex-shrink-0">
+                              <span className="text-[10px] font-bold text-[var(--text-faint)]">-</span>
+                            </div>
+                            <span className="text-sm italic text-[var(--text-faint)]">BYE</span>
+                          </div>
+                        ) : (
+                          <PlayerSlot
+                            player={match.player2}
+                            seed={match.player2_id ? seedMap.get(match.player2_id) : undefined}
+                            result={match.player2_result}
+                            isWinner={match.winner_id !== null && match.winner_id === match.player2_id}
+                            isLoser={match.winner_id !== null && match.winner_id !== match.player2_id}
+                          />
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
-function PlayerSlot({ player, isWinner, isLoser }: { player?: User | null; isWinner: boolean; isLoser: boolean }) {
+function PlayerSlot({ player, seed, result, isWinner, isLoser }: {
+  player?: User | null;
+  seed?: number;
+  result?: string | null;
+  isWinner: boolean;
+  isLoser: boolean;
+}) {
   return (
     <div className={`flex items-center gap-2 px-3 py-2.5 ${isWinner ? 'bg-green-50' : isLoser ? 'bg-[var(--bg-page)] opacity-60' : ''}`}>
+      {seed !== undefined && (
+        <span className="text-[10px] font-bold text-minerva-600 bg-minerva-50 border border-minerva-200 px-1 py-0.5 rounded flex-shrink-0">
+          #{seed}
+        </span>
+      )}
       <div className="w-7 h-7 rounded-full bg-[var(--bg-subtle)] flex items-center justify-center overflow-hidden flex-shrink-0">
         {player?.profile_picture_url ? (
           <img src={player.profile_picture_url} alt="" className="w-full h-full object-cover" />
@@ -176,7 +226,14 @@ function PlayerSlot({ player, isWinner, isLoser }: { player?: User | null; isWin
       <span className={`text-sm truncate ${isWinner ? 'font-bold text-green-700' : 'font-medium text-[var(--text-secondary)]'}`}>
         {player?.full_name || 'TBD'}
       </span>
-      {isWinner && <ChevronRight className="w-4 h-4 text-green-600 ml-auto" />}
+      {result && (
+        <span className={`text-xs font-semibold ml-auto flex-shrink-0 ${
+          isWinner ? 'text-green-600' : 'text-[var(--text-faint)]'
+        }`}>
+          {result}
+        </span>
+      )}
+      {isWinner && !result && <ChevronRight className="w-4 h-4 text-green-600 ml-auto flex-shrink-0" />}
     </div>
   );
 }

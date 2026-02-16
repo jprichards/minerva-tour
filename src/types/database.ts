@@ -34,7 +34,9 @@ export type AuditActionType =
   | 'edit_tournament'
   | 'toggle_tournament'
   | 'update_settings'
-  | 'admin_edit_record';
+  | 'admin_edit_record'
+  | 'update_playoff_matchup'
+  | 'manage_playoff_seeds';
 
 export interface User {
   id: string;
@@ -141,9 +143,20 @@ export interface PlayoffBracket {
   player1_id: string | null;
   player2_id: string | null;
   winner_id: string | null;
+  player1_result: string | null;
+  player2_result: string | null;
   event_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface PlayoffSeed {
+  id: string;
+  season_id: string;
+  user_id: string;
+  seed_number: number;
+  created_at: string;
+  user?: User;
 }
 
 export interface AuditLog {

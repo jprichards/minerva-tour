@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
-import { ArrowLeft, Plus, Trash2, Trophy, CheckCircle, Users, Pencil, Check, X } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Trophy, CheckCircle, Pencil, Check, X, ChevronDown, ChevronUp, Hash } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import type { Season, User } from '@/types/database';
 
@@ -18,10 +18,20 @@ interface PlayoffBracket {
   player1_id: string | null;
   player2_id: string | null;
   winner_id: string | null;
+  player1_result: string | null;
+  player2_result: string | null;
   event_id: string | null;
   player1?: User | null;
   player2?: User | null;
   winner?: User | null;
+}
+
+interface PlayoffSeed {
+  id: string;
+  season_id: string;
+  user_id: string;
+  seed_number: number;
+  user?: User | null;
 }
 
 const FLIGHTS = ['championship', 'consolation', 'unicorn'] as const;
@@ -30,6 +40,16 @@ const flightLabels: Record<string, string> = {
   consolation: 'Consolation',
   unicorn: 'Unicorn',
 };
+
+function getFlightForSeed(seed: number): string {
+  if (seed <= 6) return 'championship';
+  if (seed <= 12) return 'consolation';
+  return 'unicorn';
+}
+
+function getFlightLabel(seed: number): string {
+  return flightLabels[getFlightForSeed(seed)] || 'Unicorn';
+}
 
 export default function PlayoffsAdminPage() {
   const router = useRouter();
@@ -44,16 +64,27 @@ export default function PlayoffsAdminPage() {
   const [selectedFlight, setSelectedFlight] = useState<string>('championship');
   const [loading, setLoading] = useState(true);
 
+  // Seeds state
+  const [seeds, setSeeds] = useState<PlayoffSeed[]>([]);
+  const [showSeeds, setShowSeeds] = useState(false);
+  const [seedEntries, setSeedEntries] = useState<{ seed_number: number; user_id: string }[]>([]);
+  const [savingSeeds, setSavingSeeds] = useState(false);
+
   // New matchup form
   const [addingMatchup, setAddingMatchup] = useState(false);
   const [newRound, setNewRound] = useState(1);
   const [newMatchup, setNewMatchup] = useState(1);
   const [newPlayer1, setNewPlayer1] = useState('');
   const [newPlayer2, setNewPlayer2] = useState('');
+  const [newP1Result, setNewP1Result] = useState('');
+  const [newP2Result, setNewP2Result] = useState('');
 
   // Edit matchup state
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editFields, setEditFields] = useState<{ player1_id: string; player2_id: string; winner_id: string }>({ player1_id: '', player2_id: '', winner_id: '' });
+  const [editFields, setEditFields] = useState<{
+    player1_id: string; player2_id: string; winner_id: string;
+    player1_result: string; player2_result: string;
+  }>({ player1_id: '', player2_id: '', winner_id: '', player1_result: '', player2_result: '' });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -75,23 +106,105 @@ export default function PlayoffsAdminPage() {
 
   useEffect(() => {
     if (!selectedSeason) return;
-    const fetchBrackets = async () => {
+    const fetchData = async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from('playoff_brackets')
-        .select('*, player1:users!playoff_brackets_player1_id_fkey(id, full_name), player2:users!playoff_brackets_player2_id_fkey(id, full_name), winner:users!playoff_brackets_winner_id_fkey(id, full_name)')
-        .eq('season_id', selectedSeason.id)
-        .order('round')
-        .order('matchup_number');
-      setBrackets((data as PlayoffBracket[]) || []);
+      const [bracketsRes, seedsRes] = await Promise.all([
+        supabase
+          .from('playoff_brackets')
+          .select('*, player1:users!playoff_brackets_player1_id_fkey(id, full_name), player2:users!playoff_brackets_player2_id_fkey(id, full_name), winner:users!playoff_brackets_winner_id_fkey(id, full_name)')
+          .eq('season_id', selectedSeason.id)
+          .order('round')
+          .order('matchup_number'),
+        supabase
+          .from('playoff_seeds')
+          .select('*, user:users(id, full_name)')
+          .eq('season_id', selectedSeason.id)
+          .order('seed_number'),
+      ]);
+      setBrackets((bracketsRes.data as PlayoffBracket[]) || []);
+      const seedData = (seedsRes.data as PlayoffSeed[]) || [];
+      setSeeds(seedData);
+      setSeedEntries(seedData.map((s) => ({ seed_number: s.seed_number, user_id: s.user_id })));
       setLoading(false);
     };
-    fetchBrackets();
+    fetchData();
   }, [selectedSeason, supabase]);
+
+  const refreshBrackets = async () => {
+    if (!selectedSeason) return;
+    const { data } = await supabase
+      .from('playoff_brackets')
+      .select('*, player1:users!playoff_brackets_player1_id_fkey(id, full_name), player2:users!playoff_brackets_player2_id_fkey(id, full_name), winner:users!playoff_brackets_winner_id_fkey(id, full_name)')
+      .eq('season_id', selectedSeason.id)
+      .order('round')
+      .order('matchup_number');
+    setBrackets((data as PlayoffBracket[]) || []);
+  };
+
+  const seedMap = new Map<string, number>();
+  seeds.forEach((s) => seedMap.set(s.user_id, s.seed_number));
 
   const flightBrackets = brackets.filter((b) => b.flight === selectedFlight);
   const rounds = [...new Set(flightBrackets.map((b) => b.round))].sort();
 
+  // --- Seed Management ---
+  const handleAddSeedSlot = () => {
+    const nextNum = seedEntries.length > 0 ? Math.max(...seedEntries.map((s) => s.seed_number)) + 1 : 1;
+    setSeedEntries([...seedEntries, { seed_number: nextNum, user_id: '' }]);
+  };
+
+  const handleRemoveSeedSlot = (idx: number) => {
+    const updated = seedEntries.filter((_, i) => i !== idx);
+    setSeedEntries(updated.map((s, i) => ({ ...s, seed_number: i + 1 })));
+  };
+
+  const handleSeedChange = (idx: number, userId: string) => {
+    const updated = [...seedEntries];
+    updated[idx] = { ...updated[idx], user_id: userId };
+    setSeedEntries(updated);
+  };
+
+  const handleSaveSeeds = async () => {
+    if (!selectedSeason) return;
+    setSavingSeeds(true);
+
+    // Delete existing seeds for this season
+    await supabase.from('playoff_seeds').delete().eq('season_id', selectedSeason.id);
+
+    // Insert new seeds (only those with a user selected)
+    const toInsert = seedEntries
+      .filter((s) => s.user_id)
+      .map((s) => ({
+        season_id: selectedSeason.id,
+        user_id: s.user_id,
+        seed_number: s.seed_number,
+      }));
+
+    if (toInsert.length > 0) {
+      const { error } = await supabase.from('playoff_seeds').insert(toInsert);
+      if (error) {
+        showToast(`Error saving seeds: ${error.message}`, 'error');
+        setSavingSeeds(false);
+        return;
+      }
+    }
+
+    logAuditEvent('manage_playoff_seeds', 'playoff_seeds', undefined, { season_id: selectedSeason.id, count: toInsert.length });
+    showToast(`Saved ${toInsert.length} seed${toInsert.length !== 1 ? 's' : ''}!`, 'success');
+
+    // Refresh seeds
+    const { data: seedData } = await supabase
+      .from('playoff_seeds')
+      .select('*, user:users(id, full_name)')
+      .eq('season_id', selectedSeason.id)
+      .order('seed_number');
+    const refreshedSeeds = (seedData as PlayoffSeed[]) || [];
+    setSeeds(refreshedSeeds);
+    setSeedEntries(refreshedSeeds.map((s) => ({ seed_number: s.seed_number, user_id: s.user_id })));
+    setSavingSeeds(false);
+  };
+
+  // --- Matchup CRUD ---
   const handleAddMatchup = async () => {
     if (!selectedSeason) return;
 
@@ -102,6 +215,8 @@ export default function PlayoffsAdminPage() {
       matchup_number: newMatchup,
       player1_id: newPlayer1 || null,
       player2_id: newPlayer2 || null,
+      player1_result: newP1Result.trim() || null,
+      player2_result: newP2Result.trim() || null,
     });
 
     if (error) {
@@ -110,20 +225,13 @@ export default function PlayoffsAdminPage() {
     }
 
     logAuditEvent('create_playoff_matchup', 'playoff_bracket', undefined, { flight: selectedFlight, round: newRound, matchup_number: newMatchup });
-
     showToast('Matchup added!', 'success');
     setAddingMatchup(false);
     setNewPlayer1('');
     setNewPlayer2('');
-
-    // Refresh
-    const { data } = await supabase
-      .from('playoff_brackets')
-      .select('*, player1:users!playoff_brackets_player1_id_fkey(id, full_name), player2:users!playoff_brackets_player2_id_fkey(id, full_name), winner:users!playoff_brackets_winner_id_fkey(id, full_name)')
-      .eq('season_id', selectedSeason.id)
-      .order('round')
-      .order('matchup_number');
-    setBrackets((data as PlayoffBracket[]) || []);
+    setNewP1Result('');
+    setNewP2Result('');
+    await refreshBrackets();
   };
 
   const handleSetWinner = async (bracketId: string, winnerId: string) => {
@@ -138,12 +246,9 @@ export default function PlayoffsAdminPage() {
     }
 
     logAuditEvent('set_playoff_winner', 'playoff_bracket', bracketId, { winner_id: winnerId });
-
     showToast('Winner set!', 'success');
     setBrackets((prev) =>
-      prev.map((b) =>
-        b.id === bracketId ? { ...b, winner_id: winnerId } : b
-      )
+      prev.map((b) => b.id === bracketId ? { ...b, winner_id: winnerId } : b)
     );
   };
 
@@ -160,12 +265,14 @@ export default function PlayoffsAdminPage() {
       player1_id: match.player1_id || '',
       player2_id: match.player2_id || '',
       winner_id: match.winner_id || '',
+      player1_result: match.player1_result || '',
+      player2_result: match.player2_result || '',
     });
   };
 
   const cancelEditing = () => {
     setEditingId(null);
-    setEditFields({ player1_id: '', player2_id: '', winner_id: '' });
+    setEditFields({ player1_id: '', player2_id: '', winner_id: '', player1_result: '', player2_result: '' });
   };
 
   const handleSaveEdit = async () => {
@@ -176,6 +283,8 @@ export default function PlayoffsAdminPage() {
       player1_id: editFields.player1_id || null,
       player2_id: editFields.player2_id || null,
       winner_id: editFields.winner_id || null,
+      player1_result: editFields.player1_result.trim() || null,
+      player2_result: editFields.player2_result.trim() || null,
     };
 
     const { error } = await supabase
@@ -191,21 +300,17 @@ export default function PlayoffsAdminPage() {
 
     logAuditEvent('update_playoff_matchup', 'playoff_bracket', editingId, updateData);
     showToast('Matchup updated!', 'success');
-
-    // Refresh brackets to get joined player names
-    if (selectedSeason) {
-      const { data } = await supabase
-        .from('playoff_brackets')
-        .select('*, player1:users!playoff_brackets_player1_id_fkey(id, full_name), player2:users!playoff_brackets_player2_id_fkey(id, full_name), winner:users!playoff_brackets_winner_id_fkey(id, full_name)')
-        .eq('season_id', selectedSeason.id)
-        .order('round')
-        .order('matchup_number');
-      setBrackets((data as PlayoffBracket[]) || []);
-    }
-
+    await refreshBrackets();
     setEditingId(null);
-    setEditFields({ player1_id: '', player2_id: '', winner_id: '' });
+    setEditFields({ player1_id: '', player2_id: '', winner_id: '', player1_result: '', player2_result: '' });
     setSaving(false);
+  };
+
+  const getSeedBadge = (playerId: string | null) => {
+    if (!playerId) return null;
+    const seed = seedMap.get(playerId);
+    if (seed === undefined) return null;
+    return seed;
   };
 
   if (!isAdmin) {
@@ -235,6 +340,97 @@ export default function PlayoffsAdminPage() {
           </button>
         ))}
       </div>
+
+      {/* Manage Seeds Toggle */}
+      <button
+        onClick={() => setShowSeeds(!showSeeds)}
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-xl text-sm font-medium text-[var(--text-primary)]"
+      >
+        <div className="flex items-center gap-2">
+          <Hash className="w-4 h-4 text-minerva-600" />
+          Manage Seeds ({seeds.length} seeded)
+        </div>
+        {showSeeds ? <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />}
+      </button>
+
+      {/* Seeds Panel */}
+      {showSeeds && (
+        <div className="bg-[var(--bg-card)] border border-[var(--border-light)] rounded-xl p-4 space-y-3">
+          <p className="text-xs text-[var(--text-faint)]">
+            Seeds 1-6 = Championship, 7-12 = Consolation, 13+ = Unicorn. Top 2 seeds per flight get a bye.
+          </p>
+
+          {seedEntries.length === 0 ? (
+            <p className="text-sm text-[var(--text-muted)] text-center py-4">No seeds assigned yet.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {seedEntries.map((entry, idx) => {
+                const flightGroup = getFlightForSeed(entry.seed_number);
+                const prevFlightGroup = idx > 0 ? getFlightForSeed(seedEntries[idx - 1].seed_number) : null;
+                const showDivider = idx > 0 && flightGroup !== prevFlightGroup;
+                const isBye = entry.seed_number <= 2;
+
+                return (
+                  <div key={idx}>
+                    {showDivider && (
+                      <div className="flex items-center gap-2 pt-2 pb-1">
+                        <div className="flex-1 border-t border-[var(--border-light)]" />
+                        <span className="text-[10px] font-semibold text-[var(--text-faint)] uppercase">{getFlightLabel(entry.seed_number)}</span>
+                        <div className="flex-1 border-t border-[var(--border-light)]" />
+                      </div>
+                    )}
+                    {idx === 0 && (
+                      <div className="flex items-center gap-2 pb-1">
+                        <div className="flex-1 border-t border-[var(--border-light)]" />
+                        <span className="text-[10px] font-semibold text-[var(--text-faint)] uppercase">{getFlightLabel(entry.seed_number)}</span>
+                        <div className="flex-1 border-t border-[var(--border-light)]" />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <span className="w-7 text-center text-xs font-bold text-[var(--text-secondary)]">#{entry.seed_number}</span>
+                      <select
+                        value={entry.user_id}
+                        onChange={(e) => handleSeedChange(idx, e.target.value)}
+                        className="flex-1 px-2 py-1.5 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-[var(--text-primary)]"
+                      >
+                        <option value="">-- Select --</option>
+                        {members.map((m) => (
+                          <option key={m.id} value={m.id}>{m.full_name || m.email}</option>
+                        ))}
+                      </select>
+                      {isBye && <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">BYE</span>}
+                      <button
+                        onClick={() => handleRemoveSeedSlot(idx)}
+                        className="p-1 text-red-400 hover:text-red-600 rounded"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={handleAddSeedSlot}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-dashed border-[var(--input-border)] rounded-lg text-xs text-[var(--text-muted)] hover:border-minerva-400 hover:text-minerva-600 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add Seed
+            </button>
+            <button
+              onClick={handleSaveSeeds}
+              disabled={savingSeeds}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-minerva-600 text-white rounded-lg text-xs font-medium hover:bg-minerva-700 disabled:opacity-50"
+            >
+              <Check className="w-3.5 h-3.5" />
+              {savingSeeds ? 'Saving...' : 'Save Seeds'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Flight Tabs */}
       <div className="flex gap-2">
@@ -286,7 +482,7 @@ export default function PlayoffsAdminPage() {
                                 <label className="text-xs text-[var(--text-muted)]">Player 1</label>
                                 <select
                                   value={editFields.player1_id}
-                                  onChange={(e) => setEditFields({ ...editFields, player1_id: e.target.value, winner_id: editFields.winner_id === editFields.player1_id && e.target.value ? e.target.value : editFields.winner_id })}
+                                  onChange={(e) => setEditFields({ ...editFields, player1_id: e.target.value })}
                                   className="w-full mt-1 px-3 py-2 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-[var(--text-primary)]"
                                 >
                                   <option value="">TBD</option>
@@ -296,10 +492,20 @@ export default function PlayoffsAdminPage() {
                                 </select>
                               </div>
                               <div>
+                                <label className="text-xs text-[var(--text-muted)]">P1 Result</label>
+                                <input
+                                  type="text"
+                                  value={editFields.player1_result}
+                                  onChange={(e) => setEditFields({ ...editFields, player1_result: e.target.value })}
+                                  placeholder="e.g. -1, 1UP, DNP"
+                                  className="w-full mt-1 px-3 py-2 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-[var(--text-primary)]"
+                                />
+                              </div>
+                              <div>
                                 <label className="text-xs text-[var(--text-muted)]">Player 2</label>
                                 <select
                                   value={editFields.player2_id}
-                                  onChange={(e) => setEditFields({ ...editFields, player2_id: e.target.value, winner_id: editFields.winner_id === editFields.player2_id && e.target.value ? e.target.value : editFields.winner_id })}
+                                  onChange={(e) => setEditFields({ ...editFields, player2_id: e.target.value })}
                                   className="w-full mt-1 px-3 py-2 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-[var(--text-primary)]"
                                 >
                                   <option value="">TBD</option>
@@ -307,6 +513,16 @@ export default function PlayoffsAdminPage() {
                                     <option key={m.id} value={m.id}>{m.full_name || m.email}</option>
                                   ))}
                                 </select>
+                              </div>
+                              <div>
+                                <label className="text-xs text-[var(--text-muted)]">P2 Result</label>
+                                <input
+                                  type="text"
+                                  value={editFields.player2_result}
+                                  onChange={(e) => setEditFields({ ...editFields, player2_result: e.target.value })}
+                                  placeholder="e.g. +3, 1DN, DNP"
+                                  className="w-full mt-1 px-3 py-2 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-[var(--text-primary)]"
+                                />
                               </div>
                               <div>
                                 <label className="text-xs text-[var(--text-muted)]">Winner</label>
@@ -357,10 +573,22 @@ export default function PlayoffsAdminPage() {
                                     match.winner_id === match.player1_id ? 'bg-minerva-50 border border-minerva-200' : 'hover:bg-[var(--bg-page)]'
                                   }`}
                                 >
-                                  {match.winner_id === match.player1_id && <CheckCircle className="w-4 h-4 text-minerva-600" />}
-                                  <span className="text-sm font-medium text-[var(--text-primary)]">
+                                  {match.winner_id === match.player1_id && <CheckCircle className="w-4 h-4 text-minerva-600 flex-shrink-0" />}
+                                  {getSeedBadge(match.player1_id) !== null && (
+                                    <span className="text-[10px] font-bold text-minerva-600 bg-minerva-50 border border-minerva-200 px-1 py-0.5 rounded flex-shrink-0">
+                                      #{getSeedBadge(match.player1_id)}
+                                    </span>
+                                  )}
+                                  <span className="text-sm font-medium text-[var(--text-primary)] truncate">
                                     {match.player1?.full_name || 'TBD'}
                                   </span>
+                                  {match.player1_result && (
+                                    <span className={`text-xs font-semibold ml-auto flex-shrink-0 ${
+                                      match.winner_id === match.player1_id ? 'text-green-600' : 'text-[var(--text-faint)]'
+                                    }`}>
+                                      {match.player1_result}
+                                    </span>
+                                  )}
                                 </button>
                                 <div className="text-center text-xs text-[var(--text-faint)]">vs</div>
                                 {/* Player 2 */}
@@ -370,10 +598,26 @@ export default function PlayoffsAdminPage() {
                                     match.winner_id === match.player2_id ? 'bg-minerva-50 border border-minerva-200' : 'hover:bg-[var(--bg-page)]'
                                   }`}
                                 >
-                                  {match.winner_id === match.player2_id && <CheckCircle className="w-4 h-4 text-minerva-600" />}
-                                  <span className="text-sm font-medium text-[var(--text-primary)]">
-                                    {match.player2?.full_name || 'TBD'}
+                                  {match.winner_id === match.player2_id && <CheckCircle className="w-4 h-4 text-minerva-600 flex-shrink-0" />}
+                                  {getSeedBadge(match.player2_id) !== null && (
+                                    <span className="text-[10px] font-bold text-minerva-600 bg-minerva-50 border border-minerva-200 px-1 py-0.5 rounded flex-shrink-0">
+                                      #{getSeedBadge(match.player2_id)}
+                                    </span>
+                                  )}
+                                  <span className="text-sm font-medium text-[var(--text-primary)] truncate">
+                                    {!match.player2_id && match.player1_id ? (
+                                      <span className="italic text-[var(--text-faint)]">BYE</span>
+                                    ) : (
+                                      match.player2?.full_name || 'TBD'
+                                    )}
                                   </span>
+                                  {match.player2_result && (
+                                    <span className={`text-xs font-semibold ml-auto flex-shrink-0 ${
+                                      match.winner_id === match.player2_id ? 'text-green-600' : 'text-[var(--text-faint)]'
+                                    }`}>
+                                      {match.player2_result}
+                                    </span>
+                                  )}
                                 </button>
                               </div>
                               <div className="flex flex-col gap-1 ml-2">
@@ -443,6 +687,16 @@ export default function PlayoffsAdminPage() {
                 </select>
               </div>
               <div>
+                <label className="text-xs text-[var(--text-muted)]">P1 Result <span className="opacity-60">(optional)</span></label>
+                <input
+                  type="text"
+                  value={newP1Result}
+                  onChange={(e) => setNewP1Result(e.target.value)}
+                  placeholder="e.g. -1, 1UP, DNP"
+                  className="w-full mt-1 px-3 py-2 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm"
+                />
+              </div>
+              <div>
                 <label className="text-xs text-[var(--text-muted)]">Player 2</label>
                 <select
                   value={newPlayer2}
@@ -454,6 +708,16 @@ export default function PlayoffsAdminPage() {
                     <option key={m.id} value={m.id}>{m.full_name || m.email}</option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label className="text-xs text-[var(--text-muted)]">P2 Result <span className="opacity-60">(optional)</span></label>
+                <input
+                  type="text"
+                  value={newP2Result}
+                  onChange={(e) => setNewP2Result(e.target.value)}
+                  placeholder="e.g. +3, 1DN, DNP"
+                  className="w-full mt-1 px-3 py-2 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm"
+                />
               </div>
               <div className="flex gap-2">
                 <button
