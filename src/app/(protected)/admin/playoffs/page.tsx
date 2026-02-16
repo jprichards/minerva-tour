@@ -368,7 +368,7 @@ export default function PlayoffsAdminPage() {
                 const flightGroup = getFlightForSeed(entry.seed_number);
                 const prevFlightGroup = idx > 0 ? getFlightForSeed(seedEntries[idx - 1].seed_number) : null;
                 const showDivider = idx > 0 && flightGroup !== prevFlightGroup;
-                const isBye = entry.seed_number <= 2;
+                const isBye = entry.seed_number <= 2 || (entry.seed_number >= 7 && entry.seed_number <= 8);
 
                 return (
                   <div key={idx}>
@@ -648,30 +648,58 @@ export default function PlayoffsAdminPage() {
           )}
 
           {/* Add Matchup */}
-          {addingMatchup ? (
+          {addingMatchup ? (() => {
+            const roundLabels: Record<number, string> = { 1: 'Round 1', 2: 'Round 2 (Semifinal)', 3: 'Round 3 (Final)' };
+            const maxMatchupsPerRound: Record<number, number> = { 1: 3, 2: 2, 3: 1 };
+            const existingMatchupsInRound = flightBrackets.filter((b) => b.round === newRound).map((b) => b.matchup_number);
+            const maxForRound = maxMatchupsPerRound[newRound] || 3;
+            const availableMatchups = Array.from({ length: maxForRound }, (_, i) => i + 1).filter((n) => !existingMatchupsInRound.includes(n));
+            const isFinal = newRound === 3;
+
+            return (
             <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-default)] shadow-[var(--shadow-sm)] p-4 space-y-3">
               <h3 className="text-sm font-semibold text-[var(--text-primary)]">New Matchup</h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className={isFinal ? '' : 'grid grid-cols-2 gap-3'}>
                 <div>
                   <label className="text-xs text-[var(--text-muted)]">Round</label>
-                  <input
-                    type="number"
-                    min={1}
+                  <select
                     value={newRound}
-                    onChange={(e) => setNewRound(Number(e.target.value))}
+                    onChange={(e) => {
+                      const r = Number(e.target.value);
+                      setNewRound(r);
+                      if (r === 3) setNewMatchup(1);
+                      else {
+                        const existing = flightBrackets.filter((b) => b.round === r).map((b) => b.matchup_number);
+                        const max = maxMatchupsPerRound[r] || 3;
+                        const avail = Array.from({ length: max }, (_, i) => i + 1).filter((n) => !existing.includes(n));
+                        setNewMatchup(avail[0] || 1);
+                      }
+                    }}
                     className="w-full mt-1 px-3 py-2 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm"
-                  />
+                  >
+                    {[1, 2, 3].map((r) => (
+                      <option key={r} value={r}>{roundLabels[r]}</option>
+                    ))}
+                  </select>
                 </div>
-                <div>
-                  <label className="text-xs text-[var(--text-muted)]">Matchup #</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={newMatchup}
-                    onChange={(e) => setNewMatchup(Number(e.target.value))}
-                    className="w-full mt-1 px-3 py-2 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm"
-                  />
-                </div>
+                {!isFinal && (
+                  <div>
+                    <label className="text-xs text-[var(--text-muted)]">Matchup #</label>
+                    <select
+                      value={newMatchup}
+                      onChange={(e) => setNewMatchup(Number(e.target.value))}
+                      className="w-full mt-1 px-3 py-2 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm"
+                    >
+                      {availableMatchups.length > 0 ? (
+                        availableMatchups.map((n) => (
+                          <option key={n} value={n}>Matchup {n}</option>
+                        ))
+                      ) : (
+                        <option value={newMatchup}>Matchup {newMatchup} (all slots filled)</option>
+                      )}
+                    </select>
+                  </div>
+                )}
               </div>
               <div>
                 <label className="text-xs text-[var(--text-muted)]">Player 1</label>
@@ -734,7 +762,8 @@ export default function PlayoffsAdminPage() {
                 </button>
               </div>
             </div>
-          ) : (
+            );
+          })() : (
             <button
               onClick={() => setAddingMatchup(true)}
               className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed bg-[var(--input-bg)] border-[var(--input-border)] rounded-xl text-sm text-[var(--text-muted)] hover:border-minerva-400 hover:text-minerva-600 transition-colors"
