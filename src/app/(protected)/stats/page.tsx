@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import useSWR from 'swr';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -212,27 +212,48 @@ export default function StatsPage() {
           )}
 
           {/* Head-to-Head: Link to other members */}
-          <div>
-            <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Compare with Members</h3>
-            <div className="space-y-2">
-              {allMembers.filter((m) => m.id !== profile?.id).slice(0, 5).map((m) => (
-                <Link
-                  key={m.id}
-                  href={`/stats/${m.id}`}
-                  className="flex items-center justify-between bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)]"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-[var(--bg-subtle)] rounded-full flex items-center justify-center">
-                      <span className="text-xs font-bold text-[var(--text-muted)]">{(m.full_name || '?')[0].toUpperCase()}</span>
-                    </div>
-                    <p className="text-sm font-medium text-[var(--text-primary)]">{m.full_name || 'Unnamed'}</p>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-[var(--text-faint)]" />
-                </Link>
-              ))}
-            </div>
-          </div>
+          <CompareMembers members={allMembers} currentUserId={profile?.id} />
         </>
+      )}
+    </div>
+  );
+}
+
+const INITIAL_SHOW = 5;
+
+function CompareMembers({ members, currentUserId }: { members: User[]; currentUserId?: string }) {
+  const [showAll, setShowAll] = useState(false);
+  const otherMembers = members.filter((m) => m.id !== currentUserId);
+  const visible = showAll ? otherMembers : otherMembers.slice(0, INITIAL_SHOW);
+  const hasMore = otherMembers.length > INITIAL_SHOW;
+
+  return (
+    <div>
+      <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Compare with Members</h3>
+      <div className="space-y-2">
+        {visible.map((m) => (
+          <Link
+            key={m.id}
+            href={`/stats/${m.id}`}
+            className="flex items-center justify-between bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)]"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-[var(--bg-subtle)] rounded-full flex items-center justify-center">
+                <span className="text-xs font-bold text-[var(--text-muted)]">{(m.full_name || '?')[0].toUpperCase()}</span>
+              </div>
+              <p className="text-sm font-medium text-[var(--text-primary)]">{m.full_name || 'Unnamed'}</p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-[var(--text-faint)]" />
+          </Link>
+        ))}
+      </div>
+      {hasMore && (
+        <button
+          onClick={() => setShowAll(!showAll)}
+          className="w-full mt-3 text-center text-sm font-medium text-minerva-600 hover:text-minerva-700 py-2 transition-colors"
+        >
+          {showAll ? 'Show less' : `Show all ${otherMembers.length} members`}
+        </button>
       )}
     </div>
   );
