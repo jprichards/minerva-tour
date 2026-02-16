@@ -52,7 +52,7 @@ Known fuzzy matches (confirmed by user):
 
 Build four lists:
 1. **Will update** -- matched members where handicap changed (show old -> new)
-2. **Unchanged** -- matched members where handicap is the same (skip these)
+2. **Verified unchanged** -- matched members where handicap is the same (no update to `users`, but still insert a `handicap_history` row as a verification record)
 3. **Not in screenshot** -- DB members not found in the screenshot. Leave completely unchanged. Do NOT update their handicap. Do NOT insert a handicap_history row. Report them with their GHIN number so the user can add them to their GHIN "following" list for next time.
 4. **Not in DB** -- names from GHIN that don't match any DB member. Skip these.
 
@@ -60,7 +60,7 @@ Present all four lists and ask: "Ready to apply the updates?"
 
 ### Step 4: Execute updates
 
-Only update members from the "will update" list. For each:
+**For members with changed handicaps** (from "will update" list):
 
 ```sql
 UPDATE users
@@ -71,7 +71,14 @@ INSERT INTO handicap_history (user_id, handicap_index, effective_date, source)
 VALUES ('{user_id}', {new_handicap}, CURRENT_DATE, 'manual');
 ```
 
-Generate as a single SQL script and execute. Members not in the screenshot are left completely untouched.
+**For members with unchanged handicaps** (from "verified unchanged" list) -- insert history only, no user update:
+
+```sql
+INSERT INTO handicap_history (user_id, handicap_index, effective_date, source)
+VALUES ('{user_id}', {current_handicap}, CURRENT_DATE, 'manual');
+```
+
+Generate as a single script and execute. Members not in the screenshot are left completely untouched (no update, no history entry).
 
 ### Step 5: Verify and report
 
@@ -91,7 +98,7 @@ Present a final summary:
 |--------|-----|-----|--------|
 | John Smith | 13.1 | 12.3 | Updated |
 
-Report totals: X updated, Y unchanged, Z not in screenshot, W not in DB.
+Report totals: X updated, Y verified unchanged, Z not in screenshot, W not in DB.
 
 ## Database Schema Reference
 
