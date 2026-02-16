@@ -20,8 +20,9 @@ const menuItems = [
   { href: '/event-history', label: 'Event History', icon: Clock },
   { href: '/stats', label: 'Tour Stats', icon: BarChart3 },
   { href: '/members', label: 'Members', icon: Users },
+  { href: '/hall-of-fame', label: 'Hall of Fame', icon: Award },
   { href: '/playoffs', label: 'Playoffs', icon: Swords },
-  { href: '/tournament', label: 'Tournament', icon: Award },
+  { href: '/tournament', label: 'Tournament', icon: Trophy },
 ];
 
 const adminItem = { href: '/admin', label: 'Admin', icon: Shield };

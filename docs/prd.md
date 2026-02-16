@@ -810,8 +810,16 @@ The following features have been built and should be considered part of the app'
 **Data Migration:**
 - **Glide-to-Supabase migration** (`scripts/migrate-glide-data.mjs`): Comprehensive migration script that imported all historical data from the legacy Glide app (30 users, 216 handicap records, 805 courses, 12 events, 227 scores, 6 playoff matchups). Script is idempotent and uses Supabase Admin Auth API for user creation.
 
+**Trophies & Hall of Fame:**
+- **Trophy data model** (`trophies` and `season_finishes` tables): Stores awards won by members (Minerva Tour Champion, Scratch Champion, Bobby Jones Cup, Member-Guest, Most Improved, Playoffs Winner, Consolation Winner, Unicorn, Edge Solutions Cup, Hole in One) with year, award type, emoji, and optional description (location).
+- **Trophy Case on profiles** (`members/[id]/page.tsx`, `profile/page.tsx`): Each member's profile displays their award history with emojis, award names, locations, and years, plus season finish history.
+- **Emoji badges on members list** (`members/page.tsx`): Compact unique trophy emojis displayed next to each member's name in the members list.
+- **Hall of Fame page** (`/hall-of-fame`): Dedicated page listing all award categories with winners by year, grouped by award type (Champions, Scratch Champions, Bobby Jones Cup, etc.), showing player photos and emoji badges.
+- **Data migration** (`scripts/import-trophies.mjs`): Import script that parses the Glide xlsx Profile sheet's "Champ Year" column and season finish columns (2017-2023) to populate trophy and finish data.
+- **Emoji mapping**: 🏆 Minerva Tour Champion, 🥇 Scratch Champion, 📉 Most Improved, 🌳 Bobby Jones Cup (Team Magnolia), 🌺 Bobby Jones Cup (Team Azalea), 🇺🇸 Bobby Jones Cup (Hilton Head, pre-team era), 🍻 Member-Guest, 🦄 Unicorn, 🎖 Playoffs Winner, 🥈 Consolation Winner, 📀 Edge Solutions Cup, 1️⃣ Hole in One.
+
 **Testing:**
-- **Comprehensive test suite**: 256+ tests covering unit, component, integration, functional, and E2E testing using Vitest, React Testing Library, and Playwright. TDD workflow enforced via workspace rules.
+- **Comprehensive test suite**: 360+ tests covering unit, component, integration, functional, and E2E testing using Vitest, React Testing Library, and Playwright. TDD workflow enforced via workspace rules.
 
 ---
 

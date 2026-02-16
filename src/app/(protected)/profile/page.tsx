@@ -6,13 +6,16 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { Edit, LogOut, Camera, TrendingUp, Trophy, Target, Calendar } from 'lucide-react';
-import type { HandicapHistory, Score } from '@/types/database';
+import TrophyCase from '@/components/TrophyCase';
+import type { HandicapHistory, Score, Trophy as TrophyType, SeasonFinish } from '@/types/database';
 
 export default function ProfilePage() {
   const { profile, authUser, loading: userLoading } = useUser();
   const router = useRouter();
   const supabase = createClient();
   const [handicapHistory, setHandicapHistory] = useState<HandicapHistory[]>([]);
+  const [trophies, setTrophies] = useState<TrophyType[]>([]);
+  const [seasonFinishes, setSeasonFinishes] = useState<SeasonFinish[]>([]);
   const [stats, setStats] = useState({
     totalRounds: 0,
     avgNet: 0,
@@ -50,6 +53,22 @@ export default function ProfilePage() {
           worstNet: Math.max(...nets),
         });
       }
+
+      // Fetch trophies
+      const { data: trophyData } = await supabase
+        .from('trophies')
+        .select('*')
+        .eq('user_id', profile.id)
+        .order('year', { ascending: false });
+      setTrophies(trophyData || []);
+
+      // Fetch season finishes
+      const { data: finishData } = await supabase
+        .from('season_finishes')
+        .select('*')
+        .eq('user_id', profile.id)
+        .order('year', { ascending: false });
+      setSeasonFinishes(finishData || []);
 
       setLoading(false);
     };
@@ -189,6 +208,9 @@ export default function ProfilePage() {
           <p className="text-xs text-gray-500">Best Net</p>
         </div>
       </div>
+
+      {/* Trophy Case */}
+      <TrophyCase trophies={trophies} seasonFinishes={seasonFinishes} />
 
       {/* Handicap History */}
       {handicapHistory.length > 0 && (

@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { ArrowLeft, TrendingUp, Trophy, Target, Calendar, BarChart3 } from 'lucide-react';
 import { formatNetScore } from '@/lib/scoring';
-import type { User, Score, HandicapHistory } from '@/types/database';
+import TrophyCase from '@/components/TrophyCase';
+import type { User, Score, HandicapHistory, Trophy as TrophyType, SeasonFinish } from '@/types/database';
 
 export default function MemberProfilePage() {
   const { id } = useParams();
@@ -16,6 +17,8 @@ export default function MemberProfilePage() {
   const [member, setMember] = useState<User | null>(null);
   const [scores, setScores] = useState<Score[]>([]);
   const [handicapHistory, setHandicapHistory] = useState<HandicapHistory[]>([]);
+  const [trophies, setTrophies] = useState<TrophyType[]>([]);
+  const [seasonFinishes, setSeasonFinishes] = useState<SeasonFinish[]>([]);
   const [stats, setStats] = useState({
     totalRounds: 0,
     avgNet: 0,
@@ -57,6 +60,22 @@ export default function MemberProfilePage() {
         .eq('user_id', id)
         .order('effective_date', { ascending: false });
       setHandicapHistory(history || []);
+
+      // Fetch trophies
+      const { data: trophyData } = await supabase
+        .from('trophies')
+        .select('*')
+        .eq('user_id', id)
+        .order('year', { ascending: false });
+      setTrophies(trophyData || []);
+
+      // Fetch season finishes
+      const { data: finishData } = await supabase
+        .from('season_finishes')
+        .select('*')
+        .eq('user_id', id)
+        .order('year', { ascending: false });
+      setSeasonFinishes(finishData || []);
 
       setLoading(false);
     };
@@ -142,6 +161,9 @@ export default function MemberProfilePage() {
           <p className="text-xs text-gray-500">Worst Net</p>
         </div>
       </div>
+
+      {/* Trophy Case */}
+      <TrophyCase trophies={trophies} seasonFinishes={seasonFinishes} />
 
       {/* Recent Scores */}
       {scores.length > 0 && (

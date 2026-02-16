@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Search, Users, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { getHandicapTrend } from '@/lib/handicap-trend';
-import type { User } from '@/types/database';
+import type { User, Trophy } from '@/types/database';
 
 type HandicapHistoryEntry = {
   user_id: string;
@@ -42,6 +42,30 @@ export default function MembersPage() {
     },
     { revalidateOnFocus: false, dedupingInterval: 30000 }
   );
+
+  const { data: allTrophies = [] } = useSWR<Trophy[]>(
+    'all-member-trophies',
+    async () => {
+      const { data } = await supabase
+        .from('trophies')
+        .select('id, user_id, emoji, award_type, year')
+        .order('year', { ascending: false });
+      return (data || []) as Trophy[];
+    },
+    { revalidateOnFocus: false, dedupingInterval: 30000 }
+  );
+
+  // Build a map of user_id -> unique emojis
+  const userEmojisMap = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    for (const t of allTrophies) {
+      if (!map[t.user_id]) map[t.user_id] = [];
+      if (!map[t.user_id].includes(t.emoji)) {
+        map[t.user_id].push(t.emoji);
+      }
+    }
+    return map;
+  }, [allTrophies]);
 
   // Build a map of user_id -> previous handicap (second most recent entry)
   const previousHandicapMap = useMemo(() => {
@@ -112,9 +136,18 @@ export default function MembersPage() {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">
-                  {member.full_name || 'Unnamed'}
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {member.full_name || 'Unnamed'}
+                  </p>
+                  {userEmojisMap[member.id] && userEmojisMap[member.id].length > 0 && (
+                    <span className="flex items-center gap-0.5 flex-shrink-0">
+                      {userEmojisMap[member.id].slice(0, 5).map((emoji, i) => (
+                        <span key={i} className="text-xs">{emoji}</span>
+                      ))}
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 capitalize">{member.role.replace(/_/g, ' ')}</p>
               </div>
               {member.handicap_index != null && (() => {

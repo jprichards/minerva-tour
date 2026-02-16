@@ -179,6 +179,29 @@ export interface AppSetting {
   updated_by: string | null;
 }
 
+export interface Trophy {
+  id: string;
+  user_id: string;
+  year: number;
+  award_type: string;
+  award_name: string;
+  description: string | null;
+  emoji: string;
+  created_at: string;
+  // Joined
+  user?: User;
+}
+
+export interface SeasonFinish {
+  id: string;
+  user_id: string;
+  year: number;
+  finish_position: string;
+  created_at: string;
+  // Joined
+  user?: User;
+}
+
 export type NotificationType = 'event_start' | 'event_end' | 'score_posted' | 'handicap_update' | 'admin_message' | 'season_mode' | 'tournament' | 'general';
 
 export interface Notification {
