@@ -238,10 +238,7 @@ export default function ProfilePage() {
                     {new Date(h.effective_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-[var(--text-primary)]">{h.handicap_index}</p>
-                  <span className="text-xs text-[var(--text-faint)] capitalize">{h.source}</span>
-                </div>
+                <p className="text-sm font-semibold text-[var(--text-primary)]">{h.handicap_index}</p>
               </div>
             ))}
           </div>
