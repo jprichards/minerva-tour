@@ -135,34 +135,17 @@ describe('Admin Trophies Page', () => {
     render(<AdminTrophiesPage />);
     await screen.findByText('Hole in One Club');
 
-    // Find delete buttons (trash icons)
-    const deleteButtons = screen.getAllByRole('button').filter(
-      (btn) => btn.querySelector('svg')?.classList.contains('lucide-trash-2') ||
-               btn.innerHTML.includes('Trash2')
-    );
-    // Click first delete button using a broader selector
-    const trashBtns = document.querySelectorAll('button');
-    let trashBtn: HTMLButtonElement | null = null;
-    trashBtns.forEach((btn) => {
-      if (btn.querySelector('.lucide-trash-2') || btn.querySelector('[class*="trash"]')) {
-        if (!trashBtn) trashBtn = btn as HTMLButtonElement;
-      }
-    });
+    // Find buttons without visible text (icon-only buttons)
+    const allButtons = screen.getAllByRole('button');
+    const iconBtn = allButtons.find((b) => !b.textContent?.trim());
+    // The second icon-only button per trophy is the trash
+    const iconBtns = allButtons.filter((b) => !b.textContent?.trim());
+    if (iconBtns.length >= 2) fireEvent.click(iconBtns[1]);
+    else if (iconBtn) fireEvent.click(iconBtn);
 
-    // Alternative: find by the Trash2 SVG presence
-    if (!trashBtn) {
-      // Just click a button that isn't a named button
-      const allButtons = screen.getAllByRole('button');
-      const trash = allButtons.find((b) => !b.textContent?.trim() || b.textContent?.trim() === '');
-      if (trash) fireEvent.click(trash);
-    } else {
-      fireEvent.click(trashBtn);
-    }
-
-    // Should show confirm/cancel
     await waitFor(() => {
-      expect(screen.getByText('Confirm')).toBeInTheDocument();
-      expect(screen.getByText('Cancel')).toBeInTheDocument();
+      expect(screen.getByText('Delete')).toBeInTheDocument();
+      expect(screen.getAllByText('Cancel').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -170,17 +153,51 @@ describe('Admin Trophies Page', () => {
     render(<AdminTrophiesPage />);
     await screen.findByText('Hole in One Club');
 
-    // Trigger delete confirmation
-    const allButtons = screen.getAllByRole('button');
-    const trash = allButtons.find((b) => !b.textContent?.trim());
-    if (trash) fireEvent.click(trash);
+    const iconBtns = screen.getAllByRole('button').filter((b) => !b.textContent?.trim());
+    if (iconBtns.length >= 2) fireEvent.click(iconBtns[1]);
 
-    await waitFor(() => expect(screen.getByText('Confirm')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Delete')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByText('Cancel'));
+    // Click the Cancel next to Delete (not the edit cancel)
+    const cancelBtns = screen.getAllByText('Cancel');
+    fireEvent.click(cancelBtns[cancelBtns.length - 1]);
 
     await waitFor(() => {
-      expect(screen.queryByText('Confirm')).not.toBeInTheDocument();
+      expect(screen.queryByText('Delete')).not.toBeInTheDocument();
+    });
+  });
+
+  it('opens inline edit form when pencil icon is clicked', async () => {
+    render(<AdminTrophiesPage />);
+    await screen.findByText('Hole in One Club');
+
+    // First icon-only button per trophy is the edit pencil
+    const iconBtns = screen.getAllByRole('button').filter((b) => !b.textContent?.trim());
+    fireEvent.click(iconBtns[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Editing')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Hole in One Club')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('2025')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Hole 7 at Pinehurst')).toBeInTheDocument();
+      expect(screen.getByText('Save')).toBeInTheDocument();
+    });
+  });
+
+  it('cancels edit and returns to display mode', async () => {
+    render(<AdminTrophiesPage />);
+    await screen.findByText('Hole in One Club');
+
+    const iconBtns = screen.getAllByRole('button').filter((b) => !b.textContent?.trim());
+    fireEvent.click(iconBtns[0]);
+
+    await waitFor(() => expect(screen.getByText('Editing')).toBeInTheDocument());
+
+    // Click Cancel within the edit form
+    fireEvent.click(screen.getAllByText('Cancel')[0]);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Editing')).not.toBeInTheDocument();
     });
   });
 

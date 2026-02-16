@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
-import { ArrowLeft, Award, Trash2, Plus, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Award, Trash2, Plus, ChevronDown, Pencil, Check, X } from 'lucide-react';
 import Link from 'next/link';
 import { AWARD_EMOJI, AWARD_DISPLAY_NAMES, type AwardType } from '@/lib/trophy-utils';
 import type { User, Trophy } from '@/types/database';
@@ -27,6 +27,9 @@ export default function AdminTrophiesPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFields, setEditFields] = useState({ award_name: '', emoji: '', year: 0, description: '' });
+  const [saving, setSaving] = useState(false);
 
   // Form state
   const [isCustom, setIsCustom] = useState(false);
@@ -115,6 +118,43 @@ export default function AdminTrophiesPage() {
       setDeleteConfirm(null);
       fetchData();
     }
+  };
+
+  const startEditing = (trophy: Trophy) => {
+    setEditingId(trophy.id);
+    setEditFields({
+      award_name: trophy.award_name,
+      emoji: trophy.emoji,
+      year: trophy.year,
+      description: trophy.description || '',
+    });
+    setDeleteConfirm(null);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+  };
+
+  const handleSaveEdit = async (id: string) => {
+    setSaving(true);
+    const { error } = await supabase
+      .from('trophies')
+      .update({
+        award_name: editFields.award_name.trim(),
+        emoji: editFields.emoji.trim(),
+        year: editFields.year,
+        description: editFields.description.trim() || null,
+      })
+      .eq('id', id);
+
+    if (error) {
+      showToast(`Error: ${error.message}`, 'error');
+    } else {
+      showToast('Trophy updated', 'success');
+      setEditingId(null);
+      fetchData();
+    }
+    setSaving(false);
   };
 
   if (userLoading || loading) {
@@ -301,42 +341,123 @@ export default function AdminTrophiesPage() {
             {trophies.map((trophy) => (
               <div
                 key={trophy.id}
-                className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] p-3 flex items-center gap-3"
+                className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] p-3"
               >
-                <span className="text-2xl flex-shrink-0">{trophy.emoji}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[var(--text-primary)] truncate">
-                    {trophy.award_name}
-                    {trophy.description && (
-                      <span className="text-[var(--text-faint)] font-normal"> ({trophy.description})</span>
-                    )}
-                  </p>
-                  <p className="text-xs text-[var(--text-muted)]">
-                    {trophy.user?.full_name || 'Unknown'} &middot; {trophy.year}
-                  </p>
-                </div>
-                {deleteConfirm === trophy.id ? (
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button
-                      onClick={() => handleDelete(trophy.id)}
-                      className="px-2 py-1 bg-red-600 text-white text-xs rounded-lg font-medium"
-                    >
-                      Confirm
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirm(null)}
-                      className="px-2 py-1 bg-[var(--bg-subtle)] text-[var(--text-muted)] text-xs rounded-lg font-medium"
-                    >
-                      Cancel
-                    </button>
+                {editingId === trophy.id ? (
+                  /* Inline edit form */
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Pencil className="w-3.5 h-3.5 text-minerva-600" />
+                      <span className="text-xs font-semibold text-minerva-600">Editing</span>
+                      <span className="text-xs text-[var(--text-faint)]">({trophy.user?.full_name || 'Unknown'})</span>
+                    </div>
+                    <div className="grid grid-cols-[3rem_1fr] gap-2">
+                      <div>
+                        <label className="block text-[10px] font-medium text-[var(--text-faint)] mb-0.5">Emoji</label>
+                        <input
+                          type="text"
+                          value={editFields.emoji}
+                          onChange={(e) => setEditFields({ ...editFields, emoji: e.target.value })}
+                          className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg px-2 py-1.5 text-sm text-center"
+                          maxLength={4}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-medium text-[var(--text-faint)] mb-0.5">Award Name</label>
+                        <input
+                          type="text"
+                          value={editFields.award_name}
+                          onChange={(e) => setEditFields({ ...editFields, award_name: e.target.value })}
+                          className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg px-2 py-1.5 text-sm text-[var(--text-primary)]"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-[5rem_1fr] gap-2">
+                      <div>
+                        <label className="block text-[10px] font-medium text-[var(--text-faint)] mb-0.5">Year</label>
+                        <input
+                          type="number"
+                          value={editFields.year}
+                          onChange={(e) => setEditFields({ ...editFields, year: parseInt(e.target.value) || 0 })}
+                          className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg px-2 py-1.5 text-sm text-[var(--text-primary)]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-medium text-[var(--text-faint)] mb-0.5">Description</label>
+                        <input
+                          type="text"
+                          value={editFields.description}
+                          onChange={(e) => setEditFields({ ...editFields, description: e.target.value })}
+                          placeholder="Optional"
+                          className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg px-2 py-1.5 text-sm text-[var(--text-primary)]"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleSaveEdit(trophy.id)}
+                        disabled={saving}
+                        className="flex-1 flex items-center justify-center gap-1.5 bg-minerva-600 text-white rounded-lg py-2 text-xs font-medium hover:bg-minerva-700 transition-colors disabled:opacity-50"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        {saving ? 'Saving...' : 'Save'}
+                      </button>
+                      <button
+                        onClick={cancelEditing}
+                        className="flex-1 flex items-center justify-center gap-1.5 bg-[var(--bg-subtle)] text-[var(--text-muted)] rounded-lg py-2 text-xs font-medium hover:opacity-80 transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => setDeleteConfirm(trophy.id)}
-                    className="p-1.5 rounded-lg hover:bg-red-50 text-[var(--text-faint)] hover:text-red-500 transition-colors flex-shrink-0"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  /* Display row */
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl flex-shrink-0">{trophy.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[var(--text-primary)] truncate">
+                        {trophy.award_name}
+                        {trophy.description && (
+                          <span className="text-[var(--text-faint)] font-normal"> ({trophy.description})</span>
+                        )}
+                      </p>
+                      <p className="text-xs text-[var(--text-muted)]">
+                        {trophy.user?.full_name || 'Unknown'} &middot; {trophy.year}
+                      </p>
+                    </div>
+                    {deleteConfirm === trophy.id ? (
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button
+                          onClick={() => handleDelete(trophy.id)}
+                          className="px-2 py-1 bg-red-600 text-white text-xs rounded-lg font-medium"
+                        >
+                          Delete
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(null)}
+                          className="px-2 py-1 bg-[var(--bg-subtle)] text-[var(--text-muted)] text-xs rounded-lg font-medium"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => startEditing(trophy)}
+                          className="p-1.5 rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-faint)] hover:text-minerva-600 transition-colors"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => { setDeleteConfirm(trophy.id); setEditingId(null); }}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-[var(--text-faint)] hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             ))}
