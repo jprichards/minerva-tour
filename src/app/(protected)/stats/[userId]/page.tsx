@@ -50,7 +50,8 @@ export default function HeadToHeadPage() {
   }, [profile, userId, supabase]);
 
   const h2h = useMemo(() => {
-    if (!profile) return { wins: 0, losses: 0, ties: 0, events: [] as { eventName: string; myNet: number; theirNet: number; result: string }[] };
+    type H2HEvent = { eventName: string; myNet: number; theirNet: number; result: string; year: number; eventNumber: number };
+    if (!profile) return { wins: 0, losses: 0, ties: 0, eventsByYear: [] as { year: number; events: H2HEvent[] }[] };
 
     // Find events where both played, compare best net
     const myBestByEvent: Record<string, Score> = {};
@@ -71,7 +72,7 @@ export default function HeadToHeadPage() {
     }
 
     let wins = 0, losses = 0, ties = 0;
-    const events: { eventName: string; myNet: number; theirNet: number; result: string }[] = [];
+    const allEvents: H2HEvent[] = [];
 
     for (const eventId of Object.keys(myBestByEvent)) {
       if (!theirBestByEvent[eventId]) continue;
@@ -86,15 +87,31 @@ export default function HeadToHeadPage() {
       else { ties++; result = 'T'; }
 
       const eventData = my.event as unknown as { event_number: number; name: string | null };
-      events.push({
+      const year = my.tee_time ? new Date(my.tee_time).getFullYear() : new Date(my.created_at).getFullYear();
+      allEvents.push({
         eventName: eventData?.name || `Event ${eventData?.event_number}`,
+        eventNumber: eventData?.event_number ?? 0,
         myNet,
         theirNet,
         result,
+        year,
       });
     }
 
-    return { wins, losses, ties, events };
+    // Group by year, sorted newest first; events within each year sorted by event number
+    const yearMap = new Map<number, H2HEvent[]>();
+    for (const e of allEvents) {
+      if (!yearMap.has(e.year)) yearMap.set(e.year, []);
+      yearMap.get(e.year)!.push(e);
+    }
+    const eventsByYear = [...yearMap.entries()]
+      .sort(([a], [b]) => b - a)
+      .map(([year, events]) => ({
+        year,
+        events: events.sort((a, b) => a.eventNumber - b.eventNumber),
+      }));
+
+    return { wins, losses, ties, eventsByYear };
   }, [myScores, theirScores, profile]);
 
   if (loading) {
@@ -136,29 +153,36 @@ export default function HeadToHeadPage() {
       </div>
 
       {/* Event Breakdown */}
-      {h2h.events.length === 0 ? (
+      {h2h.eventsByYear.length === 0 ? (
         <p className="text-center text-[var(--text-faint)] text-sm py-4">No shared events found.</p>
       ) : (
         <div>
           <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Event Breakdown</h3>
-          <div className="space-y-2">
-            {h2h.events.map((e, idx) => (
-              <div key={idx} className="flex items-center justify-between bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)]">
-                <p className="text-sm text-[var(--text-secondary)]">{e.eventName}</p>
-                <div className="flex items-center gap-4">
-                  <span className={`text-sm font-bold ${e.myNet <= e.theirNet ? 'text-green-600' : 'text-[var(--text-faint)]'}`}>
-                    {formatNetScore(e.myNet)}
-                  </span>
-                  <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                    e.result === 'W' ? 'bg-green-100 text-green-700' :
-                    e.result === 'L' ? 'bg-red-100 text-red-700' :
-                    'bg-[var(--bg-subtle)] text-[var(--text-muted)]'
-                  }`}>
-                    {e.result}
-                  </span>
-                  <span className={`text-sm font-bold ${e.theirNet <= e.myNet ? 'text-green-600' : 'text-[var(--text-faint)]'}`}>
-                    {formatNetScore(e.theirNet)}
-                  </span>
+          <div className="space-y-5">
+            {h2h.eventsByYear.map(({ year, events }) => (
+              <div key={year}>
+                <h4 className="text-sm font-semibold text-[var(--text-muted)] mb-2">{year} Season</h4>
+                <div className="space-y-2">
+                  {events.map((e, idx) => (
+                    <div key={idx} className="flex items-center justify-between bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)]">
+                      <p className="text-sm text-[var(--text-secondary)]">{e.eventName}</p>
+                      <div className="flex items-center gap-4">
+                        <span className={`text-sm font-bold ${e.myNet <= e.theirNet ? 'text-green-600' : 'text-[var(--text-faint)]'}`}>
+                          {formatNetScore(e.myNet)}
+                        </span>
+                        <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                          e.result === 'W' ? 'bg-green-100 text-green-700' :
+                          e.result === 'L' ? 'bg-red-100 text-red-700' :
+                          'bg-[var(--bg-subtle)] text-[var(--text-muted)]'
+                        }`}>
+                          {e.result}
+                        </span>
+                        <span className={`text-sm font-bold ${e.theirNet <= e.myNet ? 'text-green-600' : 'text-[var(--text-faint)]'}`}>
+                          {formatNetScore(e.theirNet)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

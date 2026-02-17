@@ -36,11 +36,11 @@ export default function MemberProfilePage() {
 
       const { data: scoresData } = await supabase
         .from('scores')
-        .select('*, course:courses(course_name, tee_name, par)')
+        .select('*, course:courses(course_name, tee_name, par), event:events(name, event_number, start_date)')
         .eq('user_id', id)
         .eq('is_complete', true)
         .not('net_strokes_over_par', 'is', null)
-        .order('created_at', { ascending: false });
+        .order('tee_time', { ascending: false });
       setScores(scoresData || []);
 
       if (scoresData && scoresData.length > 0) {
@@ -184,7 +184,15 @@ export default function MemberProfilePage() {
               >
                 <div>
                   <p className="text-sm font-medium text-[var(--text-primary)]">{score.course?.course_name}</p>
-                  <p className="text-xs text-[var(--text-muted)]">{score.course?.tee_name} &middot; {score.holes_played}h &middot; {new Date(score.created_at).toLocaleDateString()}</p>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    {score.course?.tee_name} &middot; {score.holes_played}h
+                    {(score.tee_time || score.event?.start_date) && (
+                      <> &middot; {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</>
+                    )}
+                    {score.event?.name && (
+                      <> &middot; {score.event.name}</>
+                    )}
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-bold text-[var(--text-primary)]">{score.gross_score}</p>

@@ -68,9 +68,9 @@ export default function HomePage() {
         if (profile?.id) {
           const { data: scores } = await supabase
             .from('scores')
-            .select('*, course:courses(*), event:events(start_date, end_date)')
+            .select('*, course:courses(*), event:events(start_date, end_date, name, event_number)')
             .eq('user_id', profile.id)
-            .order('created_at', { ascending: false })
+            .order('tee_time', { ascending: false })
             .limit(5);
           setRecentScores(scores || []);
         }
@@ -256,6 +256,9 @@ export default function HomePage() {
                       {score.course?.tee_name} &middot; {score.holes_played} holes
                       {(score.tee_time || score.event?.start_date) && (
                         <> &middot; {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</>
+                      )}
+                      {score.event?.name && (
+                        <> &middot; {score.event.name}</>
                       )}
                     </p>
                   </div>

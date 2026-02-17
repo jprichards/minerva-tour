@@ -64,7 +64,7 @@ const mockScores = [
     tee_time: '2025-07-12T14:00:00Z',
     created_at: '2026-02-15T00:00:00Z',
     course: { course_name: 'Torrey Pines', tee_name: 'Blue', type: '18_holes', par: 72 },
-    event: { start_date: '2025-07-01', end_date: '2025-07-15' },
+    event: { start_date: '2025-07-01', end_date: '2025-07-15', name: 'Event 5', event_number: 5 },
   },
 ];
 
@@ -147,5 +147,14 @@ describe('Home Page - View All Link', () => {
     // The import date should not appear
     expect(screen.queryByText(/Feb 15, 2026/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Feb 14, 2026/)).not.toBeInTheDocument();
+  });
+
+  it('displays event name on recent score cards', async () => {
+    render(<HomePage />);
+    // Wait for course name to appear (confirms score card rendered)
+    const courseEl = await screen.findByText('Torrey Pines', {}, { timeout: 3000 });
+    // The score card's metadata line should contain the event name inline
+    const scoreCard = courseEl.closest('a');
+    expect(scoreCard?.textContent).toContain('Event 5');
   });
 });

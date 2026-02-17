@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import useSWR from 'swr';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
-import { Plus, Search, Clock, CheckCircle, Target, Link2, User as UserIcon } from 'lucide-react';
+import { Plus, Search, Clock, CheckCircle, Target, Link2, User as UserIcon, Calendar } from 'lucide-react';
 import { formatNetScore } from '@/lib/scoring';
 import type { Score } from '@/types/database';
 
@@ -28,6 +28,9 @@ function ScoresContent() {
   const [tab, setTab] = useState<TabType>(initialTab);
   const [search, setSearch] = useState('');
   const [filterMyRounds, setFilterMyRounds] = useState(!!playerFilter);
+  const [yearFilter, setYearFilter] = useState<string>('pending');
+  const [eventFilter, setEventFilter] = useState<string>('all');
+  const hasSetDefaultYear = useRef(false);
   const { profile } = useUser();
   const supabase = createClient();
 
@@ -37,7 +40,7 @@ function ScoresContent() {
       let query = supabase
         .from('scores')
         .select('*, course:courses(*), user:users!user_id(full_name, email, profile_picture_url), event:events(*)')
-        .order('created_at', { ascending: false });
+        .order('tee_time', { ascending: false });
 
       if (tab === 'teetimes') {
         query = query.eq('is_complete', false);
@@ -63,9 +66,63 @@ function ScoresContent() {
     { revalidateOnFocus: true, dedupingInterval: 5000 }
   );
 
+  // Derive available years from scores
+  const availableYears = Array.from(
+    new Set(
+      scores
+        .map((s) => {
+          const d = s.tee_time || s.event?.start_date;
+          return d ? new Date(d).getFullYear() : null;
+        })
+        .filter((y): y is number => y !== null)
+    )
+  ).sort((a, b) => b - a);
+
+  // Auto-default to most recent year with scores
+  useEffect(() => {
+    if (!hasSetDefaultYear.current && availableYears.length > 0) {
+      hasSetDefaultYear.current = true;
+      setYearFilter(String(availableYears[0]));
+    }
+  }, [availableYears]);
+
+  // Derive available events for the selected year
+  const availableEvents = (() => {
+    if (yearFilter === 'all' || yearFilter === 'pending') return [];
+    const selectedYear = parseInt(yearFilter);
+    const eventsInYear = new Map<string, { id: string; eventNumber: number; eventName: string }>();
+    for (const s of scores) {
+      const d = s.tee_time || s.event?.start_date;
+      if (!d || !s.event) continue;
+      const scoreYear = new Date(d).getFullYear();
+      if (scoreYear !== selectedYear) continue;
+      const eid = s.event.id;
+      if (!eventsInYear.has(eid)) {
+        eventsInYear.set(eid, {
+          id: eid,
+          eventNumber: s.event.event_number,
+          eventName: s.event.name || `Event ${s.event.event_number}`,
+        });
+      }
+    }
+    return [...eventsInYear.values()].sort((a, b) => a.eventNumber - b.eventNumber);
+  })();
+
   const filtered = scores.filter((s) => {
     // Apply "My Rounds" filter
     if (filterMyRounds && profile?.id && s.user_id !== profile.id) return false;
+
+    // Apply year filter
+    if (yearFilter !== 'all' && yearFilter !== 'pending') {
+      const d = s.tee_time || s.event?.start_date;
+      if (d) {
+        const scoreYear = new Date(d).getFullYear();
+        if (scoreYear !== parseInt(yearFilter)) return false;
+      }
+    }
+
+    // Apply event filter
+    if (eventFilter !== 'all' && s.event?.id !== eventFilter) return false;
 
     if (!search) return true;
     const lower = search.toLowerCase();
@@ -122,21 +179,47 @@ function ScoresContent() {
         </button>
       </div>
 
-      {/* Search + Filter */}
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-faint)]" />
+        <input
+          type="text"
+          placeholder="Search by course, player..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-3 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
+        />
+      </div>
+
+      {/* Filters */}
       <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-faint)]" />
-          <input
-            type="text"
-            placeholder="Search by course, player..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
-          />
-        </div>
+        <select
+          value={yearFilter === 'pending' ? 'all' : yearFilter}
+          onChange={(e) => { setYearFilter(e.target.value); setEventFilter('all'); }}
+          className="flex-1 py-3 text-center text-xs font-medium rounded-xl border bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-default)] hover:bg-[var(--bg-page)] transition-colors appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-minerva-500"
+        >
+          <option value="all">All Years</option>
+          {availableYears.map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+        {availableEvents.length > 0 && (
+          <select
+            value={eventFilter}
+            onChange={(e) => setEventFilter(e.target.value)}
+            className="flex-1 py-3 text-center text-xs font-medium rounded-xl border bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-default)] hover:bg-[var(--bg-page)] transition-colors appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-minerva-500"
+          >
+            <option value="all">All Events</option>
+            {availableEvents.map((ev) => (
+              <option key={ev.id} value={ev.id}>
+                {ev.eventName}
+              </option>
+            ))}
+          </select>
+        )}
         <button
           onClick={() => setFilterMyRounds(!filterMyRounds)}
-          className={`px-3 py-2 text-xs font-medium rounded-xl border transition-colors whitespace-nowrap ${
+          className={`flex-1 py-3 text-center text-xs font-medium rounded-xl border transition-colors whitespace-nowrap ${
             filterMyRounds
               ? 'bg-minerva-600 text-white border-minerva-600'
               : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-default)] hover:bg-[var(--bg-page)]'
@@ -204,6 +287,12 @@ function ScoresContent() {
                         <span className="text-xs text-[var(--text-faint)]">
                           {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
+                      </>
+                    )}
+                    {score.event?.name && (
+                      <>
+                        <span className="text-xs text-gray-300">&middot;</span>
+                        <span className="text-xs text-[var(--text-faint)]">{score.event.name}</span>
                       </>
                     )}
                   </div>
