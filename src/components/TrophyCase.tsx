@@ -84,9 +84,10 @@ export default function TrophyCase({ trophies, seasonFinishes = [], compact = fa
         const hasScratch = years.some(([, v]) => !!v.scratch);
         const hasPlayoff = years.some(([, v]) => !!v.playoff);
 
-        // Dynamic column count: Year + Net + (Scratch?) + (Playoff?)
-        const colCount = 1 + 1 + (hasScratch ? 1 : 0) + (hasPlayoff ? 1 : 0);
-        const gridCols = `grid-cols-${colCount}`;
+        // Tailwind requires full class names at build time (no dynamic interpolation)
+        const gridCols = (hasScratch && hasPlayoff) ? 'grid-cols-4'
+          : (hasScratch || hasPlayoff) ? 'grid-cols-3'
+          : 'grid-cols-2';
 
         const posColor = (pos: string | undefined) =>
           pos === '1st' ? 'text-yellow-600' :
