@@ -12,14 +12,6 @@ vi.mock('@/lib/hooks/useUser', () => ({
   }),
 }));
 
-// Mock useAdminMode
-vi.mock('@/lib/hooks/useAdminMode', () => ({
-  useAdminMode: () => ({
-    isAdminView: true,
-    toggleAdminMode: vi.fn(),
-  }),
-}));
-
 // Mock ThemeProvider
 vi.mock('@/components/ThemeProvider', () => ({
   useThemeContext: () => ({

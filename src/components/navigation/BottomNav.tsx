@@ -3,9 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Target, Trophy, User, Shield, Menu, X, MapPin, Calendar, BarChart3, Users, Clock, Swords, Award, Eye, EyeOff, MessageSquare, Mic } from 'lucide-react';
+import { Home, Target, Trophy, User, Shield, Menu, X, MapPin, Calendar, BarChart3, Users, Clock, Swords, Award, MessageSquare, Mic } from 'lucide-react';
 import { useUser } from '@/lib/hooks/useUser';
-import { useAdminMode } from '@/lib/hooks/useAdminMode';
 
 const mainItems = [
   { href: '/home', label: 'Home', icon: Home },
@@ -32,11 +31,7 @@ const adminItem = { href: '/admin', label: 'Admin', icon: Shield };
 export default function BottomNav() {
   const pathname = usePathname();
   const { isAdmin, isAuthenticated } = useUser();
-  const { isAdminView, toggleAdminMode } = useAdminMode();
   const [menuOpen, setMenuOpen] = useState(false);
-
-  // When admin toggle is off, admin sees member view (no admin link)
-  const showAdminFeatures = isAdmin && isAdminView;
 
   if (!isAuthenticated) return null;
 
@@ -74,7 +69,7 @@ export default function BottomNav() {
                   </Link>
                 );
               })}
-              {showAdminFeatures && (
+              {isAdmin && (
                 <Link
                   href={adminItem.href}
                   onClick={() => setMenuOpen(false)}
@@ -85,18 +80,6 @@ export default function BottomNav() {
                   <Shield className="w-5 h-5" />
                   <span className="text-xs font-medium">Admin</span>
                 </Link>
-              )}
-              {/* Admin Mode Toggle */}
-              {isAdmin && (
-                <button
-                  onClick={toggleAdminMode}
-                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors ${
-                    isAdminView ? 'bg-purple-50 text-purple-600' : 'bg-[var(--bg-page)] text-[var(--text-muted)]'
-                  }`}
-                >
-                  {isAdminView ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-                  <span className="text-xs font-medium">{isAdminView ? 'Admin View' : 'Member View'}</span>
-                </button>
               )}
             </div>
           </div>
