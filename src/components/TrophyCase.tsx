@@ -71,16 +71,22 @@ export default function TrophyCase({ trophies, seasonFinishes = [], compact = fa
 
       {/* Season Finishes */}
       {sortedFinishes.length > 0 && (() => {
-        // Group finishes by year, each year may have net and/or scratch
-        const byYear = new Map<number, { net?: string; scratch?: string }>();
+        // Group finishes by year, each year may have net, scratch, and/or playoff
+        const byYear = new Map<number, { net?: string; scratch?: string; playoff?: string }>();
         for (const f of sortedFinishes) {
           if (!byYear.has(f.year)) byYear.set(f.year, {});
           const entry = byYear.get(f.year)!;
           if (f.standing_type === 'scratch') entry.scratch = f.finish_position;
+          else if (f.standing_type === 'playoff') entry.playoff = f.finish_position;
           else entry.net = f.finish_position;
         }
         const years = [...byYear.entries()].sort(([a], [b]) => b - a);
         const hasScratch = years.some(([, v]) => !!v.scratch);
+        const hasPlayoff = years.some(([, v]) => !!v.playoff);
+
+        // Dynamic column count: Year + Net + (Scratch?) + (Playoff?)
+        const colCount = 1 + 1 + (hasScratch ? 1 : 0) + (hasPlayoff ? 1 : 0);
+        const gridCols = `grid-cols-${colCount}`;
 
         const posColor = (pos: string | undefined) =>
           pos === '1st' ? 'text-yellow-600' :
@@ -93,13 +99,14 @@ export default function TrophyCase({ trophies, seasonFinishes = [], compact = fa
             <h4 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Season Finishes</h4>
             <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
               {/* Header row */}
-              <div className={`grid ${hasScratch ? 'grid-cols-3' : 'grid-cols-2'} px-4 py-2 bg-[var(--bg-subtle)] border-b border-[var(--border-light)]`}>
+              <div className={`grid ${gridCols} px-4 py-2 bg-[var(--bg-subtle)] border-b border-[var(--border-light)]`}>
                 <span className="text-xs font-medium text-[var(--text-faint)]">Year</span>
                 <span className="text-xs font-medium text-[var(--text-faint)] text-right">Net</span>
                 {hasScratch && <span className="text-xs font-medium text-[var(--text-faint)] text-right">Scratch</span>}
+                {hasPlayoff && <span className="text-xs font-medium text-[var(--text-faint)] text-right">Playoff</span>}
               </div>
               {years.map(([year, finishes]) => (
-                <div key={year} className={`grid ${hasScratch ? 'grid-cols-3' : 'grid-cols-2'} px-4 py-2.5 border-b border-[var(--border-light)] last:border-b-0`}>
+                <div key={year} className={`grid ${gridCols} px-4 py-2.5 border-b border-[var(--border-light)] last:border-b-0`}>
                   <span className="text-sm text-[var(--text-muted)]">{year}</span>
                   <span className={`text-sm font-semibold text-right ${posColor(finishes.net)}`}>
                     {finishes.net || '—'}
@@ -107,6 +114,11 @@ export default function TrophyCase({ trophies, seasonFinishes = [], compact = fa
                   {hasScratch && (
                     <span className={`text-sm font-semibold text-right ${posColor(finishes.scratch)}`}>
                       {finishes.scratch || '—'}
+                    </span>
+                  )}
+                  {hasPlayoff && (
+                    <span className={`text-sm font-semibold text-right ${posColor(finishes.playoff)}`}>
+                      {finishes.playoff || '—'}
                     </span>
                   )}
                 </div>

@@ -39,8 +39,10 @@ const mockTrophies: Trophy[] = [
 const mockFinishes: SeasonFinish[] = [
   { id: 'f1', user_id: 'u1', year: 2022, finish_position: '1st', standing_type: 'net', created_at: '2024-01-01T00:00:00Z' },
   { id: 'f2', user_id: 'u1', year: 2022, finish_position: '5th', standing_type: 'scratch', created_at: '2024-01-01T00:00:00Z' },
+  { id: 'f6', user_id: 'u1', year: 2022, finish_position: '3rd', standing_type: 'playoff', created_at: '2024-01-01T00:00:00Z' },
   { id: 'f3', user_id: 'u1', year: 2021, finish_position: '3rd', standing_type: 'net', created_at: '2024-01-01T00:00:00Z' },
   { id: 'f4', user_id: 'u1', year: 2021, finish_position: '2nd', standing_type: 'scratch', created_at: '2024-01-01T00:00:00Z' },
+  { id: 'f7', user_id: 'u1', year: 2021, finish_position: '1st', standing_type: 'playoff', created_at: '2024-01-01T00:00:00Z' },
   { id: 'f5', user_id: 'u1', year: 2019, finish_position: '6th', standing_type: 'net', created_at: '2024-01-01T00:00:00Z' },
 ];
 
@@ -78,26 +80,44 @@ describe('TrophyCase', () => {
     expect(years[2]).toBe('2020');
   });
 
-  it('renders season finishes section with net and scratch columns', () => {
+  it('renders season finishes section with net, scratch, and playoff columns', () => {
     render(<TrophyCase trophies={[]} seasonFinishes={mockFinishes} />);
     expect(screen.getByText('Season Finishes')).toBeTruthy();
     // Column headers
     expect(screen.getByText('Net')).toBeTruthy();
     expect(screen.getByText('Scratch')).toBeTruthy();
+    expect(screen.getByText('Playoff')).toBeTruthy();
     // Net positions
-    expect(screen.getByText('1st')).toBeTruthy();
-    expect(screen.getByText('3rd')).toBeTruthy();
     expect(screen.getByText('6th')).toBeTruthy();
     // Scratch positions
     expect(screen.getByText('5th')).toBeTruthy();
-    expect(screen.getByText('2nd')).toBeTruthy();
   });
 
-  it('shows dash for missing scratch data', () => {
+  it('shows dash for missing scratch/playoff data', () => {
     render(<TrophyCase trophies={[]} seasonFinishes={mockFinishes} />);
-    // 2019 has net only, scratch should show dash
+    // 2019 has net only, scratch and playoff should show dashes
     const dashes = screen.getAllByText('—');
-    expect(dashes.length).toBeGreaterThanOrEqual(1);
+    expect(dashes.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('hides playoff column when no playoff data exists', () => {
+    const netOnlyFinishes: SeasonFinish[] = [
+      { id: 'n1', user_id: 'u1', year: 2023, finish_position: '4th', standing_type: 'net', created_at: '2024-01-01T00:00:00Z' },
+    ];
+    render(<TrophyCase trophies={[]} seasonFinishes={netOnlyFinishes} />);
+    expect(screen.queryByText('Playoff')).toBeNull();
+    expect(screen.queryByText('Scratch')).toBeNull();
+    expect(screen.getByText('Net')).toBeTruthy();
+  });
+
+  it('groups net, scratch, and playoff by year on the same row', () => {
+    render(<TrophyCase trophies={[]} seasonFinishes={mockFinishes} />);
+    // 2022 has all three types, should appear on one row
+    const year2022 = screen.getByText('2022');
+    const row = year2022.parentElement!;
+    expect(row.textContent).toContain('1st');  // net
+    expect(row.textContent).toContain('5th');  // scratch
+    expect(row.textContent).toContain('3rd');  // playoff (this is the f6 entry)
   });
 
   it('renders compact mode with unique emojis only', () => {
