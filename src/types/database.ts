@@ -211,6 +211,7 @@ export interface SeasonFinish {
   user_id: string;
   year: number;
   finish_position: string;
+  standing_type: 'net' | 'scratch';
   created_at: string;
   // Joined
   user?: User;

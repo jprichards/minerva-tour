@@ -227,8 +227,9 @@ CREATE TABLE IF NOT EXISTS season_finishes (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   year INTEGER NOT NULL,
   finish_position TEXT NOT NULL,
+  standing_type TEXT NOT NULL DEFAULT 'net',
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(user_id, year)
+  UNIQUE(user_id, year, standing_type)
 );
 
 CREATE INDEX IF NOT EXISTS idx_season_finishes_user_id ON season_finishes(user_id);

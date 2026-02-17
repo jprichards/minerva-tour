@@ -145,7 +145,7 @@ export default function StatsPage() {
                   <div>
                     <p className="text-xs text-green-600 font-medium">Best Round</p>
                     <p className="text-sm font-medium text-[var(--text-primary)]">{stats.bestRound.course?.course_name}</p>
-                    <p className="text-xs text-[var(--text-muted)]">{new Date(stats.bestRound.created_at).toLocaleDateString()}</p>
+                    <p className="text-xs text-[var(--text-muted)]">{new Date(stats.bestRound.tee_time || stats.bestRound.created_at).toLocaleDateString()}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-bold text-green-700">{formatNetScore(stats.bestRound.net_strokes_over_par!)}</p>
@@ -158,7 +158,7 @@ export default function StatsPage() {
                   <div>
                     <p className="text-xs text-red-600 font-medium">Worst Round</p>
                     <p className="text-sm font-medium text-[var(--text-primary)]">{stats.worstRound.course?.course_name}</p>
-                    <p className="text-xs text-[var(--text-muted)]">{new Date(stats.worstRound.created_at).toLocaleDateString()}</p>
+                    <p className="text-xs text-[var(--text-muted)]">{new Date(stats.worstRound.tee_time || stats.worstRound.created_at).toLocaleDateString()}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-bold text-red-700">{formatNetScore(stats.worstRound.net_strokes_over_par!)}</p>

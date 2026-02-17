@@ -70,28 +70,51 @@ export default function TrophyCase({ trophies, seasonFinishes = [], compact = fa
       )}
 
       {/* Season Finishes */}
-      {sortedFinishes.length > 0 && (
-        <div>
-          <h4 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Season Finishes</h4>
-          <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
-            <div className="grid grid-cols-2 gap-px bg-[var(--bg-subtle)]">
-              {sortedFinishes.map((finish) => (
-                <div key={finish.id} className="bg-[var(--bg-card)] px-4 py-2.5 flex items-center justify-between">
-                  <span className="text-sm text-[var(--text-muted)]">{finish.year}</span>
-                  <span className={`text-sm font-semibold ${
-                    finish.finish_position === '1st' ? 'text-yellow-600' :
-                    finish.finish_position === '2nd' ? 'text-[var(--text-muted)]' :
-                    finish.finish_position === '3rd' ? 'text-amber-700' :
-                    'text-[var(--text-secondary)]'
-                  }`}>
-                    {finish.finish_position}
+      {sortedFinishes.length > 0 && (() => {
+        // Group finishes by year, each year may have net and/or scratch
+        const byYear = new Map<number, { net?: string; scratch?: string }>();
+        for (const f of sortedFinishes) {
+          if (!byYear.has(f.year)) byYear.set(f.year, {});
+          const entry = byYear.get(f.year)!;
+          if (f.standing_type === 'scratch') entry.scratch = f.finish_position;
+          else entry.net = f.finish_position;
+        }
+        const years = [...byYear.entries()].sort(([a], [b]) => b - a);
+        const hasScratch = years.some(([, v]) => !!v.scratch);
+
+        const posColor = (pos: string | undefined) =>
+          pos === '1st' ? 'text-yellow-600' :
+          pos === '2nd' ? 'text-[var(--text-muted)]' :
+          pos === '3rd' ? 'text-amber-700' :
+          'text-[var(--text-secondary)]';
+
+        return (
+          <div>
+            <h4 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Season Finishes</h4>
+            <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
+              {/* Header row */}
+              <div className={`grid ${hasScratch ? 'grid-cols-3' : 'grid-cols-2'} px-4 py-2 bg-[var(--bg-subtle)] border-b border-[var(--border-light)]`}>
+                <span className="text-xs font-medium text-[var(--text-faint)]">Year</span>
+                <span className="text-xs font-medium text-[var(--text-faint)] text-right">Net</span>
+                {hasScratch && <span className="text-xs font-medium text-[var(--text-faint)] text-right">Scratch</span>}
+              </div>
+              {years.map(([year, finishes]) => (
+                <div key={year} className={`grid ${hasScratch ? 'grid-cols-3' : 'grid-cols-2'} px-4 py-2.5 border-b border-[var(--border-light)] last:border-b-0`}>
+                  <span className="text-sm text-[var(--text-muted)]">{year}</span>
+                  <span className={`text-sm font-semibold text-right ${posColor(finishes.net)}`}>
+                    {finishes.net || '—'}
                   </span>
+                  {hasScratch && (
+                    <span className={`text-sm font-semibold text-right ${posColor(finishes.scratch)}`}>
+                      {finishes.scratch || '—'}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

@@ -37,9 +37,11 @@ const mockTrophies: Trophy[] = [
 ];
 
 const mockFinishes: SeasonFinish[] = [
-  { id: 'f1', user_id: 'u1', year: 2022, finish_position: '1st', created_at: '2024-01-01T00:00:00Z' },
-  { id: 'f2', user_id: 'u1', year: 2021, finish_position: '3rd', created_at: '2024-01-01T00:00:00Z' },
-  { id: 'f3', user_id: 'u1', year: 2019, finish_position: '6th', created_at: '2024-01-01T00:00:00Z' },
+  { id: 'f1', user_id: 'u1', year: 2022, finish_position: '1st', standing_type: 'net', created_at: '2024-01-01T00:00:00Z' },
+  { id: 'f2', user_id: 'u1', year: 2022, finish_position: '5th', standing_type: 'scratch', created_at: '2024-01-01T00:00:00Z' },
+  { id: 'f3', user_id: 'u1', year: 2021, finish_position: '3rd', standing_type: 'net', created_at: '2024-01-01T00:00:00Z' },
+  { id: 'f4', user_id: 'u1', year: 2021, finish_position: '2nd', standing_type: 'scratch', created_at: '2024-01-01T00:00:00Z' },
+  { id: 'f5', user_id: 'u1', year: 2019, finish_position: '6th', standing_type: 'net', created_at: '2024-01-01T00:00:00Z' },
 ];
 
 describe('TrophyCase', () => {
@@ -76,12 +78,26 @@ describe('TrophyCase', () => {
     expect(years[2]).toBe('2020');
   });
 
-  it('renders season finishes section', () => {
+  it('renders season finishes section with net and scratch columns', () => {
     render(<TrophyCase trophies={[]} seasonFinishes={mockFinishes} />);
     expect(screen.getByText('Season Finishes')).toBeTruthy();
+    // Column headers
+    expect(screen.getByText('Net')).toBeTruthy();
+    expect(screen.getByText('Scratch')).toBeTruthy();
+    // Net positions
     expect(screen.getByText('1st')).toBeTruthy();
     expect(screen.getByText('3rd')).toBeTruthy();
     expect(screen.getByText('6th')).toBeTruthy();
+    // Scratch positions
+    expect(screen.getByText('5th')).toBeTruthy();
+    expect(screen.getByText('2nd')).toBeTruthy();
+  });
+
+  it('shows dash for missing scratch data', () => {
+    render(<TrophyCase trophies={[]} seasonFinishes={mockFinishes} />);
+    // 2019 has net only, scratch should show dash
+    const dashes = screen.getAllByText('—');
+    expect(dashes.length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders compact mode with unique emojis only', () => {
