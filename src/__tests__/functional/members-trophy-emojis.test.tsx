@@ -3,8 +3,8 @@ import { render, screen } from '@testing-library/react';
 
 // Only active members are returned from the query (inactive are filtered at DB level)
 const mockMembers = [
-  { id: 'u1', full_name: 'Ashby Foltz', email: 'ashby@test.com', role: 'admin', handicap_index: 13.8, profile_picture_url: null },
-  { id: 'u2', full_name: 'Robby Dewling', email: 'robby@test.com', role: 'member', handicap_index: 8.5, profile_picture_url: null },
+  { id: 'u1', full_name: 'Ashby Foltz', email: 'ashby@test.com', role: 'admin', handicap_index: 13.8, profile_picture_url: null, is_commissioner: false },
+  { id: 'u2', full_name: 'Robby Dewling', email: 'robby@test.com', role: 'member', handicap_index: 8.5, profile_picture_url: null, is_commissioner: true },
   // Note: inactive users like Alan Carpenter are NOT included because the Supabase
   // query filters by .in('role', ['admin', 'member', 'playing_guest'])
 ];
@@ -86,5 +86,49 @@ describe('Members Page - Trophy Emojis', () => {
     const robbyEmojis = robbyLink.querySelectorAll('span.text-xs');
     expect(robbyEmojis.length).toBe(2);
     expect([...robbyEmojis].every(el => el.textContent === '🏆')).toBe(true);
+  });
+});
+
+describe('Members Page - Layout', () => {
+  it('shows Commish badge next to Robby Dewling name', () => {
+    render(<MembersPage />);
+
+    const robbyName = screen.getByText('Robby Dewling');
+    const nameRow = robbyName.parentElement!;
+    expect(nameRow.textContent).toContain('Commish');
+  });
+
+  it('does not show Commish badge for non-commissioner members', () => {
+    render(<MembersPage />);
+
+    const ashbyName = screen.getByText('Ashby Foltz');
+    const nameRow = ashbyName.parentElement!;
+    expect(nameRow.textContent).not.toContain('Commish');
+  });
+
+  it('does not display user role type', () => {
+    render(<MembersPage />);
+
+    // Role types like "admin" or "member" should not appear in the member list
+    const ashbyLink = screen.getByText('Ashby Foltz').closest('a')!;
+    expect(ashbyLink.textContent).not.toContain('admin');
+
+    const robbyLink = screen.getByText('Robby Dewling').closest('a')!;
+    // "member" can appear in other contexts, check it doesn't appear as a standalone role label
+    const robbyTexts = robbyLink.querySelectorAll('p');
+    const roleText = [...robbyTexts].find(p => p.textContent?.trim() === 'member');
+    expect(roleText).toBeUndefined();
+  });
+
+  it('renders trophies below the name, not inline', () => {
+    render(<MembersPage />);
+
+    const ashbyLink = screen.getByText('Ashby Foltz').closest('a')!;
+    // Trophies container should be a separate div with flex-wrap
+    const trophyContainer = ashbyLink.querySelector('div.flex-wrap');
+    expect(trophyContainer).toBeInTheDocument();
+    // It should contain emojis
+    const emojis = trophyContainer!.querySelectorAll('span.text-xs');
+    expect(emojis.length).toBeGreaterThan(0);
   });
 });

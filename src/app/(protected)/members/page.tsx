@@ -142,20 +142,17 @@ export default function MembersPage() {
                   <p className="text-sm font-semibold text-[var(--text-primary)] truncate">
                     {member.full_name || 'Unnamed'}
                   </p>
-                  {userEmojisMap[member.id] && userEmojisMap[member.id].length > 0 && (
-                    <span className="flex items-center gap-0.5 flex-shrink-0">
-                      {userEmojisMap[member.id].map((emoji, i) => (
-                        <span key={i} className="text-xs">{emoji}</span>
-                      ))}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <p className="text-xs text-[var(--text-muted)] capitalize">{member.role.replace(/_/g, ' ')}</p>
                   {member.is_commissioner && (
-                    <span className="text-[10px] font-semibold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">Commish</span>
+                    <span className="text-[10px] font-semibold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full flex-shrink-0">Commish</span>
                   )}
                 </div>
+                {userEmojisMap[member.id] && userEmojisMap[member.id].length > 0 && (
+                  <div className="flex items-center gap-0.5 flex-wrap mt-0.5">
+                    {userEmojisMap[member.id].map((emoji, i) => (
+                      <span key={i} className="text-xs">{emoji}</span>
+                    ))}
+                  </div>
+                )}
               </div>
               {member.handicap_index != null && (() => {
                 const trend = getHandicapTrend(

@@ -196,7 +196,7 @@ function ScoresContent() {
         <select
           value={yearFilter === 'pending' ? 'all' : yearFilter}
           onChange={(e) => { setYearFilter(e.target.value); setEventFilter('all'); }}
-          className="flex-1 py-3 text-center text-xs font-medium rounded-xl border bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-default)] hover:bg-[var(--bg-page)] transition-colors appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-minerva-500"
+          className="flex-1 py-3 px-3 text-xs font-medium rounded-xl border bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-default)] hover:bg-[var(--bg-page)] transition-colors appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-minerva-500"
         >
           <option value="all">All Years</option>
           {availableYears.map((y) => (
@@ -207,7 +207,7 @@ function ScoresContent() {
           <select
             value={eventFilter}
             onChange={(e) => setEventFilter(e.target.value)}
-            className="flex-1 py-3 text-center text-xs font-medium rounded-xl border bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-default)] hover:bg-[var(--bg-page)] transition-colors appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-minerva-500"
+            className="flex-1 py-3 px-3 text-xs font-medium rounded-xl border bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-default)] hover:bg-[var(--bg-page)] transition-colors appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-minerva-500"
           >
             <option value="all">All Events</option>
             {availableEvents.map((ev) => (
@@ -219,7 +219,7 @@ function ScoresContent() {
         )}
         <button
           onClick={() => setFilterMyRounds(!filterMyRounds)}
-          className={`flex-1 py-3 text-center text-xs font-medium rounded-xl border transition-colors whitespace-nowrap ${
+          className={`flex-1 py-3 px-3 text-xs font-medium rounded-xl border transition-colors whitespace-nowrap ${
             filterMyRounds
               ? 'bg-minerva-600 text-white border-minerva-600'
               : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-default)] hover:bg-[var(--bg-page)]'
@@ -254,51 +254,44 @@ function ScoresContent() {
               href={`/scores/${score.id}`}
               className="block bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border-light)] shadow-[var(--shadow-sm)] hover:shadow-md transition-shadow"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
                   {/* Profile Picture */}
-                  <div className="w-9 h-9 rounded-full bg-[var(--bg-subtle)] flex items-center justify-center shrink-0 overflow-hidden mt-0.5">
+                  <div className="w-10 h-10 rounded-full bg-[var(--bg-subtle)] flex items-center justify-center shrink-0 overflow-hidden">
                     {score.user?.profile_picture_url ? (
                       <Image
                         src={score.user.profile_picture_url}
                         alt={score.user?.full_name || 'Player'}
-                        width={36}
-                        height={36}
+                        width={40}
+                        height={40}
                         className="w-full h-full object-cover"
                       />
                     ) : (
                       <UserIcon className="w-4 h-4 text-[var(--text-faint)]" />
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[var(--text-primary)] truncate">
-                    {score.course?.course_name || 'Unknown Course'}
-                  </p>
-                  <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                    {score.course?.tee_name} &middot; {score.course?.type.replace(/_/g, ' ')}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-[var(--text-faint)]">
+                  <div className="flex-1 min-w-0 space-y-0.5">
+                    <p className="text-[13px] font-semibold text-[var(--text-primary)] truncate">
+                      {score.course?.course_name || 'Unknown Course'}
+                      {score.course?.tee_name && (
+                        <span className="font-normal text-[var(--text-muted)]"> &middot; {score.course.tee_name}</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)] truncate">
                       {score.user?.full_name || score.user?.email || 'Unknown'}
-                    </span>
-                    {(score.tee_time || score.event?.start_date) && (
-                      <>
-                        <span className="text-xs text-gray-300">&middot;</span>
-                        <span className="text-xs text-[var(--text-faint)]">
-                          {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </span>
-                      </>
-                    )}
-                    {score.event?.name && (
-                      <>
-                        <span className="text-xs text-gray-300">&middot;</span>
-                        <span className="text-xs text-[var(--text-faint)]">{score.event.name}</span>
-                      </>
-                    )}
-                  </div>
+                      <span className="text-[var(--text-faint)]"> &middot; {score.holes_played} holes</span>
+                    </p>
+                    <p className="text-xs text-[var(--text-faint)] truncate">
+                      {(score.tee_time || score.event?.start_date) &&
+                        new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      }
+                      {score.event?.name && (
+                        <span> &middot; {score.event.name}</span>
+                      )}
+                    </p>
                   </div>
                 </div>
-                <div className="text-right ml-3">
+                <div className="text-right ml-3 shrink-0">
                   {score.is_complete && score.gross_score ? (
                     <>
                       <p className="text-lg font-bold text-[var(--text-primary)]">{score.gross_score}</p>
@@ -311,7 +304,6 @@ function ScoresContent() {
                           Net {formatNetScore(score.net_strokes_over_par)}
                         </p>
                       )}
-                      <p className="text-xs text-[var(--text-faint)] mt-0.5">{score.holes_played}h</p>
                     </>
                   ) : (
                     <span className="inline-block bg-amber-100 text-amber-700 text-xs font-medium px-2 py-1 rounded-lg">

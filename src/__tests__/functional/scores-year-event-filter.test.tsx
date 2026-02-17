@@ -221,9 +221,71 @@ describe('Scores Page - Event Name Display', () => {
     fireEvent.change(yearSelect, { target: { value: 'all' } });
 
     await waitFor(() => {
-      expect(screen.getByText('Event 3')).toBeInTheDocument();
-      expect(screen.getByText('Event 4 (Major)')).toBeInTheDocument();
-      expect(screen.getByText('Event 1')).toBeInTheDocument();
+      const cards = document.querySelectorAll('a[href^="/scores/"]');
+      const cardTexts = [...cards].map((c) => c.textContent);
+      expect(cardTexts.some((t) => t?.includes('Event 3'))).toBe(true);
+      expect(cardTexts.some((t) => t?.includes('Event 4') && t?.includes('Major'))).toBe(true);
+      expect(cardTexts.some((t) => t?.includes('Event 1'))).toBe(true);
+    });
+  });
+
+  it('does not duplicate (Major) in event name', async () => {
+    render(<ScoresPage />);
+    const yearSelect = screen.getAllByRole('combobox')[0];
+    fireEvent.change(yearSelect, { target: { value: 'all' } });
+
+    await waitFor(() => {
+      const cards = document.querySelectorAll('a[href^="/scores/"]');
+      const cardTexts = [...cards].map((c) => c.textContent);
+      const majorCard = cardTexts.find((t) => t?.includes('Event 4'));
+      expect(majorCard).toBeDefined();
+      // Should contain (Major) exactly once
+      const matches = majorCard!.match(/\(Major\)/g);
+      expect(matches).toHaveLength(1);
+    });
+  });
+});
+
+describe('Scores Page - Score Card Layout', () => {
+  beforeEach(() => {
+    mockSearchParams = new URLSearchParams();
+    vi.clearAllMocks();
+  });
+
+  const getScoreCards = () => {
+    const allLinks = document.querySelectorAll('a[href^="/scores/"]');
+    // Filter out non-score links like /scores/bridge and /scores/add
+    return [...allLinks].filter(a => !a.getAttribute('href')!.endsWith('/bridge') && !a.getAttribute('href')!.endsWith('/add'));
+  };
+
+  it('displays course name and tee on the first line', async () => {
+    render(<ScoresPage />);
+    await waitFor(() => {
+      const cards = getScoreCards();
+      expect(cards.length).toBeGreaterThan(0);
+      const firstCard = cards[0];
+      expect(firstCard.textContent).toContain('Pine Valley');
+      expect(firstCard.textContent).toContain('Blue');
+    });
+  });
+
+  it('displays player name and holes on the second line', async () => {
+    render(<ScoresPage />);
+    await waitFor(() => {
+      const cards = getScoreCards();
+      const firstCard = cards[0];
+      expect(firstCard.textContent).toContain('Jason Richards');
+      expect(firstCard.textContent).toContain('18 holes');
+    });
+  });
+
+  it('displays date and event on the third line', async () => {
+    render(<ScoresPage />);
+    await waitFor(() => {
+      const cards = getScoreCards();
+      const firstCard = cards[0];
+      expect(firstCard.textContent).toContain('Aug 10, 2025');
+      expect(firstCard.textContent).toContain('Event 3');
     });
   });
 });
