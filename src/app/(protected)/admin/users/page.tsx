@@ -14,6 +14,7 @@ const roles: { value: UserRole; label: string }[] = [
   { value: 'member', label: 'Member' },
   { value: 'playing_guest', label: 'Playing Guest' },
   { value: 'non_playing_guest', label: 'Non-Playing Guest' },
+  { value: 'inactive', label: 'Inactive' },
 ];
 
 export default function AdminUsersPage() {
@@ -174,6 +175,7 @@ export default function AdminUsersPage() {
                     user.role === 'admin' ? 'bg-red-100 text-red-700' :
                     user.role === 'member' ? 'bg-minerva-100 text-minerva-700' :
                     user.role === 'playing_guest' ? 'bg-blue-100 text-blue-700' :
+                    user.role === 'inactive' ? 'bg-gray-100 text-gray-500' :
                     'bg-[var(--bg-subtle)] text-[var(--text-muted)]'
                   }`}>
                     {user.role.replace(/_/g, ' ')}

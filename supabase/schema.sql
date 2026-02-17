@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name TEXT,
   email TEXT,
-  role TEXT NOT NULL DEFAULT 'non_playing_guest' CHECK (role IN ('admin', 'member', 'playing_guest', 'non_playing_guest')),
+  role TEXT NOT NULL DEFAULT 'non_playing_guest' CHECK (role IN ('admin', 'member', 'playing_guest', 'non_playing_guest', 'inactive')),
   handicap_index NUMERIC(5, 1),
   ghin_number TEXT,
   profile_picture_url TEXT,

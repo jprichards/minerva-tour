@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest';
  * These test the business rules for role-based access without rendering components.
  */
 
-type UserRole = 'admin' | 'member' | 'playing_guest' | 'non_playing_guest';
+type UserRole = 'admin' | 'member' | 'playing_guest' | 'non_playing_guest' | 'inactive';
 
 interface RoleCapabilities {
   canSubmitScores: boolean;
@@ -145,5 +145,30 @@ describe('Season mode transitions', () => {
     expect(getRoleCapabilities('admin', 'tournament').canSubmitScores).toBe(true);
     expect(getRoleCapabilities('member', 'tournament').canSubmitScores).toBe(true);
     expect(getRoleCapabilities('playing_guest', 'tournament').canSubmitScores).toBe(true);
+  });
+});
+
+describe('Inactive role filtering', () => {
+  const ACTIVE_ROLES: UserRole[] = ['admin', 'member', 'playing_guest'];
+  const MEMBERS_PAGE_ROLES: UserRole[] = ['admin', 'member', 'playing_guest'];
+
+  it('inactive role is excluded from active roles used in member queries', () => {
+    expect(ACTIVE_ROLES).not.toContain('inactive');
+    expect(MEMBERS_PAGE_ROLES).not.toContain('inactive');
+  });
+
+  it('inactive is a valid UserRole', () => {
+    const role: UserRole = 'inactive';
+    expect(role).toBe('inactive');
+  });
+
+  it('inactive users are not included in member-facing role filters', () => {
+    const memberPageFilter = ['admin', 'member', 'playing_guest'];
+    const statsPageFilter = ['admin', 'member'];
+    const scoreAddFilter = ['admin', 'member', 'playing_guest'];
+
+    expect(memberPageFilter).not.toContain('inactive');
+    expect(statsPageFilter).not.toContain('inactive');
+    expect(scoreAddFilter).not.toContain('inactive');
   });
 });

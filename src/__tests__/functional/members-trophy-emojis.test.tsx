@@ -1,9 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
+// Only active members are returned from the query (inactive are filtered at DB level)
 const mockMembers = [
   { id: 'u1', full_name: 'Ashby Foltz', email: 'ashby@test.com', role: 'admin', handicap_index: 13.8, profile_picture_url: null },
   { id: 'u2', full_name: 'Robby Dewling', email: 'robby@test.com', role: 'member', handicap_index: 8.5, profile_picture_url: null },
+  // Note: inactive users like Alan Carpenter are NOT included because the Supabase
+  // query filters by .in('role', ['admin', 'member', 'playing_guest'])
 ];
 
 const mockTrophies = [

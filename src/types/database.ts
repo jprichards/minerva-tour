@@ -1,6 +1,6 @@
 // Database types matching the Supabase schema
 
-export type UserRole = 'admin' | 'member' | 'playing_guest' | 'non_playing_guest';
+export type UserRole = 'admin' | 'member' | 'playing_guest' | 'non_playing_guest' | 'inactive';
 
 export type SeasonMode = 'off_season' | 'regular_season' | 'playoffs' | 'tournament';
 

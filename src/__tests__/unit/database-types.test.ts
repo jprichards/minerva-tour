@@ -22,8 +22,8 @@ import type {
 describe('Database Types', () => {
   describe('UserRole', () => {
     it('accepts all valid roles', () => {
-      const roles: UserRole[] = ['admin', 'member', 'playing_guest', 'non_playing_guest'];
-      expect(roles).toHaveLength(4);
+      const roles: UserRole[] = ['admin', 'member', 'playing_guest', 'non_playing_guest', 'inactive'];
+      expect(roles).toHaveLength(5);
       roles.forEach((r) => expect(typeof r).toBe('string'));
     });
   });
