@@ -6,7 +6,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
-import { ArrowLeft, Search, Save, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Search, Save, TrendingUp, Camera } from 'lucide-react';
+import Image from 'next/image';
 import type { User, UserRole } from '@/types/database';
 
 const roles: { value: UserRole; label: string }[] = [
@@ -29,6 +30,7 @@ export default function AdminUsersPage() {
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editRole, setEditRole] = useState<UserRole>('member');
   const [editHandicap, setEditHandicap] = useState('');
+  const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userLoading && !isAdmin) router.push('/home');
@@ -122,6 +124,44 @@ export default function AdminUsersPage() {
     setUsers((prev) => prev.filter((u) => u.id !== user.id));
   };
 
+  const handlePhotoUpload = async (user: User, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingPhoto(user.id);
+    const ext = file.name.split('.').pop();
+    const filePath = `${user.id}/avatar.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('profile-pictures')
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      showToast('Failed to upload photo.', 'error');
+      setUploadingPhoto(null);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('profile-pictures')
+      .getPublicUrl(filePath);
+
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ profile_picture_url: publicUrl })
+      .eq('id', user.id);
+
+    if (updateError) {
+      showToast('Failed to update profile picture.', 'error');
+    } else {
+      showToast('Profile picture updated!');
+      setUsers((prev) =>
+        prev.map((u) => u.id === user.id ? { ...u, profile_picture_url: publicUrl } : u)
+      );
+    }
+    setUploadingPhoto(null);
+  };
+
   if (!isAdmin) return null;
 
   return (
@@ -158,10 +198,37 @@ export default function AdminUsersPage() {
             <div key={user.id} className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 bg-[var(--bg-subtle)] rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-sm font-bold text-[var(--text-muted)]">
-                      {(user.full_name || user.email || '?')[0].toUpperCase()}
-                    </span>
+                  <div className="relative flex-shrink-0">
+                    <div className="w-10 h-10 bg-[var(--bg-subtle)] rounded-full flex items-center justify-center overflow-hidden">
+                      {user.profile_picture_url ? (
+                        <Image
+                          src={user.profile_picture_url}
+                          alt={user.full_name || 'User'}
+                          width={40}
+                          height={40}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-sm font-bold text-[var(--text-muted)]">
+                          {(user.full_name || user.email || '?')[0].toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <label className="absolute -bottom-1 -right-1 w-5 h-5 bg-minerva-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-minerva-700 transition-colors">
+                      <Camera className="w-3 h-3 text-white" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handlePhotoUpload(user, e)}
+                        disabled={uploadingPhoto === user.id}
+                      />
+                    </label>
+                    {uploadingPhoto === user.id && (
+                      <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-[var(--text-primary)] truncate">
