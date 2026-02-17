@@ -251,7 +251,8 @@ The app is mobile-first (used on phones, often outdoors). Layout and visual desi
     - Best/worst rounds
     - Courses played most
     - Scoring trends over time
-    - Head-to-head records
+    - Head-to-head records (me vs. another member)
+    - Compare any two members head-to-head (via Tour Stats page picker, navigates to `/stats/{player2}?vs={player1}`)
 - Stats should be viewable for both current season and previous seasons.
 
 **Schedule:**

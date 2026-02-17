@@ -7,7 +7,8 @@ import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { formatNetScore } from '@/lib/scoring';
-import { TrendingUp, Trophy, Target, BarChart3, Users, ArrowRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { TrendingUp, Trophy, Target, BarChart3, Users, ArrowRight, Swords } from 'lucide-react';
 import type { Score, User } from '@/types/database';
 
 export default function StatsPage() {
@@ -224,48 +225,106 @@ const INITIAL_SHOW = 5;
 
 function CompareMembers({ members, currentUserId }: { members: User[]; currentUserId?: string }) {
   const [showAll, setShowAll] = useState(false);
+  const [player1, setPlayer1] = useState('');
+  const [player2, setPlayer2] = useState('');
+  const router = useRouter();
   const otherMembers = members.filter((m) => m.id !== currentUserId);
   const visible = showAll ? otherMembers : otherMembers.slice(0, INITIAL_SHOW);
   const hasMore = otherMembers.length > INITIAL_SHOW;
 
+  const canCompare = player1 && player2 && player1 !== player2;
+
   return (
-    <div>
-      <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Compare with Members</h3>
-      <div className="space-y-2">
-        {visible.map((m) => (
-          <Link
-            key={m.id}
-            href={`/stats/${m.id}`}
-            className="flex items-center justify-between bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)]"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-[var(--bg-subtle)] rounded-full flex items-center justify-center overflow-hidden shrink-0">
-                {m.profile_picture_url ? (
-                  <Image
-                    src={m.profile_picture_url}
-                    alt={m.full_name || 'Member'}
-                    width={32}
-                    height={32}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-xs font-bold text-[var(--text-muted)]">{(m.full_name || '?')[0].toUpperCase()}</span>
-                )}
+    <div className="space-y-5">
+      {/* Compare Me vs Member */}
+      <div>
+        <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Compare with Members</h3>
+        <div className="space-y-2">
+          {visible.map((m) => (
+            <Link
+              key={m.id}
+              href={`/stats/${m.id}`}
+              className="flex items-center justify-between bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-[var(--bg-subtle)] rounded-full flex items-center justify-center overflow-hidden shrink-0">
+                  {m.profile_picture_url ? (
+                    <Image
+                      src={m.profile_picture_url}
+                      alt={m.full_name || 'Member'}
+                      width={32}
+                      height={32}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-xs font-bold text-[var(--text-muted)]">{(m.full_name || '?')[0].toUpperCase()}</span>
+                  )}
+                </div>
+                <p className="text-sm font-medium text-[var(--text-primary)]">{m.full_name || 'Unnamed'}</p>
               </div>
-              <p className="text-sm font-medium text-[var(--text-primary)]">{m.full_name || 'Unnamed'}</p>
-            </div>
-            <ArrowRight className="w-4 h-4 text-[var(--text-faint)]" />
-          </Link>
-        ))}
+              <ArrowRight className="w-4 h-4 text-[var(--text-faint)]" />
+            </Link>
+          ))}
+        </div>
+        {hasMore && (
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="w-full mt-3 text-center text-sm font-medium text-minerva-600 hover:text-minerva-700 py-2 transition-colors"
+          >
+            {showAll ? 'Show less' : `Show all ${otherMembers.length} members`}
+          </button>
+        )}
       </div>
-      {hasMore && (
-        <button
-          onClick={() => setShowAll(!showAll)}
-          className="w-full mt-3 text-center text-sm font-medium text-minerva-600 hover:text-minerva-700 py-2 transition-colors"
-        >
-          {showAll ? 'Show less' : `Show all ${otherMembers.length} members`}
-        </button>
-      )}
+
+      {/* Compare Any Two Members */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Swords className="w-4 h-4 text-[var(--text-muted)]" />
+          <h3 className="text-base font-semibold text-[var(--text-primary)]">Compare Any Two Members</h3>
+        </div>
+        <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-4 space-y-3">
+          <select
+            value={player1}
+            onChange={(e) => setPlayer1(e.target.value)}
+            className="w-full py-2.5 px-3 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--bg-page)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-minerva-500"
+          >
+            <option value="">Select first member...</option>
+            {members.map((m) => (
+              <option key={m.id} value={m.id} disabled={m.id === player2}>
+                {m.full_name || m.email}
+              </option>
+            ))}
+          </select>
+          <div className="text-center">
+            <span className="text-xs font-semibold text-[var(--text-faint)] uppercase tracking-wide">vs</span>
+          </div>
+          <select
+            value={player2}
+            onChange={(e) => setPlayer2(e.target.value)}
+            className="w-full py-2.5 px-3 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--bg-page)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-minerva-500"
+          >
+            <option value="">Select second member...</option>
+            {members.map((m) => (
+              <option key={m.id} value={m.id} disabled={m.id === player1}>
+                {m.full_name || m.email}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => {
+              if (canCompare) router.push(`/stats/${player2}?vs=${player1}`);
+            }}
+            disabled={!canCompare}
+            className={`w-full py-2.5 text-sm font-medium rounded-lg transition-colors ${
+              canCompare
+                ? 'bg-minerva-600 text-white hover:bg-minerva-700'
+                : 'bg-[var(--bg-subtle)] text-[var(--text-faint)] cursor-not-allowed'
+            }`}
+          >
+            Compare
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
