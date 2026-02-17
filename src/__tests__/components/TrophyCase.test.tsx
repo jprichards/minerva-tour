@@ -120,7 +120,7 @@ describe('TrophyCase', () => {
     expect(row.textContent).toContain('3rd');  // playoff (this is the f6 entry)
   });
 
-  it('renders compact mode with unique emojis only', () => {
+  it('renders compact mode with emoji badges', () => {
     render(<TrophyCase trophies={mockTrophies} compact={true} />);
     const badge = screen.getByLabelText('Trophy badges');
     expect(badge).toBeTruthy();
@@ -128,14 +128,16 @@ describe('TrophyCase', () => {
     expect(screen.queryByText('Trophy Case')).toBeNull();
   });
 
-  it('compact mode de-duplicates emojis', () => {
+  it('compact mode shows all emojis grouped by type (not deduplicated)', () => {
     const duplicateTrophies: Trophy[] = [
-      { ...mockTrophies[0], id: 'a' },
+      { ...mockTrophies[0], id: 'a', year: 2023 },
       { ...mockTrophies[0], id: 'b', year: 2021 },
+      { ...mockTrophies[0], id: 'c', year: 2020 },
     ];
     render(<TrophyCase trophies={duplicateTrophies} compact={true} />);
     const badge = screen.getByLabelText('Trophy badges');
     const emojiSpans = badge.querySelectorAll('span[role="img"]');
-    expect(emojiSpans.length).toBe(1);
+    // All 3 should show, not deduplicated to 1
+    expect(emojiSpans.length).toBe(3);
   });
 });

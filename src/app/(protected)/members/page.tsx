@@ -55,14 +55,16 @@ export default function MembersPage() {
     { revalidateOnFocus: false, dedupingInterval: 30000 }
   );
 
-  // Build a map of user_id -> unique emojis
+  // Build a map of user_id -> all emojis grouped by type
   const userEmojisMap = useMemo(() => {
     const map: Record<string, string[]> = {};
     for (const t of allTrophies) {
       if (!map[t.user_id]) map[t.user_id] = [];
-      if (!map[t.user_id].includes(t.emoji)) {
-        map[t.user_id].push(t.emoji);
-      }
+      map[t.user_id].push(t.emoji);
+    }
+    // Group same emojis together
+    for (const uid of Object.keys(map)) {
+      map[uid].sort();
     }
     return map;
   }, [allTrophies]);
@@ -142,7 +144,7 @@ export default function MembersPage() {
                   </p>
                   {userEmojisMap[member.id] && userEmojisMap[member.id].length > 0 && (
                     <span className="flex items-center gap-0.5 flex-shrink-0">
-                      {userEmojisMap[member.id].slice(0, 5).map((emoji, i) => (
+                      {userEmojisMap[member.id].map((emoji, i) => (
                         <span key={i} className="text-xs">{emoji}</span>
                       ))}
                     </span>

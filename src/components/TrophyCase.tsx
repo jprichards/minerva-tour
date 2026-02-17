@@ -17,18 +17,18 @@ export default function TrophyCase({ trophies, seasonFinishes = [], compact = fa
   const sortedFinishes = [...seasonFinishes].sort((a, b) => b.year - a.year);
 
   if (compact) {
-    // Compact mode: just emoji badges in a row
-    const uniqueEmojis: string[] = [];
-    const seen = new Set<string>();
+    // Compact mode: all emoji badges grouped by type
+    const grouped = new Map<string, number>();
     for (const t of sorted) {
-      if (!seen.has(t.emoji)) {
-        seen.add(t.emoji);
-        uniqueEmojis.push(t.emoji);
-      }
+      grouped.set(t.emoji, (grouped.get(t.emoji) || 0) + 1);
+    }
+    const allEmojis: string[] = [];
+    for (const [emoji, count] of grouped) {
+      for (let i = 0; i < count; i++) allEmojis.push(emoji);
     }
     return (
       <span className="flex items-center gap-0.5" aria-label="Trophy badges">
-        {uniqueEmojis.map((emoji, i) => (
+        {allEmojis.map((emoji, i) => (
           <span key={i} className="text-sm" role="img" aria-label={`trophy ${i + 1}`}>
             {emoji}
           </span>
