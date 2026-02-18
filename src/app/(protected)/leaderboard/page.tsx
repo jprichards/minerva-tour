@@ -8,7 +8,6 @@ import { Trophy, Medal, TrendingUp, AlertCircle, Download } from 'lucide-react';
 import { downloadCSV, downloadPDF, generateLeaderboardHTML } from '@/lib/export';
 import { useSeason } from '@/lib/hooks/useSeason';
 import { calculateRegularEventPoints, calculateMajorEventPoints, splitTiedPoints, formatNetScore, calculateScratchScore, getMaxHoles } from '@/lib/scoring';
-import { getChirp, getChirpFromTemplates, type ChirpContext } from '@/lib/chirps';
 import type { Score, Event, Season } from '@/types/database';
 
 type ViewMode = 'event' | 'season';
@@ -23,11 +22,11 @@ interface LeaderboardEntry {
   grossOverPar: number | null;
   scratchOverRating: number | null;
   holesPlayed: number | null;
+  maxHoles: number;
   courseName: string;
   teeName: string;
   isComplete: boolean;
   projectedPoints: number;
-  chirp: string | null;
 }
 
 interface SeasonStanding {
@@ -107,8 +106,7 @@ export default function LeaderboardPage() {
         const { data: scores } = await supabase
           .from('scores')
           .select('*, course:courses(*), user:users!user_id(full_name, email, profile_picture_url), event:events(*)')
-          .in('event_id', eventIds)
-          .eq('is_complete', true);
+          .in('event_id', eventIds);
         allSeasonScores = scores || [];
       }
 
@@ -121,23 +119,6 @@ export default function LeaderboardPage() {
       };
     },
     { revalidateOnFocus: true, dedupingInterval: 5000 }
-  );
-
-  const { data: chirpTemplates } = useSWR(
-    'chirp-templates',
-    async () => {
-      const { data } = await supabase
-        .from('chirp_templates')
-        .select('bucket, template');
-      if (!data || data.length === 0) return undefined;
-      const grouped: Record<string, string[]> = {};
-      for (const row of data) {
-        if (!grouped[row.bucket]) grouped[row.bucket] = [];
-        grouped[row.bucket].push(row.template);
-      }
-      return grouped;
-    },
-    { revalidateOnFocus: false, dedupingInterval: 60000 }
   );
 
   const { mutate: globalMutate } = useSWRConfig();
@@ -205,10 +186,9 @@ export default function LeaderboardPage() {
         }
       } else {
         // Scratch: use gross score relative to course rating (no handicap)
-        // Scratch Strokes Over Rating = Gross - Course Rating (normalized for difficulty)
-        const completedScores = scores.filter((s) => s.is_complete && s.gross_score != null);
-        if (completedScores.length > 0) {
-          bestScore = completedScores.reduce((best, s) => {
+        const withGross = scores.filter((s) => s.gross_score != null);
+        if (withGross.length > 0) {
+          bestScore = withGross.reduce((best, s) => {
             const sMaxHoles = getMaxHoles(s.course?.type || '18_holes');
             const sScratch = calculateScratchScore(
               s.gross_score!, s.course?.rating || 72, s.course?.par || 72,
@@ -233,23 +213,6 @@ export default function LeaderboardPage() {
             )
           : null;
 
-        // Generate chirp based on net score for completed rounds
-        const playerFirstName = (bestScore.user?.full_name || '').split(' ')[0] || 'Player';
-        const chirpScore = bestScore.is_complete
-          ? (scoringMode === 'net' ? bestScore.net_strokes_over_par : scratchResult?.scratchStrokesOverRating)
-          : null;
-        const chirpCtx: ChirpContext = {
-          firstName: playerFirstName,
-          course: bestScore.course?.course_name || null,
-          gross: bestScore.gross_score ?? null,
-          net: bestScore.net_strokes_over_par ?? null,
-          holes: bestScore.holes_played ?? null,
-          handicap: null,
-        };
-        const chirpText = chirpScore != null
-          ? (chirpTemplates ? getChirpFromTemplates(chirpTemplates, chirpScore, chirpCtx) : getChirp(chirpScore, chirpCtx))
-          : null;
-
         entries.push({
           userId,
           playerName: bestScore.user?.full_name || bestScore.user?.email || 'Unknown',
@@ -261,11 +224,11 @@ export default function LeaderboardPage() {
             : null,
           scratchOverRating: scratchResult?.scratchStrokesOverRating ?? null,
           holesPlayed: bestScore.holes_played,
+          maxHoles: maxH,
           courseName: bestScore.course?.course_name || '',
           teeName: bestScore.course?.tee_name || '',
           isComplete: bestScore.is_complete,
           projectedPoints: 0,
-          chirp: chirpText,
         });
       }
     }
@@ -292,30 +255,31 @@ export default function LeaderboardPage() {
     }
 
     // Calculate projected points with tie splitting per PRD
-    const numParticipants = entries.filter((e) => e.isComplete).length;
-    const completedEntries = entries.filter((e) => e.isComplete);
+    // Include all entries (complete + in-progress) -- in-progress rounds are
+    // projected as if their current score would hold through completion
+    const scoredEntries = entries.filter((e) =>
+      (scoringMode === 'net' ? e.bestNetOverPar : e.scratchOverRating) != null
+    );
+    const numParticipants = scoredEntries.length;
 
-    // Group tied players and split points
     let i = 0;
-    while (i < completedEntries.length) {
+    while (i < scoredEntries.length) {
       const currentScore = scoringMode === 'net'
-        ? completedEntries[i].bestNetOverPar
-        : completedEntries[i].scratchOverRating;
+        ? scoredEntries[i].bestNetOverPar
+        : scoredEntries[i].scratchOverRating;
 
-      // Find all players tied at this score
       let j = i;
       while (
-        j < completedEntries.length &&
+        j < scoredEntries.length &&
         (scoringMode === 'net'
-          ? completedEntries[j].bestNetOverPar
-          : completedEntries[j].scratchOverRating) === currentScore
+          ? scoredEntries[j].bestNetOverPar
+          : scoredEntries[j].scratchOverRating) === currentScore
       ) {
         j++;
       }
 
       const numTied = j - i;
       if (numTied > 1) {
-        // Collect the points that would be assigned to places i+1 through j
         const tiedPoints: number[] = [];
         for (let k = i; k < j; k++) {
           tiedPoints.push(
@@ -326,10 +290,10 @@ export default function LeaderboardPage() {
         }
         const splitPts = splitTiedPoints(tiedPoints, numTied);
         for (let k = i; k < j; k++) {
-          completedEntries[k].projectedPoints = splitPts;
+          scoredEntries[k].projectedPoints = splitPts;
         }
       } else {
-        completedEntries[i].projectedPoints = currentEvent.is_major
+        scoredEntries[i].projectedPoints = currentEvent.is_major
           ? calculateMajorEventPoints(numParticipants, i + 1)
           : calculateRegularEventPoints(numParticipants, i + 1);
       }
@@ -667,20 +631,17 @@ export default function LeaderboardPage() {
                     )}
 
                     {/* Player Info */}
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 space-y-0.5">
                       <p className={`text-sm font-medium truncate ${isCurrentUser ? 'text-minerva-800' : 'text-[var(--text-primary)]'}`}>
                         {entry.playerName}
                         {isCurrentUser && <span className="text-xs text-minerva-600 ml-1">(you)</span>}
                       </p>
                       <p className="text-xs text-[var(--text-muted)] truncate">
-                        {entry.courseName} &middot; {entry.holesPlayed}h
-                        {!entry.isComplete && ' (in progress)'}
+                        {entry.courseName} &middot; {entry.teeName}
                       </p>
-                      {entry.chirp && entry.isComplete && (
-                        <p className="text-xs text-amber-600 italic truncate mt-0.5">
-                          &ldquo;{entry.chirp}&rdquo;
-                        </p>
-                      )}
+                      <p className="text-xs text-[var(--text-faint)]">
+                        {entry.bestGrossScore ?? '-'} ({entry.bestNetOverPar != null ? formatNetScore(entry.bestNetOverPar) : '-'}) | Thru {entry.isComplete ? 'F' : entry.holesPlayed}
+                      </p>
                     </div>
 
                     {/* Score & Points */}

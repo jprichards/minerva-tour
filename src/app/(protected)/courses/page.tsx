@@ -16,12 +16,25 @@ export default function CoursesPage() {
   const { data: courses = [], isLoading: loading } = useSWR(
     'courses',
     async () => {
-      const { data, error } = await supabase
-        .from('courses')
-        .select('*')
-        .order('course_name');
-      if (error) console.error('Error fetching courses:', error);
-      return data || [];
+      const allCourses: Course[] = [];
+      let from = 0;
+      const PAGE_SIZE = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('courses')
+          .select('*')
+          .order('course_name')
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) {
+          console.error('Error fetching courses:', error);
+          break;
+        }
+        if (!data || data.length === 0) break;
+        allCourses.push(...data);
+        if (data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+      return allCourses;
     },
     { revalidateOnFocus: true, dedupingInterval: 5000 }
   );
