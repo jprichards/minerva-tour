@@ -7,7 +7,7 @@ export default function ProtectedLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-24">
       <OfflineBanner />
       <main className="max-w-lg mx-auto">
         {children}

@@ -88,7 +88,7 @@ export default function BottomNav() {
 
       {/* Bottom Nav Bar */}
       <nav className="fixed bottom-0 left-0 right-0 bg-[var(--bg-card)] border-t border-[var(--border-default)] safe-area-bottom z-40">
-        <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
+        <div className="flex items-stretch justify-around max-w-lg mx-auto">
           {mainItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
             const Icon = item.icon;
@@ -96,7 +96,7 @@ export default function BottomNav() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-0 flex-1 ${
+                className={`flex flex-col items-center justify-center gap-0.5 min-h-[56px] px-4 py-2 rounded-lg transition-colors min-w-0 flex-1 ${
                   isActive ? 'text-minerva-600' : 'text-[var(--text-faint)] hover:text-[var(--text-muted)]'
                 }`}
               >
@@ -110,7 +110,7 @@ export default function BottomNav() {
           {/* More menu */}
           <button
             onClick={() => setMenuOpen(true)}
-            className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-0 flex-1 ${
+            className={`flex flex-col items-center justify-center gap-0.5 min-h-[56px] px-4 py-2 rounded-lg transition-colors min-w-0 flex-1 ${
               menuOpen ? 'text-minerva-600' : 'text-[var(--text-faint)] hover:text-[var(--text-muted)]'
             }`}
           >
