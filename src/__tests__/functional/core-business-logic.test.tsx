@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { mockSupabaseClient } from '../setup';
 import {
   calculateRegularEventPoints,
   calculateMajorEventPoints,
@@ -322,5 +323,134 @@ describe('Incomplete Rounds Filtering Logic', () => {
 
     const eligible = eventEnded ? scores.filter((s) => s.is_complete) : scores;
     expect(eligible.length).toBe(2); // Both kept
+  });
+});
+
+// ============================================
+// Score Entry: Holes Played Required Validation
+// ============================================
+describe('Score Entry - Holes Played Required When Score Entered', () => {
+  const mockCourses = [
+    { id: 'c-1', course_name: 'Pine Valley', tee_name: 'Blue', type: '18_holes', par: 72, rating: 71.0, slope: 130 },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockSeasonState = {
+      season: { id: 's-1', mode: 'regular_season' },
+      currentEvent: { id: 'e-1', event_number: 1 },
+      loading: false,
+      isOffSeason: false,
+      isRegularSeason: true,
+      isPlayoffs: false,
+      isTournament: false,
+      canSubmitScores: true,
+    };
+
+    mockSupabaseClient.from.mockImplementation((table: string) => {
+      const data = table === 'courses' ? mockCourses : table === 'users'
+        ? [{ ...mockProfile, role: 'member' }]
+        : null;
+      const chain: Record<string, unknown> = {};
+      const self = () => chain;
+      chain.select = vi.fn(self);
+      chain.in = vi.fn(self);
+      chain.order = vi.fn(() => Promise.resolve({ data }));
+      chain.insert = vi.fn(self);
+      chain.single = vi.fn(() => Promise.resolve({ data: { id: 'new-score' }, error: null }));
+      chain.eq = vi.fn(self);
+      return chain;
+    });
+  });
+
+  it('disables submit and shows validation when score entered without holes played', async () => {
+    render(<AddScorePage />);
+
+    // Step 1: select course
+    await waitFor(() => {
+      expect(screen.getByText('Pine Valley')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Pine Valley'));
+
+    // Step 2: select self
+    await waitFor(() => {
+      expect(screen.getByText('Me')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Me'));
+
+    // Step 3: enter gross score without holes played
+    await waitFor(() => {
+      expect(screen.getByText('Score')).toBeInTheDocument();
+    });
+
+    const scoreInput = screen.getByPlaceholderText('e.g. 82');
+    fireEvent.change(scoreInput, { target: { value: '85' } });
+
+    expect(screen.getByText('Required when submitting a score.')).toBeInTheDocument();
+
+    const submitButton = screen.getByRole('button', { name: /submit score/i });
+    expect(submitButton).toBeDisabled();
+  });
+
+  it('enables submit once holes played is filled in', async () => {
+    render(<AddScorePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Pine Valley')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Pine Valley'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Me')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Me'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Score')).toBeInTheDocument();
+    });
+
+    const scoreInput = screen.getByPlaceholderText('e.g. 82');
+    fireEvent.change(scoreInput, { target: { value: '85' } });
+
+    // Validation visible
+    expect(screen.getByText('Required when submitting a score.')).toBeInTheDocument();
+
+    // Fill in holes played
+    const holesInput = screen.getByPlaceholderText('1-18');
+    fireEvent.change(holesInput, { target: { value: '18' } });
+
+    // Validation clears, button enabled
+    expect(screen.queryByText('Required when submitting a score.')).not.toBeInTheDocument();
+    const submitButton = screen.getByRole('button', { name: /submit score/i });
+    expect(submitButton).not.toBeDisabled();
+  });
+
+  it('shows validation for gross-to-par mode without holes played', async () => {
+    render(<AddScorePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Pine Valley')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Pine Valley'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Me')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Me'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Score')).toBeInTheDocument();
+    });
+
+    // Switch to gross-to-par mode
+    fireEvent.click(screen.getByText('Gross to Par'));
+
+    const toParInput = screen.getByPlaceholderText(/enter number only/);
+    fireEvent.change(toParInput, { target: { value: '5' } });
+
+    expect(screen.getByText('Required when submitting a score.')).toBeInTheDocument();
+    const submitButton = screen.getByRole('button', { name: /submit score/i });
+    expect(submitButton).toBeDisabled();
   });
 });

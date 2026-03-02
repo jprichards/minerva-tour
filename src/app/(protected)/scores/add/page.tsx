@@ -137,10 +137,15 @@ function AddScoreContent() {
 
   // Whether the user has entered a score value (used by submit logic + render)
   const hasScoreEntry = scoreEntryMode === 'toPar' ? grossToPar !== '' : grossScore !== '';
+  const missingHolesPlayed = hasScoreEntry && !holesPlayed;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCourse || !selectedPlayer) return;
+    if (missingHolesPlayed) {
+      setError('Holes played is required when submitting a score.');
+      return;
+    }
     setLoading(true);
     setError('');
 
@@ -499,7 +504,7 @@ function AddScoreContent() {
               {/* Holes Played */}
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                  Holes Played
+                  Holes Played {hasScoreEntry && <span className="text-red-500">*</span>}
                 </label>
                 <input
                   type="number"
@@ -508,11 +513,19 @@ function AddScoreContent() {
                   value={holesPlayed}
                   onChange={(e) => setHolesPlayed(e.target.value)}
                   placeholder={`1-${getMaxHoles(selectedCourse?.type || '18_holes')}`}
-                  className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
+                  className={`w-full rounded-xl border bg-[var(--input-bg)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500 ${
+                    missingHolesPlayed ? 'border-red-400 focus:ring-red-400' : 'border-[var(--input-border)]'
+                  }`}
                 />
-                <p className="text-xs text-[var(--text-faint)] mt-1">
-                  Partial rounds are supported. Enter as you play.
-                </p>
+                {missingHolesPlayed ? (
+                  <p className="text-xs text-red-500 mt-1">
+                    Required when submitting a score.
+                  </p>
+                ) : (
+                  <p className="text-xs text-[var(--text-faint)] mt-1">
+                    Partial rounds are supported. Enter as you play.
+                  </p>
+                )}
               </div>
 
               {/* Net Score Preview */}
@@ -567,7 +580,7 @@ function AddScoreContent() {
 
           <button
             type="submit"
-            disabled={loading || !!courseFailsRatingCheck}
+            disabled={loading || !!courseFailsRatingCheck || missingHolesPlayed}
             className="w-full bg-minerva-600 text-white rounded-xl px-4 py-3 text-sm font-semibold hover:bg-minerva-700 transition-colors disabled:opacity-50"
           >
             {loading
