@@ -453,4 +453,30 @@ describe('Score Entry - Holes Played Required When Score Entered', () => {
     const submitButton = screen.getByRole('button', { name: /submit score/i });
     expect(submitButton).toBeDisabled();
   });
+
+  it('disables submit when holes played entered without a score', async () => {
+    render(<AddScorePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Pine Valley')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Pine Valley'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Me')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Me'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Score')).toBeInTheDocument();
+    });
+
+    // Enter only holes played, no score
+    const holesInput = screen.getByPlaceholderText('1-18');
+    fireEvent.change(holesInput, { target: { value: '18' } });
+
+    expect(screen.getByText('Required when holes played is entered.')).toBeInTheDocument();
+    const submitButton = screen.getByRole('button', { name: /submit score/i });
+    expect(submitButton).toBeDisabled();
+  });
 });

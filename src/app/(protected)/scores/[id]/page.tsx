@@ -76,10 +76,12 @@ export default function ScoreDetailPage() {
 
   const editHasScore = grossScore !== '';
   const editMissingHoles = editHasScore && !holesPlayed;
+  const editMissingScore = !editHasScore && !!holesPlayed;
+  const editIncomplete = editMissingHoles || editMissingScore;
 
   const handleSave = async () => {
     if (!score || !score.course) return;
-    if (editMissingHoles) return;
+    if (editIncomplete) return;
     setSaving(true);
 
     const grossScoreNum = grossScore ? parseInt(grossScore) : null;
@@ -295,17 +297,24 @@ export default function ScoreDetailPage() {
         {editing ? (
           <div className="space-y-3">
             <div>
-              <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Gross Score</label>
+              <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
+                Gross Score {editMissingScore && <span className="text-red-500">*</span>}
+              </label>
               <input
                 type="number"
                 value={grossScore}
                 onChange={(e) => setGrossScore(e.target.value)}
-                className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-minerva-500"
+                className={`w-full rounded-xl border bg-[var(--input-bg)] px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-minerva-500 ${
+                  editMissingScore ? 'border-red-400 focus:ring-red-400' : 'border-[var(--input-border)]'
+                }`}
               />
+              {editMissingScore && (
+                <p className="text-xs text-red-500 mt-1">Required when holes played is entered.</p>
+              )}
             </div>
             <div>
               <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
-                Holes Played {editHasScore && <span className="text-red-500">*</span>}
+                Holes Played {editMissingHoles && <span className="text-red-500">*</span>}
               </label>
               <input
                 type="number"
@@ -388,7 +397,7 @@ export default function ScoreDetailPage() {
         <div className="space-y-2">
           <button
             onClick={handleSave}
-            disabled={saving || editMissingHoles}
+            disabled={saving || editIncomplete}
             className="flex items-center justify-center gap-2 w-full bg-minerva-600 text-white rounded-xl px-4 py-3 text-sm font-semibold hover:bg-minerva-700 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />

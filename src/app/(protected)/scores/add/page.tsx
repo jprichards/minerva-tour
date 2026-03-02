@@ -138,12 +138,16 @@ function AddScoreContent() {
   // Whether the user has entered a score value (used by submit logic + render)
   const hasScoreEntry = scoreEntryMode === 'toPar' ? grossToPar !== '' : grossScore !== '';
   const missingHolesPlayed = hasScoreEntry && !holesPlayed;
+  const missingScore = !hasScoreEntry && !!holesPlayed;
+  const incompleteScoreEntry = missingHolesPlayed || missingScore;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCourse || !selectedPlayer) return;
-    if (missingHolesPlayed) {
-      setError('Holes played is required when submitting a score.');
+    if (incompleteScoreEntry) {
+      setError(missingHolesPlayed
+        ? 'Holes played is required when submitting a score.'
+        : 'A score is required when holes played is entered.');
       return;
     }
     setLoading(true);
@@ -447,7 +451,9 @@ function AddScoreContent() {
             <>
               {/* Score Entry Mode Toggle */}
               <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Score</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                  Score {missingScore && <span className="text-red-500">*</span>}
+                </label>
                 <div className="flex bg-[var(--bg-subtle)] rounded-lg p-0.5 mb-2">
                   <button
                     type="button"
@@ -475,7 +481,9 @@ function AddScoreContent() {
                     value={grossScore}
                     onChange={(e) => setGrossScore(e.target.value)}
                     placeholder={`e.g. ${(selectedCourse?.par || 72) + 10}`}
-                    className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
+                    className={`w-full rounded-xl border bg-[var(--input-bg)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500 ${
+                      missingScore ? 'border-red-400 focus:ring-red-400' : 'border-[var(--input-border)]'
+                    }`}
                   />
                 ) : (
                   <div>
@@ -484,7 +492,9 @@ function AddScoreContent() {
                       value={grossToPar}
                       onChange={(e) => setGrossToPar(e.target.value)}
                       placeholder="e.g. +5 or -2 (enter number only)"
-                      className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
+                      className={`w-full rounded-xl border bg-[var(--input-bg)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500 ${
+                        missingScore ? 'border-red-400 focus:ring-red-400' : 'border-[var(--input-border)]'
+                      }`}
                     />
                     {grossToPar !== '' && selectedCourse && (
                       <p className="text-xs text-[var(--text-muted)] mt-1">
@@ -498,6 +508,9 @@ function AddScoreContent() {
                       </p>
                     )}
                   </div>
+                )}
+                {missingScore && (
+                  <p className="text-xs text-red-500 mt-1">Required when holes played is entered.</p>
                 )}
               </div>
 
@@ -580,7 +593,7 @@ function AddScoreContent() {
 
           <button
             type="submit"
-            disabled={loading || !!courseFailsRatingCheck || missingHolesPlayed}
+            disabled={loading || !!courseFailsRatingCheck || incompleteScoreEntry}
             className="w-full bg-minerva-600 text-white rounded-xl px-4 py-3 text-sm font-semibold hover:bg-minerva-700 transition-colors disabled:opacity-50"
           >
             {loading
