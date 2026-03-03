@@ -66,6 +66,19 @@ const mockScores = [
     course: { course_name: 'Torrey Pines', tee_name: 'Blue', type: '18_holes', par: 72 },
     event: { start_date: '2025-07-01', end_date: '2025-07-15', name: 'Event 5', event_number: 5 },
   },
+  {
+    id: 'score-tee',
+    user_id: 'user-abc-123',
+    gross_score: null,
+    net_score: null,
+    net_strokes_over_par: null,
+    holes_played: null,
+    is_complete: false,
+    tee_time: '2025-08-15T10:00:00Z',
+    created_at: '2026-03-01T00:00:00Z',
+    course: { course_name: 'Bobby Jones GC', tee_name: '#6 Tees', type: '18_holes', par: 72 },
+    event: { start_date: '2025-07-01', end_date: '2025-08-15', name: 'Event 1', event_number: 1 },
+  },
 ];
 
 // Build a recursive proxy that returns itself for any chained method,
@@ -156,5 +169,12 @@ describe('Home Page - View All Link', () => {
     // The score card's metadata line should contain the event name inline
     const scoreCard = courseEl.closest('a');
     expect(scoreCard?.textContent).toContain('Event 5');
+  });
+
+  it('shows course max holes when holes_played is null (tee time)', async () => {
+    render(<HomePage />);
+    const courseEl = await screen.findByText('Bobby Jones GC', {}, { timeout: 3000 });
+    const scoreCard = courseEl.closest('a');
+    expect(scoreCard?.textContent).toContain('18 holes');
   });
 });
