@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Lock } from 'lucide-react';
 
 export default function EditProfilePage() {
   const { profile, loading: userLoading } = useUser();
@@ -88,12 +88,10 @@ export default function EditProfilePage() {
 
         <div>
           <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Email</label>
-          <input
-            type="email"
-            value={profile?.email || ''}
-            readOnly
-            className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3 text-sm bg-[var(--bg-subtle)] text-[var(--text-muted)]"
-          />
+          <div className="flex items-center gap-2 w-full rounded-xl border border-dashed border-[var(--border-default)] bg-[var(--bg-subtle)] px-4 py-3">
+            <Lock className="w-3.5 h-3.5 text-[var(--text-faint)] flex-shrink-0" />
+            <span className="text-sm text-[var(--text-muted)]">{profile?.email || ''}</span>
+          </div>
           <p className="text-xs text-[var(--text-faint)] mt-1">Email cannot be changed.</p>
         </div>
 
@@ -113,12 +111,12 @@ export default function EditProfilePage() {
 
         <div>
           <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Current Handicap</label>
-          <input
-            type="text"
-            value={profile?.handicap_index != null ? String(profile.handicap_index) : 'Not set'}
-            readOnly
-            className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3 text-sm bg-[var(--bg-subtle)] text-[var(--text-muted)]"
-          />
+          <div className="flex items-center gap-2 w-full rounded-xl border border-dashed border-[var(--border-default)] bg-[var(--bg-subtle)] px-4 py-3">
+            <Lock className="w-3.5 h-3.5 text-[var(--text-faint)] flex-shrink-0" />
+            <span className="text-sm text-[var(--text-muted)]">
+              {profile?.handicap_index != null ? String(profile.handicap_index) : 'Not set'}
+            </span>
+          </div>
           <p className="text-xs text-[var(--text-faint)] mt-1">
             Handicap is managed by administrators.
           </p>
