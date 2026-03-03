@@ -34,16 +34,39 @@ function buildChirpContext(p: SlackNotifyPayload): ChirpContext {
   };
 }
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
 /**
- * Format a tee time date as "Saturday, Feb 16 at 10:30 AM"
+ * Format a tee time date as "Sunday, Mar 15 at 1:00 PM".
+ *
+ * Parses the date/time components directly from the string and uses
+ * Date only for day-of-week calculation (via UTC methods) so that no
+ * local-timezone conversion can shift the displayed time.
  */
-function formatTeeTimeDate(isoString: string): string {
-  const d = new Date(isoString);
-  const tz = 'UTC';
-  const dayOfWeek = d.toLocaleDateString('en-US', { weekday: 'long', timeZone: tz });
-  const monthDay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: tz });
-  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: tz });
-  return `${dayOfWeek}, ${monthDay} at ${time}`;
+function formatTeeTimeDate(dateTimeStr: string): string {
+  const [datePart, timePart] = dateTimeStr.split('T');
+  const [yearStr, monthStr, dayStr] = datePart.split('-');
+  const year = parseInt(yearStr);
+  const month = parseInt(monthStr);
+  const day = parseInt(dayStr);
+
+  const d = new Date(Date.UTC(year, month - 1, day));
+  const dayOfWeek = DAY_NAMES[d.getUTCDay()];
+  const monthName = MONTH_NAMES[month - 1];
+
+  let timeFormatted = '';
+  if (timePart) {
+    const [hourStr, minStr] = timePart.split(':');
+    let hour = parseInt(hourStr);
+    const min = minStr?.slice(0, 2) || '00';
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    if (hour === 0) hour = 12;
+    else if (hour > 12) hour -= 12;
+    timeFormatted = ` at ${hour}:${min} ${ampm}`;
+  }
+
+  return `${dayOfWeek}, ${monthName} ${day}${timeFormatted}`;
 }
 
 function getFirstName(fullName: string): string {

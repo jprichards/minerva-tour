@@ -190,7 +190,7 @@ export default function ScoreDetailPage() {
       net_strokes_over_par: netStrokesOverPar,
       holes_played: holesPlayedNum,
       max_holes: maxHoles,
-      tee_time: score.tee_time,
+      tee_time: teeTime || null,
       event_name: score.event?.name || (score.event ? `Event ${score.event.event_number}` : null),
       old_gross_score: score.gross_score,
       old_net_score: score.net_strokes_over_par,
