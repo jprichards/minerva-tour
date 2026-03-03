@@ -6,15 +6,17 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
-import { calculateNetScore, getMaxHoles, formatNetScore, formatGrossScore } from '@/lib/scoring';
+import { calculateNetScore, getMaxHoles, formatNetScore, formatGrossScore, courseMatchesEventHoles } from '@/lib/scoring';
 import { notifySlack } from '@/lib/slack-notify';
-import { ArrowLeft, Edit, Trash2, Save } from 'lucide-react';
-import type { Score, Event } from '@/types/database';
+import { useSeason } from '@/lib/hooks/useSeason';
+import { ArrowLeft, Edit, Trash2, Save, Search, ChevronRight, X } from 'lucide-react';
+import type { Score, Event, Course } from '@/types/database';
 
 export default function ScoreDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const { profile, isAdmin } = useUser();
+  const { currentEvent: seasonCurrentEvent } = useSeason();
   const { showToast } = useToast();
   const supabase = createClient();
 
@@ -28,6 +30,12 @@ export default function ScoreDetailPage() {
   const [grossScore, setGrossScore] = useState('');
   const [holesPlayed, setHolesPlayed] = useState('');
   const [teeTime, setTeeTime] = useState('');
+
+  // Course change fields
+  const [changingCourse, setChangingCourse] = useState(false);
+  const [editCourse, setEditCourse] = useState<Course | null>(null);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [courseSearch, setCourseSearch] = useState('');
 
   useEffect(() => {
     const fetchScore = async () => {
@@ -43,6 +51,7 @@ export default function ScoreDetailPage() {
         setGrossScore(data.gross_score?.toString() || '');
         setHolesPlayed(data.holes_played?.toString() || '');
         setTeeTime(data.tee_time ? new Date(data.tee_time).toISOString().slice(0, 16) : '');
+        if (data.course) setEditCourse(data.course as unknown as Course);
       }
 
       // Get current event
@@ -80,14 +89,15 @@ export default function ScoreDetailPage() {
   const editIncomplete = editMissingHoles || editMissingScore;
 
   const handleSave = async () => {
-    if (!score || !score.course) return;
+    if (!score || !editCourse) return;
     if (editIncomplete) return;
     setSaving(true);
 
+    const activeCourse = editCourse;
     const grossScoreNum = grossScore ? parseInt(grossScore) : null;
     const holesPlayedNum = holesPlayed ? parseInt(holesPlayed) : null;
     const isComplete = grossScoreNum != null && holesPlayedNum != null;
-    const maxHoles = getMaxHoles(score.course.type);
+    const maxHoles = getMaxHoles(activeCourse.type);
 
     let courseHandicap = null;
     let netScoreVal = null;
@@ -99,9 +109,9 @@ export default function ScoreDetailPage() {
       const result = calculateNetScore(
         grossScoreNum,
         handicapIndex,
-        score.course.slope,
-        score.course.rating,
-        score.course.par,
+        activeCourse.slope,
+        activeCourse.rating,
+        activeCourse.par,
         holesPlayedNum,
         maxHoles
       );
@@ -110,9 +120,12 @@ export default function ScoreDetailPage() {
       netStrokesOverPar = result.netStrokesOverPar;
     }
 
+    const courseChanged = activeCourse.id !== score.course_id;
+
     const { error } = await supabase
       .from('scores')
       .update({
+        course_id: activeCourse.id,
         gross_score: grossScoreNum,
         holes_played: holesPlayedNum,
         tee_time: teeTime || null,
@@ -130,8 +143,16 @@ export default function ScoreDetailPage() {
     }
 
     await logAuditEvent('score_edit', 'score', score.id, {
-      before: { gross_score: score.gross_score, holes_played: score.holes_played },
-      after: { gross_score: grossScoreNum, holes_played: holesPlayedNum },
+      before: {
+        gross_score: score.gross_score,
+        holes_played: score.holes_played,
+        ...(courseChanged && { course: score.course?.course_name, tee: score.course?.tee_name }),
+      },
+      after: {
+        gross_score: grossScoreNum,
+        holes_played: holesPlayedNum,
+        ...(courseChanged && { course: activeCourse.course_name, tee: activeCourse.tee_name }),
+      },
     });
 
     // Determine the right Slack event type based on round state:
@@ -160,10 +181,10 @@ export default function ScoreDetailPage() {
       event_type: slackEventType,
       player_name: playerUser?.full_name || playerUser?.email || 'Unknown',
       handicap_index: playerUser?.handicap_index,
-      course_name: score.course?.course_name || 'Unknown',
-      tee_name: score.course?.tee_name || '',
-      course_type: score.course?.type,
-      par: score.course?.par || 72,
+      course_name: activeCourse.course_name,
+      tee_name: activeCourse.tee_name,
+      course_type: activeCourse.type,
+      par: activeCourse.par,
       gross_score: grossScoreNum,
       net_score: netScoreVal,
       net_strokes_over_par: netStrokesOverPar,
@@ -178,6 +199,8 @@ export default function ScoreDetailPage() {
     showToast('Score updated!');
     setSaving(false);
     setEditing(false);
+    setChangingCourse(false);
+    setCourseSearch('');
     // Refresh
     router.refresh();
     const { data: updated } = await supabase
@@ -237,21 +260,113 @@ export default function ScoreDetailPage() {
           </h1>
         </div>
         {canEdit && !editing && (
-          <button onClick={() => setEditing(true)} className="p-2 rounded-lg hover:bg-[var(--bg-subtle)]">
+          <button onClick={() => {
+            setEditing(true);
+            if (score?.course) setEditCourse(score.course as unknown as Course);
+          }} className="p-2 rounded-lg hover:bg-[var(--bg-subtle)]">
             <Edit className="w-5 h-5 text-[var(--text-muted)]" />
           </button>
         )}
       </div>
 
+      {/* Course Picker (shown when changing course in edit mode) */}
+      {changingCourse && (
+        <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Select Course / Tee</h2>
+            <button
+              onClick={() => { setChangingCourse(false); setCourseSearch(''); }}
+              className="p-1.5 rounded-lg hover:bg-[var(--bg-subtle)]"
+            >
+              <X className="w-4 h-4 text-[var(--text-muted)]" />
+            </button>
+          </div>
+
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-faint)]" />
+            <input
+              type="text"
+              placeholder="Search courses..."
+              value={courseSearch}
+              onChange={(e) => setCourseSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
+              autoFocus
+            />
+          </div>
+
+          {seasonCurrentEvent?.holes && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-2 text-xs text-blue-700">
+              Showing {seasonCurrentEvent.holes === 9 ? '9-hole' : '18-hole'} courses for the current event.
+            </div>
+          )}
+
+          <div className="space-y-1.5 max-h-64 overflow-y-auto">
+            {courses
+              .filter((c) =>
+                courseMatchesEventHoles(c.type, seasonCurrentEvent?.holes) &&
+                (c.course_name.toLowerCase().includes(courseSearch.toLowerCase()) ||
+                c.tee_name.toLowerCase().includes(courseSearch.toLowerCase()))
+              )
+              .map((course) => (
+                <button
+                  key={course.id}
+                  onClick={() => {
+                    setEditCourse(course);
+                    setChangingCourse(false);
+                    setCourseSearch('');
+                  }}
+                  className={`w-full flex items-center justify-between rounded-xl p-2.5 border transition-colors text-left ${
+                    course.id === editCourse?.id
+                      ? 'border-minerva-300 bg-minerva-50'
+                      : 'border-[var(--border-light)] hover:border-minerva-200 bg-[var(--bg-page)]'
+                  }`}
+                >
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{course.course_name}</p>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      {course.tee_name} &middot; {course.type.replace(/_/g, ' ')} &middot;
+                      Par {course.par} &middot; {course.rating}/{course.slope}
+                    </p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
+                </button>
+              ))}
+          </div>
+        </div>
+      )}
+
       {/* Score Card */}
       <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-5 space-y-4">
         {/* Course Info */}
         <div>
-          <p className="text-lg font-bold text-[var(--text-primary)]">{score.course?.course_name}</p>
-          <p className="text-sm text-[var(--text-muted)]">
-            {score.course?.tee_name} &middot; {score.course?.type.replace(/_/g, ' ')} &middot;
-            Par {score.course?.par}
-          </p>
+          <div className="flex items-center justify-between">
+            <div className="min-w-0 flex-1">
+              <p className="text-lg font-bold text-[var(--text-primary)]">{(editing ? editCourse : score.course)?.course_name}</p>
+              <p className="text-sm text-[var(--text-muted)]">
+                {(editing ? editCourse : score.course)?.tee_name} &middot; {(editing ? editCourse : score.course)?.type.replace(/_/g, ' ')} &middot;
+                Par {(editing ? editCourse : score.course)?.par}
+              </p>
+            </div>
+            {editing && !changingCourse && (
+              <button
+                onClick={async () => {
+                  if (courses.length === 0) {
+                    const { data } = await supabase.from('courses').select('*').order('course_name');
+                    setCourses(data || []);
+                  }
+                  setChangingCourse(true);
+                }}
+                className="text-xs font-medium text-minerva-600 bg-minerva-50 px-3 py-1.5 rounded-lg hover:bg-minerva-100 transition-colors shrink-0"
+              >
+                Change
+              </button>
+            )}
+          </div>
+          {editing && editCourse && editCourse.id !== score.course_id && (
+            <p className="text-xs text-minerva-600 mt-1">
+              Changed from: {score.course?.course_name} ({score.course?.tee_name})
+            </p>
+          )}
         </div>
 
         {/* Player */}
@@ -319,7 +434,7 @@ export default function ScoreDetailPage() {
               <input
                 type="number"
                 min="1"
-                max={getMaxHoles(score.course?.type || '18_holes')}
+                max={getMaxHoles(editCourse?.type || score.course?.type || '18_holes')}
                 value={holesPlayed}
                 onChange={(e) => setHolesPlayed(e.target.value)}
                 className={`w-full rounded-xl border bg-[var(--input-bg)] px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-minerva-500 ${
@@ -404,7 +519,12 @@ export default function ScoreDetailPage() {
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
           <button
-            onClick={() => setEditing(false)}
+            onClick={() => {
+              setEditing(false);
+              setChangingCourse(false);
+              setCourseSearch('');
+              if (score?.course) setEditCourse(score.course as unknown as Course);
+            }}
             className="w-full text-[var(--text-muted)] text-sm py-2"
           >
             Cancel
