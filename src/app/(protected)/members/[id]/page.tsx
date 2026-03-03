@@ -185,7 +185,7 @@ export default function MemberProfilePage() {
                 <div>
                   <p className="text-sm font-medium text-[var(--text-primary)]">{score.course?.course_name}</p>
                   <p className="text-xs text-[var(--text-muted)]">
-                    {score.course?.tee_name} &middot; {score.holes_played ?? getMaxHoles(score.course?.type)}h
+                    {score.course?.tee_name} &middot; {score.holes_played ?? getMaxHoles(score.course?.type || '18_holes')}h
                     {(score.tee_time || score.event?.start_date) && (
                       <> &middot; {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</>
                     )}

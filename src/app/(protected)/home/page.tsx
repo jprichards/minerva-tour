@@ -254,7 +254,7 @@ export default function HomePage() {
                       {score.course?.course_name || 'Unknown Course'}
                     </p>
                     <p className="text-xs text-[var(--text-muted)]">
-                      {score.course?.tee_name} &middot; {score.holes_played ?? getMaxHoles(score.course?.type)} holes
+                      {score.course?.tee_name} &middot; {score.holes_played ?? getMaxHoles(score.course?.type || '18_holes')} holes
                       {(score.tee_time || score.event?.start_date) && (
                         <> &middot; {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</>
                       )}

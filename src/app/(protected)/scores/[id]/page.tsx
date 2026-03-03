@@ -343,7 +343,7 @@ export default function ScoreDetailPage() {
                 </div>
                 <div>
                   <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Holes</p>
-                  <p className="text-xl font-bold text-[var(--text-primary)] mt-0.5">{score.holes_played ?? getMaxHoles(score.course?.type)}</p>
+                  <p className="text-xl font-bold text-[var(--text-primary)] mt-0.5">{score.holes_played ?? getMaxHoles(score.course?.type || '18_holes')}</p>
                 </div>
               </div>
             )}

@@ -279,7 +279,7 @@ function ScoresContent() {
                     </p>
                     <p className="text-xs text-[var(--text-muted)] truncate">
                       {score.user?.full_name || score.user?.email || 'Unknown'}
-                      <span className="text-[var(--text-faint)]"> &middot; {score.holes_played ?? getMaxHoles(score.course?.type)} holes</span>
+                      <span className="text-[var(--text-faint)]"> &middot; {score.holes_played ?? getMaxHoles(score.course?.type || '18_holes')} holes</span>
                     </p>
                     <p className="text-xs text-[var(--text-faint)] truncate">
                       {(score.tee_time || score.event?.start_date) &&
