@@ -50,6 +50,7 @@ function AddScoreContent() {
   const [grossToPar, setGrossToPar] = useState('');
   const [scoreEntryMode, setScoreEntryMode] = useState<'gross' | 'toPar'>('gross');
   const [holesPlayed, setHolesPlayed] = useState('');
+  const [isPartialRound, setIsPartialRound] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -151,8 +152,8 @@ function AddScoreContent() {
 
   // Whether the user has entered a score value (used by submit logic + render)
   const hasScoreEntry = scoreEntryMode === 'toPar' ? grossToPar !== '' : grossScore !== '';
-  const missingHolesPlayed = hasScoreEntry && !holesPlayed;
-  const missingScore = !hasScoreEntry && !!holesPlayed;
+  const missingHolesPlayed = hasScoreEntry && isPartialRound && !holesPlayed;
+  const missingScore = !hasScoreEntry && isPartialRound && !!holesPlayed;
   const incompleteScoreEntry = missingHolesPlayed || missingScore;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -178,8 +179,10 @@ function AddScoreContent() {
     } else {
       grossScoreNum = grossScore ? parseInt(grossScore) : null;
     }
-    const holesPlayedNum = holesPlayed ? parseInt(holesPlayed) : null;
     const maxHoles = getMaxHoles(selectedCourse.type);
+    const holesPlayedNum = hasScoreEntry
+      ? (isPartialRound && holesPlayed ? parseInt(holesPlayed) : maxHoles)
+      : null;
 
     // Calculate net score if we have gross score and holes and handicap
     let courseHandicap = null;
@@ -534,43 +537,66 @@ function AddScoreContent() {
                 )}
               </div>
 
-              {/* Holes Played */}
-              <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                  Holes Played {hasScoreEntry && <span className="text-red-500">*</span>}
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max={selectedCourse?.type === '18_holes' ? 18 : selectedCourse?.type === '9_holes' || selectedCourse?.type === 'front_9' || selectedCourse?.type === 'back_9' ? 9 : 36}
-                  value={holesPlayed}
-                  onChange={(e) => setHolesPlayed(e.target.value)}
-                  placeholder={`1-${getMaxHoles(selectedCourse?.type || '18_holes')}`}
-                  className={`w-full rounded-xl border bg-[var(--input-bg)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500 ${
-                    missingHolesPlayed ? 'border-red-400 focus:ring-red-400' : 'border-[var(--input-border)]'
+              {/* Partial Round Toggle */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-[var(--text-secondary)]">
+                  Partial round?
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isPartialRound}
+                  onClick={() => {
+                    const next = !isPartialRound;
+                    setIsPartialRound(next);
+                    if (!next) setHolesPlayed('');
+                  }}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    isPartialRound ? 'bg-minerva-600' : 'bg-gray-300'
                   }`}
-                />
-                {missingHolesPlayed ? (
-                  <p className="text-xs text-red-500 mt-1">
-                    Required when submitting a score.
-                  </p>
-                ) : (
-                  <p className="text-xs text-[var(--text-faint)] mt-1">
-                    Partial rounds are supported. Enter as you play.
-                  </p>
-                )}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
+                      isPartialRound ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
               </div>
 
+              {isPartialRound && (
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                    Holes Played {hasScoreEntry && <span className="text-red-500">*</span>}
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max={getMaxHoles(selectedCourse?.type || '18_holes') - 1}
+                    value={holesPlayed}
+                    onChange={(e) => setHolesPlayed(e.target.value)}
+                    placeholder={`1-${getMaxHoles(selectedCourse?.type || '18_holes') - 1}`}
+                    className={`w-full rounded-xl border bg-[var(--input-bg)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500 ${
+                      missingHolesPlayed ? 'border-red-400 focus:ring-red-400' : 'border-[var(--input-border)]'
+                    }`}
+                  />
+                  {missingHolesPlayed && (
+                    <p className="text-xs text-red-500 mt-1">
+                      Required when submitting a score.
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Net Score Preview */}
-              {((scoreEntryMode === 'gross' && grossScore) || (scoreEntryMode === 'toPar' && grossToPar !== '')) && holesPlayed && selectedPlayer?.handicap_index != null && selectedCourse && (
+              {hasScoreEntry && (!isPartialRound || holesPlayed) && selectedPlayer?.handicap_index != null && selectedCourse && (
                 <div className="bg-minerva-50 rounded-xl p-3">
                   {(() => {
+                    const maxH = getMaxHoles(selectedCourse.type);
+                    const effectiveHoles = isPartialRound && holesPlayed ? parseInt(holesPlayed) : maxH;
                     let previewGross: number;
                     if (scoreEntryMode === 'toPar') {
                       const par = selectedCourse.par;
-                      const maxH = getMaxHoles(selectedCourse.type);
-                      const hp = parseInt(holesPlayed);
-                      const partialPar = hp < maxH ? Math.round(par * (hp / maxH)) : par;
+                      const partialPar = effectiveHoles < maxH ? Math.round(par * (effectiveHoles / maxH)) : par;
                       previewGross = partialPar + parseInt(grossToPar || '0');
                     } else {
                       previewGross = parseInt(grossScore);
@@ -581,8 +607,8 @@ function AddScoreContent() {
                       selectedCourse.slope,
                       selectedCourse.rating,
                       selectedCourse.par,
-                      parseInt(holesPlayed),
-                      getMaxHoles(selectedCourse.type)
+                      effectiveHoles,
+                      maxH
                     );
                     return (
                       <div className="flex items-center justify-between">

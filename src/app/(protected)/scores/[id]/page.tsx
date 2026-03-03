@@ -29,6 +29,7 @@ export default function ScoreDetailPage() {
   // Edit fields
   const [grossScore, setGrossScore] = useState('');
   const [holesPlayed, setHolesPlayed] = useState('');
+  const [isPartialRound, setIsPartialRound] = useState(false);
   const [teeTime, setTeeTime] = useState('');
 
   // Course change fields
@@ -50,6 +51,9 @@ export default function ScoreDetailPage() {
         setScore(data as unknown as Score);
         setGrossScore(data.gross_score?.toString() || '');
         setHolesPlayed(data.holes_played?.toString() || '');
+        const courseType = data.course?.type || '18_holes';
+        const maxH = getMaxHoles(courseType);
+        setIsPartialRound(data.holes_played != null && data.holes_played < maxH);
         setTeeTime(data.tee_time ? new Date(data.tee_time).toISOString().slice(0, 16) : '');
         if (data.course) setEditCourse(data.course as unknown as Course);
       }
@@ -84,8 +88,8 @@ export default function ScoreDetailPage() {
   const canDelete = canEdit;
 
   const editHasScore = grossScore !== '';
-  const editMissingHoles = editHasScore && !holesPlayed;
-  const editMissingScore = !editHasScore && !!holesPlayed;
+  const editMissingHoles = editHasScore && isPartialRound && !holesPlayed;
+  const editMissingScore = !editHasScore && isPartialRound && !!holesPlayed;
   const editIncomplete = editMissingHoles || editMissingScore;
 
   const handleSave = async () => {
@@ -95,9 +99,11 @@ export default function ScoreDetailPage() {
 
     const activeCourse = editCourse;
     const grossScoreNum = grossScore ? parseInt(grossScore) : null;
-    const holesPlayedNum = holesPlayed ? parseInt(holesPlayed) : null;
-    const isComplete = grossScoreNum != null && holesPlayedNum != null;
     const maxHoles = getMaxHoles(activeCourse.type);
+    const holesPlayedNum = grossScoreNum != null
+      ? (isPartialRound && holesPlayed ? parseInt(holesPlayed) : maxHoles)
+      : null;
+    const isComplete = grossScoreNum != null && holesPlayedNum != null;
 
     let courseHandicap = null;
     let netScoreVal = null;
@@ -427,24 +433,50 @@ export default function ScoreDetailPage() {
                 <p className="text-xs text-red-500 mt-1">Required when holes played is entered.</p>
               )}
             </div>
-            <div>
-              <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
-                Holes Played {editMissingHoles && <span className="text-red-500">*</span>}
-              </label>
-              <input
-                type="number"
-                min="1"
-                max={getMaxHoles(editCourse?.type || score.course?.type || '18_holes')}
-                value={holesPlayed}
-                onChange={(e) => setHolesPlayed(e.target.value)}
-                className={`w-full rounded-xl border bg-[var(--input-bg)] px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-minerva-500 ${
-                  editMissingHoles ? 'border-red-400 focus:ring-red-400' : 'border-[var(--input-border)]'
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
+                Partial round?
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isPartialRound}
+                onClick={() => {
+                  const next = !isPartialRound;
+                  setIsPartialRound(next);
+                  if (!next) setHolesPlayed('');
+                }}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  isPartialRound ? 'bg-minerva-600' : 'bg-gray-300'
                 }`}
-              />
-              {editMissingHoles && (
-                <p className="text-xs text-red-500 mt-1">Required when submitting a score.</p>
-              )}
+              >
+                <span
+                  className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
+                    isPartialRound ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
             </div>
+            {isPartialRound && (
+              <div>
+                <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
+                  Holes Played {editMissingHoles && <span className="text-red-500">*</span>}
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max={getMaxHoles(editCourse?.type || score.course?.type || '18_holes') - 1}
+                  value={holesPlayed}
+                  onChange={(e) => setHolesPlayed(e.target.value)}
+                  className={`w-full rounded-xl border bg-[var(--input-bg)] px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-minerva-500 ${
+                    editMissingHoles ? 'border-red-400 focus:ring-red-400' : 'border-[var(--input-border)]'
+                  }`}
+                />
+                {editMissingHoles && (
+                  <p className="text-xs text-red-500 mt-1">Required when submitting a score.</p>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           <>

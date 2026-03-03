@@ -364,36 +364,7 @@ describe('Score Entry - Holes Played Required When Score Entered', () => {
     });
   });
 
-  it('disables submit and shows validation when score entered without holes played', async () => {
-    render(<AddScorePage />);
-
-    // Step 1: select course
-    await waitFor(() => {
-      expect(screen.getByText('Pine Valley')).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByText('Pine Valley'));
-
-    // Step 2: select self
-    await waitFor(() => {
-      expect(screen.getByText('Me')).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByText('Me'));
-
-    // Step 3: enter gross score without holes played
-    await waitFor(() => {
-      expect(screen.getByText('Score')).toBeInTheDocument();
-    });
-
-    const scoreInput = screen.getByPlaceholderText('e.g. 82');
-    fireEvent.change(scoreInput, { target: { value: '85' } });
-
-    expect(screen.getByText('Required when submitting a score.')).toBeInTheDocument();
-
-    const submitButton = screen.getByRole('button', { name: /submit score/i });
-    expect(submitButton).toBeDisabled();
-  });
-
-  it('enables submit once holes played is filled in', async () => {
+  it('enables submit with only gross score when partial round toggle is OFF (full round)', async () => {
     render(<AddScorePage />);
 
     await waitFor(() => {
@@ -413,20 +384,12 @@ describe('Score Entry - Holes Played Required When Score Entered', () => {
     const scoreInput = screen.getByPlaceholderText('e.g. 82');
     fireEvent.change(scoreInput, { target: { value: '85' } });
 
-    // Validation visible
-    expect(screen.getByText('Required when submitting a score.')).toBeInTheDocument();
-
-    // Fill in holes played
-    const holesInput = screen.getByPlaceholderText('1-18');
-    fireEvent.change(holesInput, { target: { value: '18' } });
-
-    // Validation clears, button enabled
     expect(screen.queryByText('Required when submitting a score.')).not.toBeInTheDocument();
     const submitButton = screen.getByRole('button', { name: /submit score/i });
     expect(submitButton).not.toBeDisabled();
   });
 
-  it('shows validation for gross-to-par mode without holes played', async () => {
+  it('shows validation in partial round mode when score entered without holes', async () => {
     render(<AddScorePage />);
 
     await waitFor(() => {
@@ -442,6 +405,45 @@ describe('Score Entry - Holes Played Required When Score Entered', () => {
     await waitFor(() => {
       expect(screen.getByText('Score')).toBeInTheDocument();
     });
+
+    // Toggle partial round ON
+    const toggle = screen.getByRole('switch');
+    fireEvent.click(toggle);
+
+    const scoreInput = screen.getByPlaceholderText('e.g. 82');
+    fireEvent.change(scoreInput, { target: { value: '85' } });
+
+    expect(screen.getByText('Required when submitting a score.')).toBeInTheDocument();
+    const submitButton = screen.getByRole('button', { name: /submit score/i });
+    expect(submitButton).toBeDisabled();
+
+    // Fill in holes played — validation clears
+    const holesInput = screen.getByPlaceholderText('1-17');
+    fireEvent.change(holesInput, { target: { value: '13' } });
+
+    expect(screen.queryByText('Required when submitting a score.')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /submit score/i })).not.toBeDisabled();
+  });
+
+  it('shows validation for gross-to-par mode in partial round without holes', async () => {
+    render(<AddScorePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Pine Valley')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Pine Valley'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Me')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('Me'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Score')).toBeInTheDocument();
+    });
+
+    // Toggle partial round ON
+    fireEvent.click(screen.getByRole('switch'));
 
     // Switch to gross-to-par mode
     fireEvent.click(screen.getByText('Gross to Par'));
@@ -454,7 +456,7 @@ describe('Score Entry - Holes Played Required When Score Entered', () => {
     expect(submitButton).toBeDisabled();
   });
 
-  it('disables submit when holes played entered without a score', async () => {
+  it('disables submit in partial round mode when holes entered without a score', async () => {
     render(<AddScorePage />);
 
     await waitFor(() => {
@@ -471,9 +473,12 @@ describe('Score Entry - Holes Played Required When Score Entered', () => {
       expect(screen.getByText('Score')).toBeInTheDocument();
     });
 
+    // Toggle partial round ON
+    fireEvent.click(screen.getByRole('switch'));
+
     // Enter only holes played, no score
-    const holesInput = screen.getByPlaceholderText('1-18');
-    fireEvent.change(holesInput, { target: { value: '18' } });
+    const holesInput = screen.getByPlaceholderText('1-17');
+    fireEvent.change(holesInput, { target: { value: '13' } });
 
     expect(screen.getByText('Required when holes played is entered.')).toBeInTheDocument();
     const submitButton = screen.getByRole('button', { name: /submit score/i });
