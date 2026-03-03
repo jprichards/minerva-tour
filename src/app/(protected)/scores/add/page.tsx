@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
-import { calculateNetScore, getMaxHoles, formatNetScore } from '@/lib/scoring';
+import { calculateNetScore, getMaxHoles, courseMatchesEventHoles, formatNetScore } from '@/lib/scoring';
 import { notifySlack } from '@/lib/slack-notify';
 import { useSeason } from '@/lib/hooks/useSeason';
 import { ArrowLeft, Search, ChevronRight, User as UserIcon, AlertCircle } from 'lucide-react';
@@ -62,10 +62,15 @@ function AddScoreContent() {
         .order('course_name');
       setCourses(coursesData || []);
 
-      // If preselected course
+      // If preselected course, verify it matches the active event's hole count
       if (preselectedCourseId && coursesData) {
         const course = coursesData.find((c) => c.id === preselectedCourseId);
-        if (course) setSelectedCourse(course);
+        if (course && courseMatchesEventHoles(course.type, currentEvent?.holes)) {
+          setSelectedCourse(course);
+        } else if (course) {
+          // Course doesn't match event holes — reset to course selection
+          setStep('course');
+        }
       }
 
       // Fetch members
@@ -78,7 +83,15 @@ function AddScoreContent() {
     };
 
     fetchData();
-  }, [preselectedCourseId, supabase]);
+  }, [preselectedCourseId, supabase, currentEvent?.holes]);
+
+  // If the active event changes and the selected course no longer matches, reset
+  useEffect(() => {
+    if (selectedCourse && currentEvent?.holes && !courseMatchesEventHoles(selectedCourse.type, currentEvent.holes)) {
+      setSelectedCourse(null);
+      setStep('course');
+    }
+  }, [currentEvent?.holes, selectedCourse]);
 
   // Block off-season submissions
   if (isOffSeason) {
@@ -105,8 +118,9 @@ function AddScoreContent() {
   }
 
   const filteredCourses = courses.filter((c) =>
-    c.course_name.toLowerCase().includes(courseSearch.toLowerCase()) ||
-    c.tee_name.toLowerCase().includes(courseSearch.toLowerCase())
+    courseMatchesEventHoles(c.type, currentEvent?.holes) &&
+    (c.course_name.toLowerCase().includes(courseSearch.toLowerCase()) ||
+    c.tee_name.toLowerCase().includes(courseSearch.toLowerCase()))
   );
 
   const filteredMembers = members.filter((m) =>
@@ -293,6 +307,12 @@ function AddScoreContent() {
               className="w-full pl-10 pr-4 py-3 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
             />
           </div>
+
+          {currentEvent?.holes && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-2.5 text-xs text-blue-700">
+              Showing {currentEvent.holes === 9 ? '9-hole' : '18-hole'} courses for the current {currentEvent.holes}-hole event.
+            </div>
+          )}
 
           {isMajorOrPlayoff && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-xs text-amber-700">

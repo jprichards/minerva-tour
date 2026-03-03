@@ -817,6 +817,7 @@ The following features have been built and should be considered part of the app'
 - **9-hole bridging** (`src/app/(protected)/scores/bridge/page.tsx`): Dedicated UI for combining two 9-hole scores into one 18-hole score, with splicing prevention.
 - **Gross-to-par score entry**: Toggle between entering gross score or gross score relative to par.
 - **Major/playoff course rating validation**: Warning when selected course rating is below 68 for major/playoff events.
+- **Course filtering by event holes**: When an active event exists, the course list on score submission and tee time pages only shows courses matching the event's hole count (18h/36h events show only 18-hole courses; 9h events show only 9-hole/front-9/back-9 courses). An info banner indicates the filtering. Pre-selected courses that don't match are cleared.
 
 **Chirps:**
 - **Automated score commentary** (`src/lib/chirps.ts`): Score-based trash talk templates with performance buckets and `$first_name` substitution.

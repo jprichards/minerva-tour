@@ -4,6 +4,7 @@ import {
   calculatePartialCourseHandicap,
   calculatePartialPar,
   getMaxHoles,
+  courseMatchesEventHoles,
   calculateNetScore,
   calculateScratchScore,
   calculateRegularEventPoints,
@@ -525,5 +526,38 @@ describe('formatGrossScore', () => {
     expect(formatGrossScore(40, 36)).toBe('40 (+4)');
     expect(formatGrossScore(36, 36)).toBe('36 (E)');
     expect(formatGrossScore(33, 36)).toBe('33 (-3)');
+  });
+});
+
+// ============================================
+// courseMatchesEventHoles
+// ============================================
+describe('courseMatchesEventHoles', () => {
+  it('returns true when eventHoles is null or undefined (no active event)', () => {
+    expect(courseMatchesEventHoles('18_holes', null)).toBe(true);
+    expect(courseMatchesEventHoles('9_holes', null)).toBe(true);
+    expect(courseMatchesEventHoles('front_9', undefined)).toBe(true);
+    expect(courseMatchesEventHoles('back_9', undefined)).toBe(true);
+  });
+
+  it('allows only 18_holes courses for 18-hole events', () => {
+    expect(courseMatchesEventHoles('18_holes', 18)).toBe(true);
+    expect(courseMatchesEventHoles('9_holes', 18)).toBe(false);
+    expect(courseMatchesEventHoles('front_9', 18)).toBe(false);
+    expect(courseMatchesEventHoles('back_9', 18)).toBe(false);
+  });
+
+  it('allows only 18_holes courses for 36-hole events', () => {
+    expect(courseMatchesEventHoles('18_holes', 36)).toBe(true);
+    expect(courseMatchesEventHoles('9_holes', 36)).toBe(false);
+    expect(courseMatchesEventHoles('front_9', 36)).toBe(false);
+    expect(courseMatchesEventHoles('back_9', 36)).toBe(false);
+  });
+
+  it('allows only 9-hole courses for 9-hole events', () => {
+    expect(courseMatchesEventHoles('9_holes', 9)).toBe(true);
+    expect(courseMatchesEventHoles('front_9', 9)).toBe(true);
+    expect(courseMatchesEventHoles('back_9', 9)).toBe(true);
+    expect(courseMatchesEventHoles('18_holes', 9)).toBe(false);
   });
 });

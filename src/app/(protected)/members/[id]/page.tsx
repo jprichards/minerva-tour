@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { ArrowLeft, TrendingUp, TrendingDown, Minus, Trophy, Target, Calendar, BarChart3 } from 'lucide-react';
-import { formatNetScore } from '@/lib/scoring';
+import { formatNetScore, getMaxHoles } from '@/lib/scoring';
 import { getHandicapTrend } from '@/lib/handicap-trend';
 import TrophyCase from '@/components/TrophyCase';
 import type { User, Score, HandicapHistory, Trophy as TrophyType, SeasonFinish } from '@/types/database';
@@ -185,7 +185,7 @@ export default function MemberProfilePage() {
                 <div>
                   <p className="text-sm font-medium text-[var(--text-primary)]">{score.course?.course_name}</p>
                   <p className="text-xs text-[var(--text-muted)]">
-                    {score.course?.tee_name} &middot; {score.holes_played}h
+                    {score.course?.tee_name} &middot; {score.holes_played ?? getMaxHoles(score.course?.type)}h
                     {(score.tee_time || score.event?.start_date) && (
                       <> &middot; {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</>
                     )}

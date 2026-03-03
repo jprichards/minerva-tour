@@ -8,7 +8,7 @@ import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { Plus, Search, Clock, CheckCircle, Target, Link2, User as UserIcon, Calendar } from 'lucide-react';
-import { formatNetScore } from '@/lib/scoring';
+import { formatNetScore, getMaxHoles } from '@/lib/scoring';
 import type { Score } from '@/types/database';
 
 type TabType = 'completed' | 'teetimes';
@@ -279,7 +279,7 @@ function ScoresContent() {
                     </p>
                     <p className="text-xs text-[var(--text-muted)] truncate">
                       {score.user?.full_name || score.user?.email || 'Unknown'}
-                      <span className="text-[var(--text-faint)]"> &middot; {score.holes_played} holes</span>
+                      <span className="text-[var(--text-faint)]"> &middot; {score.holes_played ?? getMaxHoles(score.course?.type)} holes</span>
                     </p>
                     <p className="text-xs text-[var(--text-faint)] truncate">
                       {(score.tee_time || score.event?.start_date) &&

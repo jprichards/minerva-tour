@@ -38,6 +38,18 @@ export function calculatePartialPar(fullPar: number, holesPlayed: number, maxHol
 }
 
 /**
+ * Check if a course type is compatible with the active event's hole count.
+ * 18h/36h events → only 18_holes courses; 9h events → only 9_holes/front_9/back_9.
+ * Returns true (no filtering) when eventHoles is null/undefined.
+ */
+export function courseMatchesEventHoles(courseType: string, eventHoles: number | null | undefined): boolean {
+  if (eventHoles == null) return true;
+  if (eventHoles === 18 || eventHoles === 36) return courseType === '18_holes';
+  if (eventHoles === 9) return courseType !== '18_holes';
+  return true;
+}
+
+/**
  * Get the max holes for a course type
  */
 export function getMaxHoles(courseType: string): number {

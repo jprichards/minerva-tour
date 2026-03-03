@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { Trophy, Target, MapPin, Calendar, ExternalLink, Clock, TrendingUp, Image } from 'lucide-react';
 import NotificationBell from '@/components/navigation/NotificationBell';
+import { getMaxHoles } from '@/lib/scoring';
 import type { Event, Season, Score } from '@/types/database';
 
 export default function HomePage() {
@@ -253,7 +254,7 @@ export default function HomePage() {
                       {score.course?.course_name || 'Unknown Course'}
                     </p>
                     <p className="text-xs text-[var(--text-muted)]">
-                      {score.course?.tee_name} &middot; {score.holes_played} holes
+                      {score.course?.tee_name} &middot; {score.holes_played ?? getMaxHoles(score.course?.type)} holes
                       {(score.tee_time || score.event?.start_date) && (
                         <> &middot; {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</>
                       )}
