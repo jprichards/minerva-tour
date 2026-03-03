@@ -218,7 +218,7 @@ export default function MemberProfilePage() {
               <div key={h.id} className={`flex items-center justify-between px-4 py-3 ${idx < handicapHistory.length - 1 ? 'border-b border-[var(--border-light)]' : ''}`}>
                 <div className="flex items-center gap-3">
                   <Calendar className="w-4 h-4 text-[var(--text-faint)]" />
-                  <p className="text-sm text-[var(--text-secondary)]">{new Date(h.effective_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
+                  <p className="text-sm text-[var(--text-secondary)]">{new Date(h.effective_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                 </div>
                 <div className="flex items-center gap-1.5">
                   {(() => {

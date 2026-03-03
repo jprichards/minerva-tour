@@ -25,6 +25,8 @@ playwright-report/
 # misc
 .DS_Store
 *.pem
+docs/bugs-feedback
+docs/handicap-dump/
 
 # debug
 npm-debug.log*

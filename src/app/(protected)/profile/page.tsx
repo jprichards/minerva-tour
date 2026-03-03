@@ -236,7 +236,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-3">
                   <Calendar className="w-4 h-4 text-[var(--text-faint)]" />
                   <p className="text-sm text-[var(--text-secondary)]">
-                    {new Date(h.effective_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                    {new Date(h.effective_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5">
