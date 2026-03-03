@@ -39,9 +39,10 @@ function buildChirpContext(p: SlackNotifyPayload): ChirpContext {
  */
 function formatTeeTimeDate(isoString: string): string {
   const d = new Date(isoString);
-  const dayOfWeek = d.toLocaleDateString('en-US', { weekday: 'long' });
-  const monthDay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const tz = 'UTC';
+  const dayOfWeek = d.toLocaleDateString('en-US', { weekday: 'long', timeZone: tz });
+  const monthDay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: tz });
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: tz });
   return `${dayOfWeek}, ${monthDay} at ${time}`;
 }
 

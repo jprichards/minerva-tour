@@ -255,7 +255,7 @@ export default function HomePage() {
                     <p className="text-xs text-[var(--text-muted)]">
                       {score.course?.tee_name} &middot; {score.holes_played} holes
                       {(score.tee_time || score.event?.start_date) && (
-                        <> &middot; {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</>
+                        <> &middot; {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</>
                       )}
                       {score.event?.name && (
                         <> &middot; {score.event.name}</>

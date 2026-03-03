@@ -115,7 +115,7 @@ export default function ScoreDetailPage() {
       .update({
         gross_score: grossScoreNum,
         holes_played: holesPlayedNum,
-        tee_time: teeTime ? new Date(teeTime).toISOString() : null,
+        tee_time: teeTime || null,
         is_complete: isComplete,
         course_handicap: courseHandicap,
         net_score: netScoreVal,
@@ -267,7 +267,7 @@ export default function ScoreDetailPage() {
           <div className="border-t border-[var(--border-light)] pt-3">
             <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Date</p>
             <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">
-              {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
             </p>
           </div>
         )}
@@ -287,8 +287,8 @@ export default function ScoreDetailPage() {
           <div className="border-t border-[var(--border-light)] pt-3">
             <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Tee Time</p>
             <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">
-              {new Date(score.tee_time).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}{' '}
-              {new Date(score.tee_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {new Date(score.tee_time).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}{' '}
+              {new Date(score.tee_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}
             </p>
           </div>
         ) : null}

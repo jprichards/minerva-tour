@@ -194,7 +194,7 @@ function AddScoreContent() {
       user_id: selectedPlayer.id,
       course_id: selectedCourse.id,
       event_id: currentEvent?.id || null,
-      tee_time: teeTime ? new Date(teeTime).toISOString() : null,
+      tee_time: teeTime || null,
       gross_score: grossScoreNum,
       holes_played: holesPlayedNum,
       is_complete: isComplete,
@@ -246,7 +246,7 @@ function AddScoreContent() {
       net_strokes_over_par: netStrokesOverPar,
       holes_played: holesPlayedNum,
       max_holes: maxHoles,
-      tee_time: teeTime ? new Date(teeTime).toISOString() : null,
+      tee_time: teeTime || null,
       event_name: currentEvent?.name || (currentEvent ? `Event ${currentEvent.event_number}` : null),
       is_complete: isComplete,
     });

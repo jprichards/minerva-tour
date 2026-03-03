@@ -53,18 +53,17 @@ describe('formatSlackMessage', () => {
       expect(text).toContain('Points: -');
     });
 
-    it('formats tee time date with day of week', () => {
+    it('formats tee time date with day of week and preserves the stored time (no timezone shift)', () => {
       const payload: SlackNotifyPayload = {
         ...basePayload,
         event_type: 'tee_time',
-        tee_time: '2026-02-16T15:30:00Z',
+        tee_time: '2026-03-15T13:00:00Z',
       };
 
       const msg = formatSlackMessage(payload);
       const text = allBlockText(msg);
 
-      // Should have a day name like "Monday" or similar (depends on timezone)
-      expect(text).toMatch(/Tee Time: \w+day,/);
+      expect(text).toContain('Tee Time: Sunday, Mar 15 at 1:00 PM');
     });
 
     it('omits tee time line when no tee_time provided', () => {

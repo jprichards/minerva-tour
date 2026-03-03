@@ -102,7 +102,7 @@ export default function HeadToHeadContent() {
       else { ties++; result = 'T'; }
 
       const eventData = a.event as unknown as { event_number: number; name: string | null };
-      const year = a.tee_time ? new Date(a.tee_time).getFullYear() : new Date(a.created_at).getFullYear();
+      const year = a.tee_time ? new Date(a.tee_time).getUTCFullYear() : new Date(a.created_at).getUTCFullYear();
       allEvents.push({
         eventName: eventData?.name || `Event ${eventData?.event_number}`,
         eventNumber: eventData?.event_number ?? 0,

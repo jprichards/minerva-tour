@@ -283,7 +283,7 @@ function ScoresContent() {
                     </p>
                     <p className="text-xs text-[var(--text-faint)] truncate">
                       {(score.tee_time || score.event?.start_date) &&
-                        new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
                       }
                       {score.event?.name && (
                         <span> &middot; {score.event.name}</span>
