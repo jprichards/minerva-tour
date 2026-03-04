@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
+import { SessionPersistence } from '@/components/SessionPersistence';
 import { SWRProvider } from '@/components/SWRProvider';
 import { ThemeProvider, ThemeScript } from '@/components/ThemeProvider';
 
@@ -46,6 +47,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} font-sans antialiased bg-[var(--bg-page)] text-[var(--text-primary)]`}>
         <ServiceWorkerRegistration />
+        <SessionPersistence />
         <SWRProvider>
           <ThemeProvider>
             <ToastProvider>

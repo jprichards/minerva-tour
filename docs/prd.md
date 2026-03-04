@@ -860,8 +860,14 @@ The following features have been built and should be considered part of the app'
 - **Configuration stored in** `app_settings` table with key `slack_config` (JSONB): bot_token, channel_id, channel_name, and per-event-type enabled flags.
 - **Error handling**: Slack notifications are best-effort — failures are silent and never block score submission.
 
+**iOS Standalone Session Persistence:**
+- **Problem**: iOS WKWebView can evict `document.cookie` storage when the standalone (home screen) PWA process is killed, causing users to re-authenticate on every launch.
+- **Session backup** (`src/lib/session-persistence.ts`): Mirrors auth tokens (access + refresh) to `localStorage` on every auth state change. `localStorage` is preserved more reliably than cookies in iOS standalone mode.
+- **Auto-backup component** (`src/components/SessionPersistence.tsx`): Mounted in the root layout, subscribes to Supabase `onAuthStateChange` to keep the backup in sync. Clears backup on sign-out.
+- **Login page recovery** (`src/app/(auth)/login/page.tsx`): On mount, checks for an existing session or a localStorage backup. If found, restores the session via `setSession()` and redirects to `/home` without requiring re-authentication. Shows a branded loading state during recovery.
+
 **Testing:**
-- **Comprehensive test suite**: 360+ tests covering unit, component, integration, functional, and E2E testing using Vitest, React Testing Library, and Playwright. TDD workflow enforced via workspace rules.
+- **Comprehensive test suite**: 670+ tests covering unit, component, integration, functional, and E2E testing using Vitest, React Testing Library, and Playwright. TDD workflow enforced via workspace rules.
 
 ---
 

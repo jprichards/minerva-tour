@@ -1,13 +1,52 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { getSessionBackup, clearSessionBackup } from '@/lib/session-persistence';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [recovering, setRecovering] = useState(true);
+  const router = useRouter();
   const supabase = createClient();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function tryRecoverSession() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && !cancelled) {
+          router.replace('/home');
+          return;
+        }
+
+        const backup = getSessionBackup();
+        if (!backup) {
+          if (!cancelled) setRecovering(false);
+          return;
+        }
+
+        const { error } = await supabase.auth.setSession(backup);
+        if (!error && !cancelled) {
+          router.replace('/home');
+          return;
+        }
+
+        clearSessionBackup();
+      } catch {
+        clearSessionBackup();
+      }
+
+      if (!cancelled) setRecovering(false);
+    }
+
+    tryRecoverSession();
+    return () => { cancelled = true; };
+  }, [supabase, router]);
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
@@ -43,6 +82,20 @@ export default function LoginPage() {
     }
     setLoading(false);
   };
+
+  if (recovering) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-minerva-900 via-minerva-800 to-minerva-950 flex flex-col items-center justify-center px-4">
+        <div className="inline-flex items-center justify-center w-24 h-24 mb-4">
+          <img
+            src="/brand/Owl Face/MinervaWW_040523.png"
+            alt="Minerva Tour"
+            className="w-full h-full object-contain drop-shadow-lg animate-pulse"
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-minerva-900 via-minerva-800 to-minerva-950 flex flex-col items-center justify-center px-4">
