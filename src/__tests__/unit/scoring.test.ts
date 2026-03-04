@@ -7,6 +7,7 @@ import {
   courseMatchesEventHoles,
   calculateNetScore,
   calculateScratchScore,
+  calculateProjectedScore,
   calculateRegularEventPoints,
   calculateMajorEventPoints,
   splitTiedPoints,
@@ -532,6 +533,91 @@ describe('formatGrossScore', () => {
 // ============================================
 // courseMatchesEventHoles
 // ============================================
+// ============================================
+// calculateProjectedScore
+// ============================================
+describe('calculateProjectedScore', () => {
+  it('returns actual values for complete rounds (no projection)', () => {
+    // PH=10, Par=72, Rating=71.2, Gross=82 through 18/18 holes
+    const result = calculateProjectedScore(82, 18, 18, 10, 72, 71.2);
+    expect(result.projectedGross).toBe(82);
+    expect(result.projectedNetOverPar).toBe(82 - 10 - 72); // 0
+    expect(result.projectedScratchOverRating).toBe(Math.round(82 - 71.2)); // 11
+  });
+
+  it('returns actual values when holesPlayed is 0', () => {
+    const result = calculateProjectedScore(0, 0, 18, 10, 72, 71.2);
+    expect(result.projectedGross).toBe(0);
+    expect(result.projectedNetOverPar).toBe(0 - 10 - 72); // -82
+  });
+
+  it('projects a half-round (9 of 18) correctly', () => {
+    // 5 over par through 9 holes, PH=10, Par=72, Rating=71.0
+    // partialPar = round(72 * 9/18) = 36, overPar = 41 - 36 = 5
+    // projectedGross = round(5 + (10/18)*9 + 72) = round(5 + 5 + 72) = 82
+    // projectedNOP = round(82 - 10) - 72 = 0
+    const result = calculateProjectedScore(41, 9, 18, 10, 72, 71.0);
+    expect(result.projectedGross).toBe(82);
+    expect(result.projectedNetOverPar).toBe(0);
+    expect(result.projectedScratchOverRating).toBe(Math.round(82 - 71.0)); // 11
+  });
+
+  it('projects early in a round (3 of 18)', () => {
+    // 1 over through 3 holes, PH=15, Par=72, Rating=71.5
+    // partialPar = round(72 * 3/18) = 12, overPar = 13 - 12 = 1
+    // projectedGross = round(1 + (15/18)*15 + 72) = round(1 + 12.5 + 72) = round(85.5) = 86
+    // projectedNOP = round(86 - 15) - 72 = 71 - 72 = -1
+    const result = calculateProjectedScore(13, 3, 18, 15, 72, 71.5);
+    expect(result.projectedGross).toBe(86);
+    expect(result.projectedNetOverPar).toBe(-1);
+  });
+
+  it('projects a 9-hole partial round (5 of 9)', () => {
+    // 2 over through 5 holes on a par-35, 9-hole course, PH=5, Rating=34.8
+    // partialPar = round(35 * 5/9) = round(19.44) = 19, overPar = 21 - 19 = 2
+    // projectedGross = round(2 + (5/9)*4 + 35) = round(2 + 2.222 + 35) = round(39.222) = 39
+    // projectedNOP = round(39 - 5) - 35 = 34 - 35 = -1
+    const result = calculateProjectedScore(21, 5, 9, 5, 35, 34.8);
+    expect(result.projectedGross).toBe(39);
+    expect(result.projectedNetOverPar).toBe(-1);
+    expect(result.projectedScratchOverRating).toBe(Math.round(39 - 34.8)); // 4
+  });
+
+  it('handles player shooting well under handicap', () => {
+    // Even par through 9 holes (gross 36), PH=12, Par=72, Rating=70.5
+    // partialPar = 36, overPar = 0
+    // projectedGross = round(0 + (12/18)*9 + 72) = round(6 + 72) = 78
+    // projectedNOP = round(78 - 12) - 72 = 66 - 72 = -6
+    const result = calculateProjectedScore(36, 9, 18, 12, 72, 70.5);
+    expect(result.projectedGross).toBe(78);
+    expect(result.projectedNetOverPar).toBe(-6);
+  });
+
+  it('handles player shooting over handicap', () => {
+    // 10 over through 9 holes (gross 46), PH=6, Par=72, Rating=71.0
+    // partialPar = 36, overPar = 10
+    // projectedGross = round(10 + (6/18)*9 + 72) = round(10 + 3 + 72) = 85
+    // projectedNOP = round(85 - 6) - 72 = 79 - 72 = 7
+    const result = calculateProjectedScore(46, 9, 18, 6, 72, 71.0);
+    expect(result.projectedGross).toBe(85);
+    expect(result.projectedNetOverPar).toBe(7);
+  });
+
+  it('matches Glide formula for a known example', () => {
+    // Glide worked example: Devin Blankenship E1 2025
+    // Full round: PH=10, Par=71, Gross=81 → NOP = 0
+    // Simulate as if through 13 holes with proportional gross
+    // partialPar = round(71 * 13/18) = round(51.28) = 51
+    // If player is E through 13: gross = 51, overPar = 0
+    // projectedGross = round(0 + (10/18)*5 + 71) = round(2.778 + 71) = round(73.778) = 74
+    // projectedNOP = round(74 - 10) - 71 = 64 - 71 = -7
+    // (He was playing well below his handicap through 13 holes)
+    const result = calculateProjectedScore(51, 13, 18, 10, 71, 71.0);
+    expect(result.projectedGross).toBe(74);
+    expect(result.projectedNetOverPar).toBe(-7);
+  });
+});
+
 describe('courseMatchesEventHoles', () => {
   it('returns true when eventHoles is null or undefined (no active event)', () => {
     expect(courseMatchesEventHoles('18_holes', null)).toBe(true);

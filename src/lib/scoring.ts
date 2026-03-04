@@ -20,6 +20,20 @@ export function calculateCourseHandicap(handicapIndex: number, slope: number): n
 }
 
 /**
+ * Calculate the WHS Playing Handicap with course difficulty adjustment and handicap allowance.
+ * Playing Handicap = round((Index * Slope / 113 + (Rating - Par)) * allowance / 100)
+ */
+export function calculatePlayingHandicap(
+  handicapIndex: number,
+  slope: number,
+  rating: number,
+  par: number,
+  allowance: number = 100
+): number {
+  return Math.round(((handicapIndex * slope) / 113 + (rating - par)) * allowance / 100);
+}
+
+/**
  * Calculate partial course handicap for partial rounds
  */
 export function calculatePartialCourseHandicap(
@@ -109,6 +123,49 @@ export function calculateNetScore(
     netScore,
     netStrokesOverPar,
     isPartial: false,
+  };
+}
+
+/**
+ * Project a partial round to a full-round equivalent using Glide's pace-based formula.
+ *
+ * Glide Col N: ProjectedGross = round(OverPar + (PH / MaxHoles) * RemainingHoles + Par)
+ * Glide Col Q: ProjectedNetOverPar = round(ProjectedGross − PH) − Par
+ *
+ * For complete rounds (holesPlayed >= maxHoles), returns actual values with no projection.
+ */
+export function calculateProjectedScore(
+  grossScore: number,
+  holesPlayed: number,
+  maxHoles: number,
+  playingHandicap: number,
+  par: number,
+  rating: number
+): {
+  projectedGross: number;
+  projectedNetOverPar: number;
+  projectedScratchOverRating: number;
+} {
+  if (holesPlayed >= maxHoles || holesPlayed <= 0) {
+    return {
+      projectedGross: grossScore,
+      projectedNetOverPar: grossScore - playingHandicap - par,
+      projectedScratchOverRating: Math.round(grossScore - rating),
+    };
+  }
+
+  const partialPar = Math.round(par * holesPlayed / maxHoles);
+  const overPar = grossScore - partialPar;
+  const remainingHoles = maxHoles - holesPlayed;
+
+  const projectedGross = Math.round(
+    overPar + (playingHandicap / maxHoles) * remainingHoles + par
+  );
+
+  return {
+    projectedGross,
+    projectedNetOverPar: Math.round(projectedGross - playingHandicap) - par,
+    projectedScratchOverRating: Math.round(projectedGross - rating),
   };
 }
 

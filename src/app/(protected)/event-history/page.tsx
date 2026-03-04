@@ -123,7 +123,9 @@ export default function EventHistoryPage() {
             const byUser: Record<string, Score> = {};
             for (const score of event.scores) {
               const existing = byUser[score.user_id];
-              if (!existing || (score.net_strokes_over_par ?? 999) < (existing.net_strokes_over_par ?? 999)) {
+              const sNop = score.net_strokes_over_par ?? 999;
+              const eNop = existing?.net_strokes_over_par ?? 999;
+              if (!existing || sNop < eNop || (sNop === eNop && score.points_awarded != null && existing.points_awarded == null)) {
                 byUser[score.user_id] = score;
               }
             }

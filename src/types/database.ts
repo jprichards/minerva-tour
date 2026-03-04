@@ -75,6 +75,7 @@ export interface Season {
   year: number;
   mode: SeasonMode;
   current_event_id: string | null;
+  handicap_allowance: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -123,6 +124,7 @@ export interface Score {
   net_score: number | null;
   net_strokes_over_par: number | null;
   points_awarded: number | null;
+  handicap_index_used: number | null;
   combined_with_score_id: string | null;
   is_retroactive: boolean;
   submitted_by: string | null;

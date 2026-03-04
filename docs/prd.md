@@ -46,7 +46,7 @@ The first major version of this app will be a website that is meant to be used o
 - The tour follows all best practices set by the USGA for maintaining handicaps. This is done automatically through GHIN . More details on the USGA handicapping process is available here: [http://www.usga.org/content/usga/home-page/Handicapping/handicap-manual.html#!rule-14389](http://www.usga.org/content/usga/home-page/Handicapping/handicap-manual.html#!rule-14389)
 - A USGA compliant handicap is required to post an official score to the Minerva Tour (at least 54 holes must be played).
 - The maximum handicap is 54
-- Event scores are handicapped based on the player’s official GHIN handicap at the time of the first day of the event.
+- **Handicap locking per event**: Event scores are handicapped based on the player’s official GHIN handicap at the time of the first day of the event. The handicap is locked for the entire event window — all scores submitted within that event use the same locked handicap, regardless of any changes that may occur during the event. Admins import the latest GHIN handicaps between events (typically the evening before or morning of the next event), at which point the new handicap takes effect for that next event only. The `handicap_index_used` field on each score stores the handicap that was in effect at the time of scoring.
 - Official handicaps through GHIN are used for Minerva Tour event scoring.
 
 ### **Format & Rules**
@@ -84,11 +84,20 @@ Local Minerva Tour Rules and Guidelines
 
 ### **Scoring**:
 
-- Scoring for each tour event will be done with a standard handicapped stroke play format. To calculate a net score which is normalized for course difficulty (yardage, hazards, etc.) and player ability (handicap), the following formula is used: “Net Strokes Over Par” (rounded to nearest stroke) = (“Gross Score” – “Course Handicap (rounded to nearest stroke)” – “Course Rating”)
-    - Each player is assigned a course handicap based on the course they are playing and tees selected
-    - At the end of the round, the course handicap is subtracted from the player’s final score
-    - The course rating is then subtracted to get “Net Strokes Over Par” and rounded to the nearest stroke.
-    - The player with the lowest “Net Strokes Over Par” after subtracting the course handicap and course rating is the winner.
+- Scoring for each tour event will be done with a standard handicapped stroke play format. To calculate a net score normalized for course difficulty and player ability, the WHS (World Handicap System) Playing Handicap formula is used:
+    1. **Playing Handicap** = `round((Handicap Index × Slope / 113 + (Course Rating − Par)) × Handicap Allowance)`
+    2. **Net Strokes Over Par** = `Gross Score − Playing Handicap − Par` (rounded to nearest stroke)
+    - Each player is assigned a Playing Handicap based on their handicap index, the course they are playing (slope, rating, par), and the season’s handicap allowance percentage.
+    - The Playing Handicap is subtracted from the gross score, then Par is subtracted to get “Net Strokes Over Par”.
+    - The `(Course Rating − Par)` term adjusts for courses where rating differs from par (e.g., a par 72 course rated 69.3 reduces the handicap strokes given). The allowance percentage is applied to the entire unrounded value before a single final rounding.
+    - The player with the lowest “Net Strokes Over Par” is the winner.
+- **Handicap Allowance**: A configurable percentage applied to each player’s course handicap for net scoring purposes, set per season on the Admin > Seasons page. This follows USGA/WHS “handicap allowance” terminology.
+    - The full formula: `Playing Handicap = round((Index × Slope / 113 + (Rating − Par)) × allowance / 100)`
+    - Default: 100% (full handicap). Starting in 2024, the league adopted a 95% handicap allowance to better balance competition between low and high handicap players.
+    - Pre-2024 seasons: 100%. 2024 onward: 95%. New seasons default to 95%.
+    - When a season’s handicap allowance is changed, all net scores for that season should be recalculated.
+    - Valid range: 1-100%.
+    - See [`docs/GLIDE_FORMULA_REFERENCE.md`](GLIDE_FORMULA_REFERENCE.md) for detailed formula breakdowns, worked examples, and parity checklist.
 - Note: Ranking by “Net Strokes Over Par” allows us to play on courses with variations in yardage/course par (i.e. executive courses with par 62, par 70, par 72, etc.)
 - Regular Season scoring on the the Minerva Tour is done as follows
     - The winner of **9 hole events** and **non-major 18 hole events** receives 1 point for each player who plays in the event. Subsequent places receive one less point per place. For example, if 3 people play in a 9 hole event, first place wins 3 points, second place 2 points, and third place 1 point
@@ -225,17 +234,19 @@ The app is mobile-first (used on phones, often outdoors). Layout and visual desi
 - During the regular season, users submit scores during or after their round. From the Scores area, they choose a course and tee (full course list with search/browse; if the course isn’t listed, they can add it). They can choose “Me” or “Other Member” (with a searchable way to pick another member) and optionally set a tee time and/or enter gross score. Saving with only a tee time creates an incomplete round they can finish later.
 - **Tee times**: Users can create multiple future tee times (incomplete rounds). Show incomplete tee times in a dedicated area: course name, tee, type, player, tee time date/time; sort by date with the current user’s tee times first; support search/filter. Tapping a tee time opens a screen where they can enter or update score (gross score to par or gross score, and holes played). Once a score is entered, the round counts as complete and moves out of “tee times” into completed rounds. Users can change the course/tee on an existing tee time or round from the detail screen (via a "Change" button in edit mode) with a searchable course picker filtered by the current event’s hole count.
 - **Score entry**: Support entering gross score (or gross score to par) and holes played. Holes played can be 1 through the course maximum (9, 18, or 36) to support partial rounds. Allow updating the score as the round progresses. Net score must be calculated by the app (members do not enter course handicap):
-  - **Course handicap**: (Handicap Index × Slope) / 113, rounded to nearest stroke.
-  - **Partial rounds**: Use proportional handicap and par: Partial Course Handicap = Full Course Handicap × (Holes Played / Max Holes), rounded; Partial Par = Full Par × (Holes Played / Max Holes), rounded; then Gross = Partial Par + (gross to par), Net = Gross − Partial Course Handicap, Net to Par = Net − Partial Par.
-  - **Complete rounds**: Net = Gross − Full Course Handicap, Net to Par = Net − Full Par.
+  - **Playing Handicap**: `round((Handicap Index × Slope / 113 + (Rating − Par)) × Handicap Allowance)`. The raw course handicap `(Index × Slope / 113)` is an intermediate value; the Playing Handicap incorporates `(Rating − Par)` and the season’s handicap allowance before a single final rounding.
+  - **Partial rounds**: Use proportional Playing Handicap and par: Partial Playing Handicap = Full Playing Handicap × (Holes Played / Max Holes), rounded; Partial Par = Full Par × (Holes Played / Max Holes), rounded; then Gross = Partial Par + (gross to par), Net = Gross − Partial Playing Handicap, Net to Par = Net − Partial Par.
+  - **Complete rounds**: Net = Gross − Playing Handicap, Net to Par = Net − Par (rounded to nearest stroke).
   - Show gross and net to par and holes played where relevant (e.g. on tee time detail and completed rounds).
+  - **Unrounded course handicap**: Display the raw decimal `(Handicap Index × Slope / 113) + (Rating − Par)` alongside the rounded Playing Handicap on tee time detail, round detail, and score submission pages.
+  - **Net E target**: Display the gross score needed to shoot net even, calculated as `Playing Handicap + Par`, shown with its to-par value (e.g. “90 (+18)”). Shown on tee time detail, round detail, and score submission pages.
 - **Editing/deleting**: Members can edit or delete only scores in the current event window. Past events are locked; admins can correct those.
 - **Other member**: Members can submit and update scores on behalf of other members (with a clear way to select who is playing).
 - **Completed rounds**: List completed rounds (e.g. grouped by person, best net first). Include course, tee, holes, gross, net; support search/filter.
 - **Score corrections**: Admins can correct scores (including wrong course data) and edit locked (past event) scores.
 - **Validation**: Honor system—no strict validation on score values.
 - **Live scoring**: Leaderboard and scores should update as new scores are posted (real-time or refresh).
-- **Partial rounds in leaderboard**: Show in-progress rounds with projected points; if not completed by event end, they don’t count for points.
+- **Partial rounds in leaderboard**: In-progress rounds are projected to a full-round equivalent using the pace-based projection formula: `Projected Gross = round(OverPar + (PlayingHandicap / TotalHoles) * RemainingHoles + Par)`, then `Projected NOP = round(ProjectedGross - PlayingHandicap) - Par`. The projected NOP (not the partial-round NOP) is used for leaderboard ranking and projected points during an event. If a partial round is not completed by event end, it doesn’t count for points.
 - **9-hole bridging**: For regular 18-hole events only (not majors/playoffs), members manually combine two 9-hole scores to form an 18-hole score; no splicing (splitting an 18-hole score to combine with another 9).
 - **Course handicap**: Calculated from member’s handicap index; never entered manually by the member.
 
@@ -269,7 +280,7 @@ The app is mobile-first (used on phones, often outdoors). Layout and visual desi
     - OR using unofficial wrappers (with terms of service risks)
   - See `GHIN_INTEGRATION.md` in this folder for detailed information
 - App should track handicap history over time for each member.
-- Handicaps are locked at the start of each event window. The app should automatically capture and store the handicap from user profiles when the event window starts. (If GHIN integration is implemented, it would automatically capture from GHIN).
+- Handicaps are locked at the start of each event window. All scores submitted during an event use the handicap that was in effect when the event began. The locked value is stored in each score record as `handicap_index_used`. Admins import updated handicaps from GHIN between events (evening before or morning of the next event). (If GHIN integration is implemented, it would automatically capture from GHIN).
 - Users can add/edit their GHIN number in their profile (if not pre-provisioned by admin).
 
 ### **Playing Guest:**
@@ -298,6 +309,7 @@ The app is mobile-first (used on phones, often outdoors). Layout and visual desi
 - Switch app mode between off-season, regular season, playoffs, and tournament mode.
 - Set and modify the schedule for each tour event window.
 - Extend event windows for weather/emergency situations by modifying the schedule.
+- Configure per-season handicap allowance percentage (1-100%) for net scoring. See Handicap Allowance under Scoring for details.
 
 **Playoff Management:**
 

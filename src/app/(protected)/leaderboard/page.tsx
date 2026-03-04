@@ -7,7 +7,7 @@ import { useUser } from '@/lib/hooks/useUser';
 import { Trophy, Medal, TrendingUp, AlertCircle, Download } from 'lucide-react';
 import { downloadCSV, downloadPDF, generateLeaderboardHTML } from '@/lib/export';
 import { useSeason } from '@/lib/hooks/useSeason';
-import { calculateRegularEventPoints, calculateMajorEventPoints, splitTiedPoints, formatNetScore, calculateScratchScore, getMaxHoles } from '@/lib/scoring';
+import { calculateRegularEventPoints, calculateMajorEventPoints, splitTiedPoints, formatNetScore, calculateScratchScore, calculatePlayingHandicap, calculateProjectedScore, getMaxHoles } from '@/lib/scoring';
 import type { Score, Event, Season } from '@/types/database';
 
 type ViewMode = 'event' | 'season';
@@ -94,7 +94,7 @@ export default function LeaderboardPage() {
       if (activeEvent) {
         const { data: scores } = await supabase
           .from('scores')
-          .select('*, course:courses(*), user:users!user_id(full_name, email, profile_picture_url)')
+          .select('*, course:courses(*), user:users!user_id(full_name, email, profile_picture_url, handicap_index)')
           .eq('event_id', activeEvent.id);
         eventScores = scores || [];
       }
@@ -175,30 +175,59 @@ export default function LeaderboardPage() {
 
       if (scoringMode === 'net') {
         const completedScores = scores.filter((s) => s.is_complete && s.net_strokes_over_par != null);
-        const inProgressScores = scores.filter((s) => !s.is_complete || s.net_strokes_over_par == null);
+        const inProgressScores = scores.filter((s) => !s.is_complete && s.gross_score != null);
+        const allowanceNet = currentSeason?.handicap_allowance ?? 100;
 
         if (completedScores.length > 0) {
-          bestScore = completedScores.reduce((best, s) =>
-            (s.net_strokes_over_par ?? 999) < (best.net_strokes_over_par ?? 999) ? s : best
-          );
+          bestScore = completedScores.reduce((best, s) => {
+            const sNop = s.net_strokes_over_par ?? 999;
+            const bNop = best.net_strokes_over_par ?? 999;
+            if (sNop < bNop) return s;
+            if (sNop === bNop && s.points_awarded != null && best.points_awarded == null) return s;
+            return best;
+          });
         } else if (inProgressScores.length > 0) {
-          bestScore = inProgressScores[0];
+          bestScore = inProgressScores.reduce((best, s) => {
+            const sMax = getMaxHoles(s.course?.type || '18_holes');
+            const bMax = getMaxHoles(best.course?.type || '18_holes');
+            const sIdx = s.handicap_index_used ?? s.user?.handicap_index ?? 0;
+            const bIdx = best.handicap_index_used ?? best.user?.handicap_index ?? 0;
+            const sPH = s.course ? calculatePlayingHandicap(sIdx, s.course.slope, s.course.rating, s.course.par, allowanceNet) : 0;
+            const bPH = best.course ? calculatePlayingHandicap(bIdx, best.course.slope, best.course.rating, best.course.par, allowanceNet) : 0;
+            const sProj = s.course ? calculateProjectedScore(s.gross_score!, s.holes_played || 0, sMax, sPH, s.course.par, s.course.rating).projectedNetOverPar : 999;
+            const bProj = best.course ? calculateProjectedScore(best.gross_score!, best.holes_played || 0, bMax, bPH, best.course.par, best.course.rating).projectedNetOverPar : 999;
+            return sProj < bProj ? s : best;
+          });
         }
       } else {
         // Scratch: use gross score relative to course rating (no handicap)
+        // For in-progress rounds, use projected scratch to compare
+        const allowance = currentSeason?.handicap_allowance ?? 100;
         const withGross = scores.filter((s) => s.gross_score != null);
         if (withGross.length > 0) {
           bestScore = withGross.reduce((best, s) => {
-            const sMaxHoles = getMaxHoles(s.course?.type || '18_holes');
-            const sScratch = calculateScratchScore(
-              s.gross_score!, s.course?.rating || 72, s.course?.par || 72,
-              s.holes_played || sMaxHoles, sMaxHoles
-            ).scratchStrokesOverRating;
-            const bMaxHoles = getMaxHoles(best.course?.type || '18_holes');
-            const bScratch = calculateScratchScore(
-              best.gross_score!, best.course?.rating || 72, best.course?.par || 72,
-              best.holes_played || bMaxHoles, bMaxHoles
-            ).scratchStrokesOverRating;
+            const sMax = getMaxHoles(s.course?.type || '18_holes');
+            const sPartial = !s.is_complete && (s.holes_played || 0) < sMax;
+            let sScratch: number;
+            if (sPartial && s.course) {
+              const hIdx = s.handicap_index_used ?? s.user?.handicap_index ?? 0;
+              const ph = calculatePlayingHandicap(hIdx, s.course.slope, s.course.rating, s.course.par, allowance);
+              sScratch = calculateProjectedScore(s.gross_score!, s.holes_played || 0, sMax, ph, s.course.par, s.course.rating).projectedScratchOverRating;
+            } else {
+              sScratch = calculateScratchScore(s.gross_score!, s.course?.rating || 72, s.course?.par || 72, s.holes_played || sMax, sMax).scratchStrokesOverRating;
+            }
+
+            const bMax = getMaxHoles(best.course?.type || '18_holes');
+            const bPartial = !best.is_complete && (best.holes_played || 0) < bMax;
+            let bScratch: number;
+            if (bPartial && best.course) {
+              const hIdx = best.handicap_index_used ?? best.user?.handicap_index ?? 0;
+              const ph = calculatePlayingHandicap(hIdx, best.course.slope, best.course.rating, best.course.par, allowance);
+              bScratch = calculateProjectedScore(best.gross_score!, best.holes_played || 0, bMax, ph, best.course.par, best.course.rating).projectedScratchOverRating;
+            } else {
+              bScratch = calculateScratchScore(best.gross_score!, best.course?.rating || 72, best.course?.par || 72, best.holes_played || bMax, bMax).scratchStrokesOverRating;
+            }
+
             return sScratch < bScratch ? s : best;
           });
         }
@@ -206,23 +235,46 @@ export default function LeaderboardPage() {
 
       if (bestScore) {
         const maxH = getMaxHoles(bestScore.course?.type || '18_holes');
-        const scratchResult = bestScore.gross_score != null && bestScore.course?.rating != null
-          ? calculateScratchScore(
-              bestScore.gross_score, bestScore.course.rating, bestScore.course?.par || 72,
-              bestScore.holes_played || maxH, maxH
-            )
-          : null;
+        const isPartial = !bestScore.is_complete && (bestScore.holes_played || 0) < maxH;
+        const allowance = currentSeason?.handicap_allowance ?? 100;
+
+        let netOverPar = bestScore.net_strokes_over_par;
+        let scratchOver: number | null = null;
+        let displayGross = bestScore.gross_score;
+
+        if (isPartial && bestScore.gross_score != null && bestScore.course) {
+          const hcpIdx = bestScore.handicap_index_used ?? bestScore.user?.handicap_index ?? 0;
+          const fullPH = calculatePlayingHandicap(
+            hcpIdx, bestScore.course.slope, bestScore.course.rating,
+            bestScore.course.par, allowance
+          );
+          const projected = calculateProjectedScore(
+            bestScore.gross_score, bestScore.holes_played || 0, maxH,
+            fullPH, bestScore.course.par, bestScore.course.rating
+          );
+          netOverPar = projected.projectedNetOverPar;
+          scratchOver = projected.projectedScratchOverRating;
+          displayGross = projected.projectedGross;
+        } else {
+          const scratchResult = bestScore.gross_score != null && bestScore.course?.rating != null
+            ? calculateScratchScore(
+                bestScore.gross_score, bestScore.course.rating, bestScore.course?.par || 72,
+                bestScore.holes_played || maxH, maxH
+              )
+            : null;
+          scratchOver = scratchResult?.scratchStrokesOverRating ?? null;
+        }
 
         entries.push({
           userId,
           playerName: bestScore.user?.full_name || bestScore.user?.email || 'Unknown',
           profilePicture: bestScore.user?.profile_picture_url || null,
-          bestNetOverPar: bestScore.net_strokes_over_par,
-          bestGrossScore: bestScore.gross_score,
-          grossOverPar: bestScore.gross_score && bestScore.course?.par
-            ? bestScore.gross_score - bestScore.course.par
+          bestNetOverPar: netOverPar,
+          bestGrossScore: displayGross,
+          grossOverPar: displayGross && bestScore.course?.par
+            ? displayGross - bestScore.course.par
             : null,
-          scratchOverRating: scratchResult?.scratchStrokesOverRating ?? null,
+          scratchOverRating: scratchOver,
           holesPlayed: bestScore.holes_played,
           maxHoles: maxH,
           courseName: bestScore.course?.course_name || '',
@@ -301,7 +353,7 @@ export default function LeaderboardPage() {
     }
 
     return entries;
-  }, [eventScores, currentEvent, scoringMode]);
+  }, [eventScores, currentEvent, currentSeason, scoringMode]);
 
   // Build season standings
   const seasonStandings = useMemo((): SeasonStanding[] => {
@@ -323,7 +375,9 @@ export default function LeaderboardPage() {
       for (const score of eventScoresForEvent) {
         const existing = byUser[score.user_id];
         if (scoringMode === 'net') {
-          if (!existing || (score.net_strokes_over_par ?? 999) < (existing.net_strokes_over_par ?? 999)) {
+          const sNop = score.net_strokes_over_par ?? 999;
+          const eNop = existing?.net_strokes_over_par ?? 999;
+          if (!existing || sNop < eNop || (sNop === eNop && score.points_awarded != null && existing.points_awarded == null)) {
             byUser[score.user_id] = score;
           }
         } else {

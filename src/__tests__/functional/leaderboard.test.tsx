@@ -55,8 +55,9 @@ const completedScore = {
   holes_played: 18,
   is_complete: true,
   course_handicap: 12,
+  handicap_index_used: 10.5,
   course: { id: 'c-1', course_name: 'Pine Valley', tee_name: 'Blue', type: '18_holes', par: 72, rating: 72.0, slope: 130 },
-  user: { full_name: 'Ashby Foltz', email: 'ashby@test.com', profile_picture_url: null },
+  user: { full_name: 'Ashby Foltz', email: 'ashby@test.com', profile_picture_url: null, handicap_index: 10.5 },
   event: mockEvent,
 };
 
@@ -70,8 +71,9 @@ const inProgressScore = {
   holes_played: 9,
   is_complete: false,
   course_handicap: 7,
+  handicap_index_used: 12.0,
   course: { id: 'c-2', course_name: 'Augusta National', tee_name: 'Gold', type: '18_holes', par: 72, rating: 74.0, slope: 137 },
-  user: { full_name: 'Robby Dewling', email: 'robby@test.com', profile_picture_url: null },
+  user: { full_name: 'Robby Dewling', email: 'robby@test.com', profile_picture_url: null, handicap_index: 12.0 },
   event: mockEvent,
 };
 
@@ -85,8 +87,9 @@ const secondRoundScore = {
   holes_played: 18,
   is_complete: true,
   course_handicap: 12,
+  handicap_index_used: 10.5,
   course: { id: 'c-3', course_name: 'Pebble Beach', tee_name: 'White', type: '18_holes', par: 72, rating: 71.0, slope: 125 },
-  user: { full_name: 'Ashby Foltz', email: 'ashby@test.com', profile_picture_url: null },
+  user: { full_name: 'Ashby Foltz', email: 'ashby@test.com', profile_picture_url: null, handicap_index: 10.5 },
   event: mockEvent,
 };
 

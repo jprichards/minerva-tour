@@ -27,6 +27,10 @@ playwright-report/
 *.pem
 docs/bugs-feedback
 docs/handicap-dump/
+docs/glide-app/
+docs/95percent_calc.png
+scripts/ncrdb-verify/
+supabase/.temp/
 
 # debug
 npm-debug.log*
