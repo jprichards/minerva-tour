@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useSWRConfig } from 'swr';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
@@ -18,6 +19,7 @@ export default function ScoreDetailPage() {
   const { profile, isAdmin } = useUser();
   const { currentEvent: seasonCurrentEvent } = useSeason();
   const { showToast } = useToast();
+  const { mutate } = useSWRConfig();
   const supabase = createClient();
 
   const [score, setScore] = useState<Score | null>(null);
@@ -207,7 +209,10 @@ export default function ScoreDetailPage() {
     setEditing(false);
     setChangingCourse(false);
     setCourseSearch('');
-    // Refresh
+
+    mutate('leaderboard');
+    mutate((key: unknown) => Array.isArray(key) && key[0] === 'scores', undefined, { revalidate: true });
+
     router.refresh();
     const { data: updated } = await supabase
       .from('scores')
@@ -221,8 +226,8 @@ export default function ScoreDetailPage() {
     if (!score) return;
     if (!confirm('Delete this score? This cannot be undone.')) return;
 
-    const { error } = await supabase.from('scores').delete().eq('id', score.id);
-    if (error) {
+    const { data, error } = await supabase.from('scores').delete().eq('id', score.id).select();
+    if (error || !data || data.length === 0) {
       showToast('Failed to delete score.', 'error');
       return;
     }
@@ -231,6 +236,9 @@ export default function ScoreDetailPage() {
       player: score.user?.full_name,
       gross_score: score.gross_score,
     });
+
+    mutate('leaderboard');
+    mutate((key: unknown) => Array.isArray(key) && key[0] === 'scores', undefined, { revalidate: true });
 
     showToast('Score deleted.');
     router.push('/scores');

@@ -152,12 +152,15 @@ export default function LeaderboardPage() {
   const eventLeaderboard = useMemo((): LeaderboardEntry[] => {
     if (!currentEvent || eventScores.length === 0) return [];
 
-    // After event window closes, filter out incomplete rounds (PRD requirement)
+    // After event window closes, only completed rounds count.
+    // During an active event, include completed rounds and in-progress rounds
+    // that have a gross score entered. Exclude bare tee times (no score data)
+    // since they haven't started scoring and shouldn't appear on the leaderboard.
     const today = new Date().toISOString().split('T')[0];
     const eventEnded = currentEvent.end_date < today;
     const eligibleScores = eventEnded
       ? eventScores.filter((s) => s.is_complete)
-      : eventScores;
+      : eventScores.filter((s) => s.is_complete || s.gross_score != null);
 
     if (eligibleScores.length === 0) return [];
 
@@ -368,7 +371,9 @@ export default function LeaderboardPage() {
       // For net: only include regular season events (playoffs are bracket-based, not points)
       if (scoringMode === 'net' && event.is_playoff) continue;
 
-      const eventScoresForEvent = allSeasonScores.filter((s) => s.event_id === event.id);
+      const eventScoresForEvent = allSeasonScores.filter(
+        (s) => s.event_id === event.id && (s.is_complete || s.gross_score != null)
+      );
 
       // Group by user, find best score
       const byUser: Record<string, Score> = {};

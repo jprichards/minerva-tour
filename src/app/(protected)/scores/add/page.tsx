@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useSWRConfig } from 'swr';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
@@ -31,6 +32,7 @@ function AddScoreContent() {
   const { profile, isPlayingGuest } = useUser();
   const { canSubmitScores, isOffSeason, isRegularSeason, currentEvent } = useSeason();
   const { showToast } = useToast();
+  const { mutate } = useSWRConfig();
   const supabase = createClient();
 
   const [step, setStep] = useState<Step>(preselectedCourseId ? 'player' : 'course');
@@ -267,6 +269,9 @@ function AddScoreContent() {
       event_name: currentEvent?.name || (currentEvent ? `Event ${currentEvent.event_number}` : null),
       is_complete: isComplete,
     });
+
+    mutate('leaderboard');
+    mutate((key: unknown) => Array.isArray(key) && key[0] === 'scores', undefined, { revalidate: true });
 
     showToast(isComplete ? 'Score submitted!' : 'Tee time saved!');
     router.push('/scores');
