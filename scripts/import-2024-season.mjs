@@ -108,6 +108,23 @@ async function run() {
   const ws = wb.Sheets['Round History'];
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
+  // BUG FIX: Round History "Gross Score" (col 8) stores Projected Gross, not
+  // Actual Gross, for scores entered via direct gross entry. Build a correction
+  // map from Score Archive which has the correct "Actual Gross" column.
+  const actualGrossById = new Map();
+  const saSheet = wb.Sheets['Score Archive'];
+  if (saSheet) {
+    const saRows = XLSX.utils.sheet_to_json(saSheet, { header: 1, defval: '' });
+    for (let i = 1; i < saRows.length; i++) {
+      const id = saRows[i][24]; // ID column (may be offset by 1 in some years)
+      const actualGross = saRows[i][11]; // Actual Gross
+      if (id && String(id).match(/^[0-9a-f]{8}-/) && typeof actualGross === 'number') {
+        actualGrossById.set(String(id), actualGross);
+      }
+    }
+    console.log(`  Score Archive gross corrections loaded: ${actualGrossById.size}`);
+  }
+
   // 2. Parse data rows (skip "For Stats" placeholder rows)
   const roundData = [];
   for (let i = 1; i < rows.length; i++) {
@@ -129,6 +146,10 @@ async function run() {
       continue;
     }
 
+    const rowId = r[0] ? String(r[0]) : '';
+    const rhGross = typeof r[8] === 'number' ? r[8] : parseInt(r[8]) || null;
+    const correctedGross = actualGrossById.has(rowId) ? actualGrossById.get(rowId) : rhGross;
+
     roundData.push({
       player: player.toString().trim(),
       handicap: typeof r[2] === 'number' ? r[2] : parseFloat(r[2]) || 0,
@@ -140,7 +161,7 @@ async function run() {
       holeType: parsed.holeType,
       rating: typeof r[6] === 'number' ? r[6] : parseFloat(r[6]) || 0,
       slope: typeof r[7] === 'number' ? r[7] : parseInt(r[7]) || 113,
-      grossScore: typeof r[8] === 'number' ? r[8] : parseInt(r[8]) || null,
+      grossScore: correctedGross,
       holesPlayed: typeof r[9] === 'number' ? r[9] : parseInt(r[9]) || null,
       par: typeof r[10] === 'number' ? r[10] : parseInt(r[10]) || null,
       eventType: r[13] ? r[13].toString().trim() : 'R18',
@@ -393,7 +414,7 @@ async function run() {
       } else {
         courseHandicap = fullCH;
         netScore = rd.grossScore - courseHandicap;
-        netStrokesOverPar = Math.round(rd.grossScore - courseHandicap - rd.rating);
+        netStrokesOverPar = Math.round(rd.grossScore - courseHandicap - (rd.par || (maxHoles === 9 ? 36 : 72)));
       }
     }
 

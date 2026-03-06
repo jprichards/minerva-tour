@@ -632,6 +632,16 @@ async function migrateScores() {
   // Tertiary: Current Event Scores
   const currentScores = getSheet('Current Event Scores').filter(r => r.Name && r.ID);
 
+  // BUG FIX: Round History "Gross Score" column stores the Projected Gross
+  // (not Actual Gross) for scores entered via direct gross entry. Build a
+  // correction map from Score Archive/CES which has both Actual and Projected.
+  const actualGrossById = new Map();
+  for (const row of [...scoreArchive, ...currentScores]) {
+    if (!row.ID) continue;
+    const actual = int(row['Actual Gross']);
+    if (actual != null) actualGrossById.set(row.ID, actual);
+  }
+
   // Build a dedup set of score IDs we've processed
   const processedIds = new Set();
 
@@ -641,6 +651,7 @@ async function migrateScores() {
   console.log(`  Round History: ${roundHistory.length} scores`);
   console.log(`  Score Archive: ${scoreArchive.length} scores`);
   console.log(`  Current Event: ${currentScores.length} scores`);
+  console.log(`  Gross score corrections available: ${actualGrossById.size}`);
 
   // Check existing scores
   const { data: existingScores } = await supabase.from('scores').select('id');
@@ -722,7 +733,8 @@ async function migrateScores() {
       continue;
     }
 
-    const grossScore = int(row['Gross Score']);
+    const rhGrossScore = int(row['Gross Score']);
+    const grossScore = actualGrossById.has(glideId) ? actualGrossById.get(glideId) : rhGrossScore;
     const holesPlayed = int(row['# of Holes']);
     const par = int(row.Par);
     const netStrokesOverPar = int(row['Net Score']);

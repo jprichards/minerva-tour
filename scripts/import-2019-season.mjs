@@ -277,7 +277,7 @@ async function run() {
       } else {
         courseHandicap = fullCH;
         netScore = rd.grossScore - courseHandicap;
-        netStrokesOverPar = Math.round(rd.grossScore - courseHandicap - rd.rating);
+        netStrokesOverPar = Math.round(rd.grossScore - courseHandicap - (rd.par || (maxHoles === 9 ? 36 : 72)));
       }
     }
     scoreInserts.push({
