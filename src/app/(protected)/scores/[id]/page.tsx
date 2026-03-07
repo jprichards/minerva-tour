@@ -30,6 +30,8 @@ export default function ScoreDetailPage() {
 
   // Edit fields
   const [grossScore, setGrossScore] = useState('');
+  const [grossToPar, setGrossToPar] = useState('');
+  const [scoreEntryMode, setScoreEntryMode] = useState<'gross' | 'toPar'>('gross');
   const [holesPlayed, setHolesPlayed] = useState('');
   const [isPartialRound, setIsPartialRound] = useState(false);
   const [teeTime, setTeeTime] = useState('');
@@ -89,7 +91,7 @@ export default function ScoreDetailPage() {
 
   const canDelete = canEdit;
 
-  const editHasScore = grossScore !== '';
+  const editHasScore = scoreEntryMode === 'toPar' ? grossToPar !== '' : grossScore !== '';
   const editMissingHoles = editHasScore && isPartialRound && !holesPlayed;
   const editMissingScore = !editHasScore && isPartialRound && !!holesPlayed;
   const editIncomplete = editMissingHoles || editMissingScore;
@@ -100,8 +102,15 @@ export default function ScoreDetailPage() {
     setSaving(true);
 
     const activeCourse = editCourse;
-    const grossScoreNum = grossScore ? parseInt(grossScore) : null;
     const maxHoles = getMaxHoles(activeCourse.type);
+    let grossScoreNum: number | null = null;
+    if (scoreEntryMode === 'toPar' && grossToPar !== '') {
+      const hp = isPartialRound && holesPlayed ? parseInt(holesPlayed) : maxHoles;
+      const partialPar = hp < maxHoles ? Math.round(activeCourse.par * (hp / maxHoles)) : activeCourse.par;
+      grossScoreNum = partialPar + parseInt(grossToPar);
+    } else {
+      grossScoreNum = grossScore ? parseInt(grossScore) : null;
+    }
     const holesPlayedNum = grossScoreNum != null
       ? (isPartialRound && holesPlayed ? parseInt(holesPlayed) : maxHoles)
       : null;
@@ -209,6 +218,8 @@ export default function ScoreDetailPage() {
     setEditing(false);
     setChangingCourse(false);
     setCourseSearch('');
+    setScoreEntryMode('gross');
+    setGrossToPar('');
 
     mutate('leaderboard');
     mutate((key: unknown) => Array.isArray(key) && key[0] === 'scores', undefined, { revalidate: true });
@@ -427,16 +438,63 @@ export default function ScoreDetailPage() {
           <div className="space-y-3">
             <div>
               <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
-                Gross Score {editMissingScore && <span className="text-red-500">*</span>}
+                Score {editMissingScore && <span className="text-red-500">*</span>}
               </label>
-              <input
-                type="number"
-                value={grossScore}
-                onChange={(e) => setGrossScore(e.target.value)}
-                className={`w-full rounded-xl border bg-[var(--input-bg)] px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-minerva-500 ${
-                  editMissingScore ? 'border-red-400 focus:ring-red-400' : 'border-[var(--input-border)]'
-                }`}
-              />
+              <div className="flex bg-[var(--bg-subtle)] rounded-lg p-0.5 mt-1 mb-2">
+                <button
+                  type="button"
+                  onClick={() => { setScoreEntryMode('gross'); setGrossToPar(''); }}
+                  className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    scoreEntryMode === 'gross' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
+                  }`}
+                >
+                  Gross Score
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setScoreEntryMode('toPar'); setGrossScore(''); }}
+                  className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    scoreEntryMode === 'toPar' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
+                  }`}
+                >
+                  Gross to Par
+                </button>
+              </div>
+
+              {scoreEntryMode === 'gross' ? (
+                <input
+                  type="number"
+                  value={grossScore}
+                  onChange={(e) => setGrossScore(e.target.value)}
+                  placeholder={`e.g. ${(editCourse?.par || 72) + 10}`}
+                  className={`w-full rounded-xl border bg-[var(--input-bg)] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500 ${
+                    editMissingScore ? 'border-red-400 focus:ring-red-400' : 'border-[var(--input-border)]'
+                  }`}
+                />
+              ) : (
+                <div>
+                  <input
+                    type="number"
+                    value={grossToPar}
+                    onChange={(e) => setGrossToPar(e.target.value)}
+                    placeholder="e.g. 5 for over, -2 for under"
+                    className={`w-full rounded-xl border bg-[var(--input-bg)] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500 ${
+                      editMissingScore ? 'border-red-400 focus:ring-red-400' : 'border-[var(--input-border)]'
+                    }`}
+                  />
+                  {grossToPar !== '' && editCourse && (
+                    <p className="text-xs text-[var(--text-muted)] mt-1">
+                      = Gross {(() => {
+                        const par = editCourse.par;
+                        const maxH = getMaxHoles(editCourse.type);
+                        const hp = isPartialRound && holesPlayed ? parseInt(holesPlayed) : maxH;
+                        const partialPar = hp < maxH ? Math.round(par * (hp / maxH)) : par;
+                        return partialPar + parseInt(grossToPar || '0');
+                      })()}
+                    </p>
+                  )}
+                </div>
+              )}
               {editMissingScore && (
                 <p className="text-xs text-red-500 mt-1">Required when holes played is entered.</p>
               )}
@@ -563,6 +621,9 @@ export default function ScoreDetailPage() {
               setEditing(false);
               setChangingCourse(false);
               setCourseSearch('');
+              setScoreEntryMode('gross');
+              setGrossToPar('');
+              setGrossScore(score?.gross_score?.toString() || '');
               if (score?.course) setEditCourse(score.course as unknown as Course);
             }}
             className="w-full text-[var(--text-muted)] text-sm py-2"

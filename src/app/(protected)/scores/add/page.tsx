@@ -519,7 +519,7 @@ function AddScoreContent() {
                       type="number"
                       value={grossToPar}
                       onChange={(e) => setGrossToPar(e.target.value)}
-                      placeholder="e.g. +5 or -2 (enter number only)"
+                      placeholder="e.g. 5 for over, -2 for under"
                       className={`w-full rounded-xl border bg-[var(--input-bg)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500 ${
                         missingScore ? 'border-red-400 focus:ring-red-400' : 'border-[var(--input-border)]'
                       }`}

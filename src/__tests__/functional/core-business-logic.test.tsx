@@ -448,7 +448,7 @@ describe('Score Entry - Holes Played Required When Score Entered', () => {
     // Switch to gross-to-par mode
     fireEvent.click(screen.getByText('Gross to Par'));
 
-    const toParInput = screen.getByPlaceholderText(/enter number only/);
+    const toParInput = screen.getByPlaceholderText(/for over.*for under/);
     fireEvent.change(toParInput, { target: { value: '5' } });
 
     expect(screen.getByText('Required when submitting a score.')).toBeInTheDocument();

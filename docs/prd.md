@@ -828,7 +828,7 @@ The following features have been built and should be considered part of the app'
 **Score Features:**
 
 - **9-hole bridging** (`src/app/(protected)/scores/bridge/page.tsx`): Dedicated UI for combining two 9-hole scores into one 18-hole score, with splicing prevention.
-- **Gross-to-par score entry**: Toggle between entering gross score or gross score relative to par.
+- **Gross-to-par score entry**: Toggle between entering gross score or gross score relative to par, available on both the add-score page (`scores/add`) and the score/tee-time edit page (`scores/[id]`).
 - **Major/playoff course rating validation**: Warning when selected course rating is below 68 for major/playoff events.
 - **Course filtering by event holes**: When an active event exists, the course list on score submission and tee time pages only shows courses matching the event's hole count (18h/36h events show only 18-hole courses; 9h events show only 9-hole/front-9/back-9 courses). An info banner indicates the filtering. Pre-selected courses that don't match are cleared.
 
@@ -862,11 +862,13 @@ The following features have been built and should be considered part of the app'
   - `round_complete` — Round finished (gross, net, holes, chirp commentary)
   - `score_edit` — Score edited (before/after values)
   - `retroactive` — Retroactive score entered by admin (player, course, event)
-- **Architecture**: Client fires a fire-and-forget POST to `/api/slack/notify` after score operations. The API route reads the Slack config from `app_settings` server-side (bot token never exposed to browser), checks if the event type is enabled, formats a Slack Block Kit message (including chirp for completed rounds), and posts via `chat.postMessage`.
+  - `feedback_submitted` — User submitted feedback (type, title, description, attachment links if any)
+- **Architecture**: Client fires a fire-and-forget POST to `/api/slack/notify` after score operations and feedback submissions. The API route reads the Slack config from `app_settings` server-side (bot token never exposed to browser), checks if the event type is enabled, formats a Slack Block Kit message (including chirp for completed rounds), and posts via `chat.postMessage`.
 - **Projected points**: For `score_in_progress`, `round_complete`, and `retroactive` events, the API route queries the current event's completed scores from the database, ranks the player among all participants (handling ties with point splitting), and includes both projected net and scratch points in the Slack message. Points are calculated server-side using the same formulas as the leaderboard (`calculateProjectedPoints` in `src/lib/scoring.ts`). Tee time notifications show "Points: -" since no score exists yet.
-- **Message format**: Compact single-section Slack blocks with no header/title blocks. Chirps appear as regular-sized italic text with a `:studio_microphone:` emoji. No event-type emojis on player lines.
-- **Configuration stored in** `app_settings` table with key `slack_config` (JSONB): bot_token, channel_id, channel_name, and per-event-type enabled flags.
-- **Error handling**: Slack notifications are best-effort — failures are silent and never block score submission.
+- **Message format**: Compact single-section Slack blocks with no header/title blocks. Chirps appear as regular-sized italic text with a `:studio_microphone:` emoji. No event-type emojis on player lines. Feedback messages show a type-specific emoji (:bug:, :bulb:, :speech_balloon:), submitter name, title, description, and clickable attachment links when present.
+- **Feedback channel**: Admins can optionally configure a separate Slack channel for feedback notifications (stored as `feedback_channel_id` and `feedback_channel_name` in `slack_config`). If not configured, feedback posts to the main score channel. The admin settings page shows a "Feedback Channel" dropdown (visible after loading channels) with a "Same as score channel" default option.
+- **Configuration stored in** `app_settings` table with key `slack_config` (JSONB): bot_token, channel_id, channel_name, per-event-type enabled flags, and optional feedback_channel_id/feedback_channel_name.
+- **Error handling**: Slack notifications are best-effort — failures are silent and never block score submission or feedback submission.
 
 **iOS Standalone Session Persistence:**
 
