@@ -211,7 +211,7 @@ export default function AdminFeedbackPage() {
                     <TypeIcon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[var(--text-primary)] truncate">{fb.title}</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{fb.title}</p>
                     <p className="text-xs text-[var(--text-muted)]">
                       {fb.user?.full_name || fb.user?.email || 'Unknown'} &middot;{' '}
                       {new Date(fb.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}

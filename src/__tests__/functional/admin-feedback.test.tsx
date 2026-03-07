@@ -214,6 +214,15 @@ describe('Admin Feedback Inbox', () => {
     });
   });
 
+  it('does not truncate feedback titles', async () => {
+    render(<AdminFeedbackPage />);
+    await waitFor(() => {
+      const titleEl = screen.getByText('App crashes on load');
+      expect(titleEl).toBeInTheDocument();
+      expect(titleEl.className).not.toMatch(/truncate/);
+    });
+  });
+
   it('redirects non-admin users', () => {
     mockIsAdmin.mockReturnValue(false);
     render(<AdminFeedbackPage />);
