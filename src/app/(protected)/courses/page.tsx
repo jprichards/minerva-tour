@@ -30,10 +30,11 @@ export default function CoursesPage() {
 
     const groups: Record<string, Course[]> = {};
     for (const course of filtered) {
-      if (!groups[course.course_name]) {
-        groups[course.course_name] = [];
+      const key = course.course_name.trim();
+      if (!groups[key]) {
+        groups[key] = [];
       }
-      groups[course.course_name].push(course);
+      groups[key].push(course);
     }
     return groups;
   }, [courses, search]);
