@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { Trophy, Target, MapPin, Calendar, ExternalLink, Clock, TrendingUp, Image } from 'lucide-react';
-import NotificationBell from '@/components/navigation/NotificationBell';
+import ShareButton from '@/components/navigation/ShareButton';
 import { getMaxHoles } from '@/lib/scoring';
 import type { Event, Season, Score } from '@/types/database';
 
@@ -111,7 +111,7 @@ export default function HomePage() {
               : 'Welcome to the Minerva Tour'}
           </p>
         </div>
-        <NotificationBell />
+        <ShareButton />
       </div>
 
       {/* Current Event Card */}

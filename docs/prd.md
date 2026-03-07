@@ -24,9 +24,9 @@ The first major version of this app will be a website that is meant to be used o
 
 - The tour complies with all USGA “Rules of Golf” (found at [https://www.usga.org/content/dam/usga/pdf/2015/2016 Rules/2016-rulesofgolf-USGAfinal.pdf](https://www.usga.org/content/dam/usga/pdf/2015/2016%20Rules/2016-rulesofgolf-USGAfinal.pdf)) , unless otherwise noted above, and with all rule changes for the 2019 PGA Tour season (found at [http://www.usga.org/rules-hub/rules-modernization/text/major-proposed-changes.html](http://www.usga.org/rules-hub/rules-modernization/text/major-proposed-changes.html))
 - Notable updates to the 2019 USGA rules include:
-    - No penalty for striking the flag stick with a putt
-    - No penalty for repairing spike marks on the putting line
-    - No penalty for accidentally moving your ball.
+  - No penalty for striking the flag stick with a putt
+  - No penalty for repairing spike marks on the putting line
+  - No penalty for accidentally moving your ball.
 - A quadruple bogey is the maximum score a player can score on any hole
 - The score posting process is available [here](https://minervatour.wordpress.com/rules/posting-scores/)
 - Event weeks begin on Monday morning and end on Sunday night (unless the deadline is extended due to weather or group consensus).
@@ -34,7 +34,7 @@ The first major version of this app will be a website that is meant to be used o
 - “Remote” scores are allowed. Rounds do not need to be played on the same course to be eligible.
 - Scores should be submitted on the same day in which they are played
 - Scores must be shot during the event window to be eligible**.**
-    - Note: A provision is available to players who live in a location where golf cannot be played at the beginning of the Minerva Tour season. The first two events are eligible for retroactive scores to be posted by these players but the events must be made up by the end of event 4. The best score posted in each event window applies to the current event, subsequent posted scores are applied as makeup rounds to the first two events.
+  - Note: A provision is available to players who live in a location where golf cannot be played at the beginning of the Minerva Tour season. The first two events are eligible for retroactive scores to be posted by these players but the events must be made up by the end of event 4. The best score posted in each event window applies to the current event, subsequent posted scores are applied as makeup rounds to the first two events.
 - If you are able, you may play multiple rounds during a single event week and submit all of your scores. Your best net score will be selected and applied to the active event. There is no limit to the number of rounds you can play in a single event week.
 - Playing multiple balls during a single round and submitting each ball as a separate score is not allowed.
 - The maximum scored allowed per hole in a match play event (for example Bobby Jones Cup) is a net quad. This means, a player may not pick up their ball, say they made a gross quad and receive handicap strokes on top of this score. The player must play the ball out to a maximum of net quadruple bogey.
@@ -57,78 +57,73 @@ Local Minerva Tour Rules and Guidelines
 - Gimmies - **No gimmies** allowed, players must putt everything out
 - Major course/tee requirement - **Major and Playoff events** must be played from course/tee **rated 68 or higher and may not be comprised of combined 9 hole scores**
 - Out of Bounds + Lost Ball -
-    
     Two additional options are available in case of a lost ball or out of bounds:
-    
-    1. Player must return to the place of the previous shot under one penalty stroke.
-    2. Player may take a drop within 2 club lengths of the position of the lost ball or where the ball went out of bounds under penalty of **2 strokes.**
-    3. Player may take a drop 2 club lengths inside the nearest fairway edge, no closer to the hole than where the ball was lost or where the ball went out of bounds under penalty of **2 strokes.**
+  1. Player must return to the place of the previous shot under one penalty stroke.
+  2. Player may take a drop within 2 club lengths of the position of the lost ball or where the ball went out of bounds under penalty of **2 strokes.**
+  3. Player may take a drop 2 club lengths inside the nearest fairway edge, no closer to the hole than where the ball was lost or where the ball went out of bounds under penalty of **2 strokes.**
 - Lost Ball Relief - In the event a ball has been lost and if you are **virtually certain** that your ball is lost in standard rough or fairway grass **on the hole you are playing**, you may elect to take a free drop in the area where your ball is estimated to have come to rest. The spirit of this rule is to provide relief in situations where a ball should be find-able (such as in light rough or embedded in the fairway), but it inexplicably cannot be found.
-    
     **Using this rule requires mandatory reporting to the membership with photo evidence and explanation of circumstances.**
-    
     This rule does not apply if the ball is expected to be in the following areas:
-    
-    - Heavy rough which is longer than the course’s standard rough length (i.e. tall rough between holes at Lawsonia
-    - Ivy covered areas
-    - Hazards (marked by red or yellow stakes)
-    - Bunkers
-    - Out of bounds areas
-    - Bushes or low brush
-    - Drainage ditch
-    - Pinestraw
+  - Heavy rough which is longer than the course’s standard rough length (i.e. tall rough between holes at Lawsonia
+  - Ivy covered areas
+  - Hazards (marked by red or yellow stakes)
+  - Bunkers
+  - Out of bounds areas
+  - Bushes or low brush
+  - Drainage ditch
+  - Pinestraw
 - Scoring -
-    - Course handicap calculations as applied to Net score are **rounded to the nearest stroke**
-    - Net scores are rounded to the **nearest stroke**
-    - In case of a tie in an event, points are split evenly between the tied players and rounded to the **nearest tenth of a point**
+  - Course handicap calculations as applied to Net score are **rounded to the nearest stroke**
+  - Net scores are rounded to the **nearest stroke**
+  - In case of a tie in an event, points are split evenly between the tied players and rounded to the **nearest tenth of a point**
 
 ### **Scoring**:
 
 - Scoring for each tour event will be done with a standard handicapped stroke play format. To calculate a net score normalized for course difficulty and player ability, the WHS (World Handicap System) Playing Handicap formula is used:
-    1. **Playing Handicap** = `round((Handicap Index × Slope / 113 + (Course Rating − Par)) × Handicap Allowance)`
-    2. **Net Strokes Over Par** = `Gross Score − Playing Handicap − Par` (rounded to nearest stroke)
-    - Each player is assigned a Playing Handicap based on their handicap index, the course they are playing (slope, rating, par), and the season’s handicap allowance percentage.
-    - The Playing Handicap is subtracted from the gross score, then Par is subtracted to get “Net Strokes Over Par”.
-    - The `(Course Rating − Par)` term adjusts for courses where rating differs from par (e.g., a par 72 course rated 69.3 reduces the handicap strokes given). The allowance percentage is applied to the entire unrounded value before a single final rounding.
-    - The player with the lowest “Net Strokes Over Par” is the winner.
+  1. **Playing Handicap** = `round((Handicap Index × Slope / 113 + (Course Rating − Par)) × Handicap Allowance)`
+  2. **Net Strokes Over Par** = `Gross Score − Playing Handicap − Par` (rounded to nearest stroke)
+  - Each player is assigned a Playing Handicap based on their handicap index, the course they are playing (slope, rating, par), and the season’s handicap allowance percentage.
+  - The Playing Handicap is subtracted from the gross score, then Par is subtracted to get “Net Strokes Over Par”.
+  - The `(Course Rating − Par)` term adjusts for courses where rating differs from par (e.g., a par 72 course rated 69.3 reduces the handicap strokes given). The allowance percentage is applied to the entire unrounded value before a single final rounding.
+  - The player with the lowest “Net Strokes Over Par” is the winner.
 - **Handicap Allowance**: A configurable percentage applied to each player’s course handicap for net scoring purposes, set per season on the Admin > Seasons page. This follows USGA/WHS “handicap allowance” terminology.
-    - The full formula: `Playing Handicap = round((Index × Slope / 113 + (Rating − Par)) × allowance / 100)`
-    - Default: 100% (full handicap). Starting in 2024, the league adopted a 95% handicap allowance to better balance competition between low and high handicap players.
-    - Pre-2024 seasons: 100%. 2024 onward: 95%. New seasons default to 95%.
-    - When a season’s handicap allowance is changed, all net scores for that season should be recalculated.
-    - Valid range: 1-100%.
-    - See [`docs/GLIDE_FORMULA_REFERENCE.md`](GLIDE_FORMULA_REFERENCE.md) for detailed formula breakdowns, worked examples, and parity checklist.
+  - The full formula: `Playing Handicap = round((Index × Slope / 113 + (Rating − Par)) × allowance / 100)`
+  - Default: 100% (full handicap). Starting in 2024, the league adopted a 95% handicap allowance to better balance competition between low and high handicap players.
+  - Pre-2024 seasons: 100%. 2024 onward: 95%. New seasons default to 95%.
+  - When a season’s handicap allowance is changed, all net scores for that season should be recalculated.
+  - Valid range: 1-100%.
+  - See `[docs/GLIDE_FORMULA_REFERENCE.md](GLIDE_FORMULA_REFERENCE.md)` for detailed formula breakdowns, worked examples, and parity checklist.
 - Note: Ranking by “Net Strokes Over Par” allows us to play on courses with variations in yardage/course par (i.e. executive courses with par 62, par 70, par 72, etc.)
 - Regular Season scoring on the the Minerva Tour is done as follows
-    - The winner of **9 hole events** and **non-major 18 hole events** receives 1 point for each player who plays in the event. Subsequent places receive one less point per place. For example, if 3 people play in a 9 hole event, first place wins 3 points, second place 2 points, and third place 1 point
-    - **Majors (18 holes)** are assigned higher point values. Winners receive **1.33** points per participant or 10, whichever is greater. Subsequent places will receive points as indicated below:
-        - Place - Point Payout
-            - 1st - Max of (# of participants * 1.33) or (10)
-            - 2nd - 1st place minus 3
-            - 3rd - 2nd place minus 2
-            - 4th - 3rd place minus 1
-            - 5th - 4th place minus 1
-            - 6th - 5th place minus 1
-            - 7th and beyond - 1 less per place (minimum of 1 point)
-        - For example, if 7 participants play, below are the payouts (1st place receives minimum of 10 points)
-            - Place - Points
-                - 1st - 10
-                - 2nd - 7
-                - 3rd - 5
-                - 4th - 4
-                - 5th - 3
-                - 6th - 2
-                - 7th - 1
-        - If 15 participants play, below are the payouts (First place receives 15 * 1.33 rounded to the nearest tenth of a point)
-            - **Place - Points**
-                - 1st- 20
-                - 2nd - 17
-                - 3rd - 15
-                - 4th - 14
-                - 5th - 13
-                - 6th- 12
-                - 7th - 11
-                - 8th through 15th - 1 less per place (minimum of 1 point)
+  - The winner of **9 hole events** and **non-major 18 hole events** receives 1 point for each player who plays in the event. Subsequent places receive one less point per place. For example, if 3 people play in a 9 hole event, first place wins 3 points, second place 2 points, and third place 1 point
+  - **Majors (18 holes)** are assigned higher point values. Winners receive **1.33** points per participant or 10, whichever is greater. Subsequent places will receive points as indicated below:
+    - Place - Point Payout
+      - 1st - Max of (# of participants * 1.33) or (10)
+      - 2nd - 1st place minus 3
+      - 3rd - 2nd place minus 2
+      - 4th - 3rd place minus 1
+      - 5th - 4th place minus 1
+      - 6th - 5th place minus 1
+      - 7th and beyond - 1 less per place (minimum of 1 point)
+    - For example, if 7 participants play, below are the payouts (1st place receives minimum of 10 points)
+      - Place - Points
+        - 1st - 10
+        - 2nd - 7
+        - 3rd - 5
+        - 4th - 4
+        - 5th - 3
+        - 6th - 2
+        - 7th - 1
+    - If 15 participants play, below are the payouts (First place receives 15 * 1.33 rounded to the nearest tenth of a point)
+      - **Place - Points**
+        - 1st- 20
+        - 2nd - 17
+        - 3rd - 15
+        - 4th - 14
+        - 5th - 13
+        - 6th- 12
+        - 7th - 11
+        - 8th through 15th - 1 less per place (minimum of 1 point)
 
 **Playoffs:**
 
@@ -175,7 +170,7 @@ Playoff Qualification and Seeding
 Playoff Advancement:
 
 - The tiebreaker for playoff advancement to the next round is the player’s playoff seed (applies to advancement from the first to the second and second to championship playoff events). The player with the better seed wins the tie (3 seed wins tiebreaker over a 6 seed)
-    - Note: The players in the match may mutually agree to settle the tie in a different manner (i.e. sudden death holes, additional round, etc.) but the tie must be resolved by the end of the event window otherwise the standard tiebreaker mentioned above will apply)
+  - Note: The players in the match may mutually agree to settle the tie in a different manner (i.e. sudden death holes, additional round, etc.) but the tie must be resolved by the end of the event window otherwise the standard tiebreaker mentioned above will apply)
 
 Unicorn:
 
@@ -258,12 +253,12 @@ The app is mobile-first (used on phones, often outdoors). Layout and visual desi
 **Stats:**
 
 - Members can view detailed stats for themselves and other members, including:
-    - Average net score
-    - Best/worst rounds
-    - Courses played most
-    - Scoring trends over time
-    - Head-to-head records (me vs. another member)
-    - Compare any two members head-to-head (via Tour Stats page picker, navigates to `/stats/{player2}?vs={player1}`)
+  - Average net score
+  - Best/worst rounds
+  - Courses played most
+  - Scoring trends over time
+  - Head-to-head records (me vs. another member)
+  - Compare any two members head-to-head (via Tour Stats page picker, navigates to `/stats/{player2}?vs={player1}`)
 - Stats should be viewable for both current season and previous seasons.
 
 **Schedule:**
@@ -338,10 +333,10 @@ The app is mobile-first (used on phones, often outdoors). Layout and visual desi
 
 **Tournament Format Details (TO BE DEFINED):**
 
-- [ ]  Member-Guest tournament format: team-based? Scoring method (best ball, alternate shot, combined)?
-- [ ]  Bobby Jones Cup format details: match play brackets? Team format?
-- [ ]  What settings does admin need to configure when creating a tournament? (format, scoring rules, eligibility, point values, pairings/teams?)
-- [ ]  Should tournament pairings/teams be randomly assigned, manually set by admin, or member-selected?
+- Member-Guest tournament format: team-based? Scoring method (best ball, alternate shot, combined)?
+- Bobby Jones Cup format details: match play brackets? Team format?
+- What settings does admin need to configure when creating a tournament? (format, scoring rules, eligibility, point values, pairings/teams?)
+- Should tournament pairings/teams be randomly assigned, manually set by admin, or member-selected?
 
 **Playoff Bracket Display:**
 
@@ -428,7 +423,7 @@ Since this will be AI-coded and you want to prioritize ease of use for administr
 **AI Coding Tool** (choose one):
 
 - **Cursor**: $20/month - Best option for this project
-- [**Bolt.new**](http://Bolt.new): $25/month
+- **[Bolt.new](http://Bolt.new)**: $25/month
 - **Claude Pro** (with manual setup): $20/month
 - **Free alternatives**: Replit (limited free tier), v0 (limited free tier)
 
@@ -610,6 +605,7 @@ You only need to pay for the AI coding tool ($20/month) while actively building 
 - Display user's current position in event and season
 - Quick action buttons (Start a round, Add a tee time)
 - Quick links (Standings, Rules [link to WordPress], Photos [external link], Schedule)
+- **Share button** in the top-right header (replaces notification bell). Tapping opens the native OS share sheet (via Web Share API) to share the app link via text, email, social media, etc. Falls back to copy-to-clipboard with visual "Copied!" feedback on browsers that don't support the Web Share API.
 
 **3.2 Navigation:**
 
@@ -806,6 +802,7 @@ You only need to pay for the AI coding tool ($20/month) while actively building 
 The following features have been built and should be considered part of the app's current specification:
 
 **Offline Architecture & Performance:**
+
 - **Service worker** (`public/sw.js`): Pre-caches static assets, stale-while-revalidate for resources, network-first for navigation.
 - **SWR + IndexedDB caching** (`src/components/SWRProvider.tsx`, `src/lib/offline/cache.ts`): All data fetching uses SWR with IndexedDB persistence for instant page loads and offline fallback.
 - **Offline banner** (`src/components/OfflineBanner.tsx`): Displays connectivity status and pending sync count.
@@ -813,34 +810,41 @@ The following features have been built and should be considered part of the app'
 - **Online status detection** (`src/lib/hooks/useOnlineStatus.ts`): React hook for real-time online/offline state.
 
 **Notifications:**
+
 - **Push notifications** (`src/lib/push-notifications.ts`, `src/app/(protected)/notifications/page.tsx`): Full Web Push API integration with subscribe/unsubscribe, VAPID key support, and push event handling in the service worker.
 - **In-app notification bell** (`src/components/navigation/NotificationBell.tsx`): Bell icon with unread badge in the header, linking to notifications page.
 - **Notification types**: event_start, event_end, score_posted, handicap_update, admin_message, season_mode, tournament, general.
 
 **Data Export:**
+
 - **CSV/PDF export** (`src/lib/export.ts`): Export leaderboards and event history as CSV or PDF (print-to-PDF via HTML). Available on leaderboard and event history pages.
 
 **Admin Features:**
+
 - **Database viewer** (`src/app/(protected)/admin/data/page.tsx`): Mobile-friendly table browser with search, pagination, and inline editing for all 9 core tables.
 - **Retroactive scores** (`src/app/(protected)/admin/retroactive/page.tsx`): Dedicated admin page for entering retroactive scores for members in unplayable climates.
 - **Audit log viewer** (`src/app/(protected)/admin/audit/page.tsx`): Filterable, searchable audit log with structured event data and mobile-friendly display.
 
 **Score Features:**
+
 - **9-hole bridging** (`src/app/(protected)/scores/bridge/page.tsx`): Dedicated UI for combining two 9-hole scores into one 18-hole score, with splicing prevention.
 - **Gross-to-par score entry**: Toggle between entering gross score or gross score relative to par.
 - **Major/playoff course rating validation**: Warning when selected course rating is below 68 for major/playoff events.
 - **Course filtering by event holes**: When an active event exists, the course list on score submission and tee time pages only shows courses matching the event's hole count (18h/36h events show only 18-hole courses; 9h events show only 9-hole/front-9/back-9 courses). An info banner indicates the filtering. Pre-selected courses that don't match are cleared.
 
 **Chirps:**
+
 - **Automated score commentary** (`src/lib/chirps.ts`): Score-based trash talk templates with performance buckets and `$first_name` substitution.
 
 **Data Migration:**
+
 - **Glide-to-Supabase migration** (`scripts/migrate-glide-data.mjs`): Comprehensive migration script that imported all historical data from the legacy Glide app (30 users, 216 handicap records, 805 courses, 12 events, 227 scores, 6 playoff matchups). Script is idempotent and uses Supabase Admin Auth API for user creation.
 - **Glide data source guidance** (from commissioner): Round History "Gross Score" is unreliable (pulls from Projected Gross). For correct gross, use Score Archive "Gross Score (optional)" if populated, otherwise derive from Over Par + Par. The "Actual Gross" column (col 11) in Score Archive implements this as a formula. RH "Net Score" and "Scratch Score" are the source of truth for standings.
 - **Projected Gross bug fix**: Glide's "Round History" tab stores Projected Gross (not Actual Gross) in its "Gross Score" column for scores entered via direct gross entry. This affected 797 scores across 2020-2025. All migration scripts (`migrate-glide-data.mjs` and `import-YYYY-season.mjs` for 2020-2025) now cross-reference the "Score Archive" tab's "Actual Gross" column to correct the value. Fix script: `scripts/fix-projected-gross-scores.mjs` (matches by Glide UUID for 2025, by user+event+gross for 2020-2024). 2018-2019 data uses a different format ("Round Data") and is unaffected.
 - **NOP formula fix**: Import scripts (2018-2024) computed `net_strokes_over_par` as `round(gross - courseHandicap - rating)` instead of `gross - courseHandicap - par`. This affected 736 scores. Fix script: `scripts/fix-nop-rating-vs-par.mjs`. All import scripts patched to use `par`.
 
 **Trophies & Hall of Fame:**
+
 - **Trophy data model** (`trophies` and `season_finishes` tables): Stores awards won by members (Minerva Tour Champion, Scratch Champion, Bobby Jones Cup, Member-Guest, Most Improved, Playoffs Winner, Consolation Winner, Unicorn, Edge Solutions Cup, Hole in One) with year, award type, emoji, and optional description (location).
 - **Trophy Case on profiles** (`members/[id]/page.tsx`, `profile/page.tsx`): Each member's profile displays their award history with emojis, award names, locations, and years, plus season finish history.
 - **Emoji badges on members list** (`members/page.tsx`): Compact unique trophy emojis displayed next to each member's name in the members list.
@@ -849,6 +853,7 @@ The following features have been built and should be considered part of the app'
 - **Emoji mapping**: 🏆 Minerva Tour Champion, 🥇 Scratch Champion, 📉 Most Improved, 🌳 Bobby Jones Cup (Team Magnolia), 🌺 Bobby Jones Cup (Team Azalea), 🇺🇸 Bobby Jones Cup (Hilton Head, pre-team era), 🍻 Member-Guest, 🦄 Unicorn, 🎖 Playoffs Winner, 🥈 Consolation Winner, 📀 Edge Solutions Cup, 1️⃣ Hole in One.
 
 **Slack Integration:**
+
 - **Slack Bot integration** (`src/lib/slack.ts`, `src/lib/slack-notify.ts`, `src/app/api/slack/`): Posts rich notifications to a configured Slack channel when key events occur.
 - **Admin configuration** (extended in `/admin/settings`): Admins paste a Slack Bot Token, select a channel from a dropdown (populated via Slack API), and toggle which events fire notifications.
 - **Event types**:
@@ -864,12 +869,14 @@ The following features have been built and should be considered part of the app'
 - **Error handling**: Slack notifications are best-effort — failures are silent and never block score submission.
 
 **iOS Standalone Session Persistence:**
+
 - **Problem**: iOS WKWebView can evict `document.cookie` storage when the standalone (home screen) PWA process is killed, causing users to re-authenticate on every launch.
 - **Session backup** (`src/lib/session-persistence.ts`): Mirrors auth tokens (access + refresh) to `localStorage` on every auth state change. `localStorage` is preserved more reliably than cookies in iOS standalone mode.
 - **Auto-backup component** (`src/components/SessionPersistence.tsx`): Mounted in the root layout, subscribes to Supabase `onAuthStateChange` to keep the backup in sync. Clears backup on sign-out.
 - **Login page recovery** (`src/app/(auth)/login/page.tsx`): On mount, checks for an existing session or a localStorage backup. If found, restores the session via `setSession()` and redirects to `/home` without requiring re-authentication. Shows a branded loading state during recovery.
 
 **Testing:**
+
 - **Comprehensive test suite**: 670+ tests covering unit, component, integration, functional, and E2E testing using Vitest, React Testing Library, and Playwright. TDD workflow enforced via workspace rules.
 
 ---
@@ -915,9 +922,11 @@ The following features have been built and should be considered part of the app'
 ## **Feedback System:**
 
 ### **Overview:**
+
 Users can submit bug reports, feature requests, or general feedback directly within the app. Admins manage an inbox to review, respond to, and close out submissions.
 
 ### **User Features:**
+
 - Submit feedback with a type (Bug Report, Feature Request, Other), title, and description
 - Attach up to 3 screenshots or videos (max 10MB each) to any submission
 - View "My Submissions" list with status badges (Open, In Progress, Resolved, Closed)
@@ -925,6 +934,7 @@ Users can submit bug reports, feature requests, or general feedback directly wit
 - Accessible from Profile page ("Send Feedback" card) and More menu ("Feedback" link)
 
 ### **Admin Features:**
+
 - Dedicated "Feedback Inbox" in the admin section
 - Filter by status (Open, In Progress, Resolved, Closed) and type (Bug, Feature, Other)
 - Expand any entry to view description, attachments, and write a response
@@ -932,6 +942,8 @@ Users can submit bug reports, feature requests, or general feedback directly wit
 - **Attachment cleanup**: When feedback is closed, all uploaded files are deleted from storage and the attachments array is cleared to prevent indefinite storage growth
 
 ### **Database:**
+
 - `feedback` table with RLS policies (users insert/read own, admins read/update all)
 - `feedback-attachments` Supabase Storage bucket (private, authenticated access)
 - File path convention: `{user_id}/{feedback_id}/{filename}`
+
