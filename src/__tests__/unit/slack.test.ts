@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { formatSlackMessage } from '@/lib/slack';
-import type { SlackNotifyPayload } from '@/types/database';
+import type { SlackNotifyPayload, SlackScorePayload, SlackFeedbackPayload } from '@/types/database';
 
 // Mock chirps to return deterministic values
 vi.mock('@/lib/chirps', () => ({
@@ -10,7 +10,7 @@ vi.mock('@/lib/chirps', () => ({
     `Mock chirp for ${ctx.firstName} at ${netOverPar > 0 ? '+' : ''}${netOverPar}`,
 }));
 
-const basePayload: SlackNotifyPayload = {
+const basePayload: SlackScorePayload = {
   event_type: 'round_complete',
   player_name: 'John Smith',
   handicap_index: 12.4,
@@ -365,8 +365,8 @@ describe('formatSlackMessage', () => {
       expect(msg.blocks[0].text?.text).toContain('John Smith');
     });
 
-    it('always includes a fallback text string', () => {
-      const eventTypes: SlackNotifyPayload['event_type'][] = [
+    it('always includes a fallback text string for score events', () => {
+      const eventTypes: SlackScorePayload['event_type'][] = [
         'tee_time',
         'score_in_progress',
         'round_complete',
@@ -380,6 +380,104 @@ describe('formatSlackMessage', () => {
         expect(typeof msg.text).toBe('string');
         expect(msg.text.length).toBeGreaterThan(0);
       }
+    });
+
+    it('includes a fallback text string for feedback events', () => {
+      const feedbackPayload: SlackFeedbackPayload = {
+        event_type: 'feedback_submitted',
+        user_name: 'Jane Doe',
+        feedback_type: 'bug',
+        title: 'Something broke',
+        description: 'Details here',
+      };
+
+      const msg = formatSlackMessage(feedbackPayload);
+      expect(msg.text).toBeTruthy();
+      expect(typeof msg.text).toBe('string');
+      expect(msg.text.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('feedback_submitted', () => {
+    const feedbackPayload: SlackFeedbackPayload = {
+      event_type: 'feedback_submitted',
+      user_name: 'Jane Doe',
+      feedback_type: 'bug',
+      title: 'Login page broken',
+      description: 'Cannot log in after the latest update.',
+    };
+
+    it('shows feedback type, user name, title, and description', () => {
+      const msg = formatSlackMessage(feedbackPayload);
+      const text = allBlockText(msg);
+
+      expect(text).toContain('Bug Report');
+      expect(text).toContain('Jane Doe');
+      expect(text).toContain('Login page broken');
+      expect(text).toContain('Cannot log in after the latest update.');
+    });
+
+    it('shows bug emoji for bug type', () => {
+      const msg = formatSlackMessage(feedbackPayload);
+      const text = allBlockText(msg);
+      expect(text).toContain(':bug:');
+    });
+
+    it('shows bulb emoji for feature request type', () => {
+      const msg = formatSlackMessage({ ...feedbackPayload, feedback_type: 'feature_request' });
+      const text = allBlockText(msg);
+      expect(text).toContain(':bulb:');
+      expect(text).toContain('Feature Request');
+    });
+
+    it('shows speech balloon emoji for other type', () => {
+      const msg = formatSlackMessage({ ...feedbackPayload, feedback_type: 'other' });
+      const text = allBlockText(msg);
+      expect(text).toContain(':speech_balloon:');
+      expect(text).toContain('Other');
+    });
+
+    it('includes attachment links when provided', () => {
+      const withAttachments: SlackFeedbackPayload = {
+        ...feedbackPayload,
+        attachments: [
+          'https://storage.example.com/file1.png',
+          'https://storage.example.com/file2.mp4',
+        ],
+      };
+
+      const msg = formatSlackMessage(withAttachments);
+      const text = allBlockText(msg);
+
+      expect(text).toContain(':paperclip:');
+      expect(text).toContain('Attachment 1');
+      expect(text).toContain('Attachment 2');
+      expect(text).toContain('https://storage.example.com/file1.png');
+    });
+
+    it('omits attachment section when no attachments', () => {
+      const msg = formatSlackMessage(feedbackPayload);
+      const text = allBlockText(msg);
+      expect(text).not.toContain(':paperclip:');
+      expect(text).not.toContain('Attachment');
+    });
+
+    it('omits attachment section for empty array', () => {
+      const msg = formatSlackMessage({ ...feedbackPayload, attachments: [] });
+      const text = allBlockText(msg);
+      expect(text).not.toContain(':paperclip:');
+    });
+
+    it('uses only section blocks', () => {
+      const msg = formatSlackMessage(feedbackPayload);
+      expect(msg.blocks.every((b) => b.type === 'section')).toBe(true);
+    });
+
+    it('includes user name and type in fallback text', () => {
+      const msg = formatSlackMessage(feedbackPayload);
+      expect(msg.text).toContain('Jane Doe');
+      expect(msg.text).toContain('Bug Report');
+      expect(msg.text).toContain('Login page broken');
     });
   });
 });

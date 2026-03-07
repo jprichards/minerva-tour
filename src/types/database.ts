@@ -241,17 +241,20 @@ export interface Feedback {
   responder?: User;
 }
 
-export type SlackEventType = 'tee_time' | 'score_in_progress' | 'round_complete' | 'score_edit' | 'retroactive';
+export type SlackScoreEventType = 'tee_time' | 'score_in_progress' | 'round_complete' | 'score_edit' | 'retroactive';
+export type SlackEventType = SlackScoreEventType | 'feedback_submitted';
 
 export interface SlackConfig {
   bot_token: string;
   channel_id: string;
   channel_name: string;
   events: Record<SlackEventType, boolean>;
+  feedback_channel_id?: string;
+  feedback_channel_name?: string;
 }
 
-export interface SlackNotifyPayload {
-  event_type: SlackEventType;
+export interface SlackScorePayload {
+  event_type: SlackScoreEventType;
   player_name: string;
   handicap_index?: number | null;
   course_name: string;
@@ -271,6 +274,17 @@ export interface SlackNotifyPayload {
   projected_net_points?: number | null;
   projected_scratch_points?: number | null;
 }
+
+export interface SlackFeedbackPayload {
+  event_type: 'feedback_submitted';
+  user_name: string;
+  feedback_type: string;
+  title: string;
+  description: string;
+  attachments?: string[];
+}
+
+export type SlackNotifyPayload = SlackScorePayload | SlackFeedbackPayload;
 
 export type NotificationType = 'event_start' | 'event_end' | 'score_posted' | 'handicap_update' | 'admin_message' | 'season_mode' | 'tournament' | 'general';
 

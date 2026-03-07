@@ -16,6 +16,11 @@ vi.mock('@/lib/hooks/useUser', () => ({
   }),
 }));
 
+const mockNotifySlack = vi.fn();
+vi.mock('@/lib/slack-notify', () => ({
+  notifySlack: (...args: unknown[]) => mockNotifySlack(...args),
+}));
+
 import FeedbackPage from '@/app/(protected)/feedback/page';
 
 function createChainProxy(resolvedData: unknown = [], resolvedError: unknown = null) {
@@ -150,6 +155,53 @@ describe('Feedback Page', () => {
     render(<FeedbackPage />);
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     expect(fileInput.accept).toBe('image/*,video/*');
+  });
+
+  it('calls notifySlack with feedback details after successful submission', async () => {
+    const insertChain = createChainProxy({ id: 'fb-new', type: 'bug', title: 'Test', description: 'Desc', attachments: [] });
+    const selectChain = createChainProxy(mockFeedbackList);
+
+    mockSupabaseClient.from.mockImplementation((table: string) => {
+      if (table === 'feedback') {
+        return {
+          ...insertChain,
+          select: vi.fn().mockReturnValue(selectChain),
+          insert: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: { id: 'fb-new' }, error: null }),
+              then: vi.fn((resolve: (val: unknown) => void) => {
+                resolve({ data: { id: 'fb-new' }, error: null });
+                return Promise.resolve({ data: { id: 'fb-new' }, error: null });
+              }),
+            }),
+          }),
+        };
+      }
+      return createChainProxy([]);
+    });
+
+    render(<FeedbackPage />);
+
+    const titleInput = screen.getByPlaceholderText(/Scores not loading/) as HTMLInputElement;
+    const descInput = screen.getByPlaceholderText(/What happened/) as HTMLTextAreaElement;
+
+    fireEvent.change(titleInput, { target: { value: 'My bug report' } });
+    fireEvent.change(descInput, { target: { value: 'Something is wrong' } });
+
+    const submitBtn = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+    fireEvent.submit(submitBtn.closest('form')!);
+
+    await waitFor(() => {
+      expect(mockNotifySlack).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event_type: 'feedback_submitted',
+          user_name: 'Test User',
+          feedback_type: 'bug',
+          title: 'My bug report',
+          description: 'Something is wrong',
+        })
+      );
+    });
   });
 
   it('displays My Submissions list', async () => {

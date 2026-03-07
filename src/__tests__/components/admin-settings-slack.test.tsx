@@ -83,7 +83,7 @@ describe('AdminSettingsPage - Slack Integration', () => {
     }
   });
 
-  it('renders all 5 event toggle switches', async () => {
+  it('renders all 6 event toggle switches (5 score + 1 feedback)', async () => {
     render(<AdminSettingsPage />);
 
     await waitFor(() => {
@@ -94,6 +94,7 @@ describe('AdminSettingsPage - Slack Integration', () => {
     expect(screen.getByText('Completed Rounds')).toBeInTheDocument();
     expect(screen.getByText('Score Edits')).toBeInTheDocument();
     expect(screen.getByText('Retroactive Scores')).toBeInTheDocument();
+    expect(screen.getByText('Feedback Submissions')).toBeInTheDocument();
   });
 
   it('renders event toggles as switches with correct initial state (all on)', async () => {
@@ -104,7 +105,7 @@ describe('AdminSettingsPage - Slack Integration', () => {
     });
 
     const switches = screen.getAllByRole('switch');
-    expect(switches.length).toBe(5);
+    expect(switches.length).toBe(6);
     switches.forEach((sw) => {
       expect(sw.getAttribute('aria-checked')).toBe('true');
     });
@@ -127,6 +128,16 @@ describe('AdminSettingsPage - Slack Integration', () => {
 
     fireEvent.click(teeTimeSwitch);
     expect(teeTimeSwitch.getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('renders feedback notifications section with its own toggle', async () => {
+    render(<AdminSettingsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Feedback Notifications')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Feedback Submissions')).toBeInTheDocument();
   });
 
   it('renders Load Channels button', async () => {

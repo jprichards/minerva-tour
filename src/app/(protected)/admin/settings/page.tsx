@@ -15,7 +15,10 @@ const SLACK_EVENT_LABELS: Record<SlackEventType, string> = {
   round_complete: 'Completed Rounds',
   score_edit: 'Score Edits',
   retroactive: 'Retroactive Scores',
+  feedback_submitted: 'Feedback Submissions',
 };
+
+const SCORE_EVENT_TYPES: SlackEventType[] = ['tee_time', 'score_in_progress', 'round_complete', 'score_edit', 'retroactive'];
 
 const DEFAULT_SLACK_EVENTS: Record<SlackEventType, boolean> = {
   tee_time: true,
@@ -23,6 +26,7 @@ const DEFAULT_SLACK_EVENTS: Record<SlackEventType, boolean> = {
   round_complete: true,
   score_edit: true,
   retroactive: true,
+  feedback_submitted: true,
 };
 
 export default function AdminSettingsPage() {
@@ -42,6 +46,8 @@ export default function AdminSettingsPage() {
   const [slackChannelName, setSlackChannelName] = useState('');
   const [slackEvents, setSlackEvents] = useState<Record<SlackEventType, boolean>>(DEFAULT_SLACK_EVENTS);
   const [slackChannels, setSlackChannels] = useState<Array<{ id: string; name: string }>>([]);
+  const [feedbackChannelId, setFeedbackChannelId] = useState('');
+  const [feedbackChannelName, setFeedbackChannelName] = useState('');
   const [showToken, setShowToken] = useState(false);
   const [slackStatus, setSlackStatus] = useState<'disconnected' | 'connected' | 'error'>('disconnected');
   const [loadingChannels, setLoadingChannels] = useState(false);
@@ -78,6 +84,8 @@ export default function AdminSettingsPage() {
         if (config.bot_token) setSlackBotToken(config.bot_token);
         if (config.channel_id) setSlackChannelId(config.channel_id);
         if (config.channel_name) setSlackChannelName(config.channel_name);
+        if (config.feedback_channel_id) setFeedbackChannelId(config.feedback_channel_id);
+        if (config.feedback_channel_name) setFeedbackChannelName(config.feedback_channel_name);
         if (config.events) setSlackEvents({ ...DEFAULT_SLACK_EVENTS, ...config.events });
         if (config.bot_token && config.channel_id) setSlackStatus('connected');
       }
@@ -153,6 +161,12 @@ export default function AdminSettingsPage() {
     if (ch) setSlackChannelName('#' + ch.name);
   };
 
+  const handleFeedbackChannelChange = (channelId: string) => {
+    setFeedbackChannelId(channelId);
+    const ch = slackChannels.find((c) => c.id === channelId);
+    if (ch) setFeedbackChannelName('#' + ch.name);
+  };
+
   const toggleSlackEvent = (eventType: SlackEventType) => {
     setSlackEvents((prev) => ({ ...prev, [eventType]: !prev[eventType] }));
   };
@@ -177,6 +191,8 @@ export default function AdminSettingsPage() {
         channel_id: slackChannelId,
         channel_name: slackChannelName,
         events: slackEvents,
+        feedback_channel_id: feedbackChannelId || undefined,
+        feedback_channel_name: feedbackChannelName || undefined,
       };
       await supabase.from('app_settings').upsert({
         key: 'slack_config',
@@ -360,11 +376,11 @@ export default function AdminSettingsPage() {
               </button>
             )}
 
-            {/* Event Toggles */}
+            {/* Score Event Toggles */}
             <div>
-              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-2">Notify on</label>
+              <p className="text-sm font-semibold text-[var(--text-primary)] mb-2">Score &amp; Tee Time Notifications</p>
               <div className="space-y-2">
-                {(Object.keys(SLACK_EVENT_LABELS) as SlackEventType[]).map((eventType) => (
+                {SCORE_EVENT_TYPES.map((eventType) => (
                   <label key={eventType} className="flex items-center justify-between cursor-pointer">
                     <span className="text-sm text-[var(--text-primary)]">{SLACK_EVENT_LABELS[eventType]}</span>
                     <button
@@ -383,6 +399,52 @@ export default function AdminSettingsPage() {
                   </label>
                 ))}
               </div>
+            </div>
+
+            {/* Feedback Notifications */}
+            <div className="border-t border-[var(--border-light)] pt-5 space-y-3">
+              <p className="text-sm font-semibold text-[var(--text-primary)]">Feedback Notifications</p>
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-sm text-[var(--text-primary)]">{SLACK_EVENT_LABELS.feedback_submitted}</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={slackEvents.feedback_submitted}
+                  onClick={() => toggleSlackEvent('feedback_submitted')}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    slackEvents.feedback_submitted ? 'bg-minerva-600' : 'bg-gray-200'
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    slackEvents.feedback_submitted ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+                </button>
+              </label>
+
+              {slackChannels.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Feedback Channel</label>
+                  <select
+                    value={feedbackChannelId}
+                    onChange={(e) => handleFeedbackChannelChange(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
+                  >
+                    <option value="">Same as score channel</option>
+                    {slackChannels.map((ch) => (
+                      <option key={ch.id} value={ch.id}>#{ch.name}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-[var(--text-faint)] mt-1">
+                    Choose a separate channel for feedback, or leave as default to use the score channel.
+                  </p>
+                </div>
+              )}
+
+              {slackChannels.length === 0 && feedbackChannelName && (
+                <div className="text-xs text-[var(--text-muted)]">
+                  Feedback channel: <span className="font-medium">{feedbackChannelName}</span>
+                </div>
+              )}
             </div>
           </div>
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { formatSlackMessage } from '@/lib/slack';
 import { calculateProjectedPoints, calculateScratchScore, getMaxHoles } from '@/lib/scoring';
-import type { SlackConfig, SlackNotifyPayload } from '@/types/database';
+import type { SlackConfig, SlackNotifyPayload, SlackScorePayload } from '@/types/database';
 
 /**
  * POST /api/slack/notify
@@ -48,18 +48,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, reason: 'incomplete_config' }, { status: 200 });
     }
 
-    // Check if this event type is enabled
-    if (!config.events?.[payload.event_type]) {
+    // Check if this event type is enabled (default to true for event types not yet saved in config)
+    if (config.events?.[payload.event_type] === false) {
       return NextResponse.json({ ok: false, reason: 'event_disabled' }, { status: 200 });
     }
 
+    // Determine target channel — feedback goes to its own channel if configured
+    const isFeedback = payload.event_type === 'feedback_submitted';
+    const targetChannel = isFeedback
+      ? (config.feedback_channel_id || config.channel_id)
+      : config.channel_id;
+
     // Calculate projected points for score-related events
     if (['score_in_progress', 'round_complete', 'retroactive'].includes(payload.event_type)) {
-      await enrichWithProjectedPoints(supabase, payload);
+      await enrichWithProjectedPoints(supabase, payload as SlackScorePayload);
     }
 
     // Load chirp templates from DB (best-effort, falls back to hardcoded)
-    const dbTemplates = await loadChirpTemplates(supabase);
+    const dbTemplates = isFeedback ? undefined : await loadChirpTemplates(supabase);
 
     // Format the message
     const message = formatSlackMessage(payload, dbTemplates);
@@ -72,7 +78,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        channel: config.channel_id,
+        channel: targetChannel,
         text: message.text,
         blocks: message.blocks,
       }),
@@ -103,7 +109,7 @@ export async function POST(request: NextRequest) {
  */
 async function enrichWithProjectedPoints(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  payload: SlackNotifyPayload
+  payload: SlackScorePayload
 ): Promise<void> {
   try {
     // Find the current active event

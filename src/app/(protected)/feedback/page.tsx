@@ -5,6 +5,7 @@ import useSWR, { mutate } from 'swr';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
+import { notifySlack } from '@/lib/slack-notify';
 import { MessageSquare, Bug, Lightbulb, HelpCircle, Paperclip, X, ChevronDown, ChevronUp, Send } from 'lucide-react';
 import type { Feedback, FeedbackType } from '@/types/database';
 
@@ -128,15 +129,25 @@ export default function FeedbackPage() {
     }
 
     // Upload files if any
+    let attachmentUrls: string[] = [];
     if (files.length > 0) {
-      const urls = await uploadFiles(inserted.id);
-      if (urls.length > 0) {
+      attachmentUrls = await uploadFiles(inserted.id);
+      if (attachmentUrls.length > 0) {
         await supabase
           .from('feedback')
-          .update({ attachments: urls })
+          .update({ attachments: attachmentUrls })
           .eq('id', inserted.id);
       }
     }
+
+    notifySlack({
+      event_type: 'feedback_submitted',
+      user_name: profile!.full_name || 'Unknown',
+      feedback_type: type,
+      title: title.trim(),
+      description: description.trim(),
+      ...(attachmentUrls.length > 0 ? { attachments: attachmentUrls } : {}),
+    });
 
     showToast('Feedback submitted! Thank you.', 'success');
     setTitle('');

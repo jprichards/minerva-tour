@@ -7,7 +7,7 @@
 
 import { getChirp, getChirpFromTemplates, type ChirpContext } from '@/lib/chirps';
 import { formatNetScore, formatGrossScore, calculatePartialPar } from '@/lib/scoring';
-import type { SlackEventType, SlackNotifyPayload, CourseType } from '@/types/database';
+import type { SlackNotifyPayload, SlackScorePayload, SlackFeedbackPayload, CourseType } from '@/types/database';
 
 export interface SlackBlock {
   type: string;
@@ -23,7 +23,7 @@ function sectionBlock(markdown: string): SlackBlock {
   return { type: 'section', text: { type: 'mrkdwn', text: markdown } };
 }
 
-function buildChirpContext(p: SlackNotifyPayload): ChirpContext {
+function buildChirpContext(p: SlackScorePayload): ChirpContext {
   return {
     firstName: getFirstName(p.player_name),
     course: p.course_name || null,
@@ -89,7 +89,7 @@ function formatCourseType(courseType?: CourseType): string {
 /**
  * Format the player line: "John Smith (12.4)" or "John Smith" if no handicap
  */
-function playerLine(p: SlackNotifyPayload): string {
+function playerLine(p: SlackScorePayload): string {
   const hcp = p.handicap_index != null ? ` (${p.handicap_index})` : '';
   return `*${p.player_name}*${hcp}`;
 }
@@ -97,7 +97,7 @@ function playerLine(p: SlackNotifyPayload): string {
 /**
  * Format the course line: "Pine Valley - White Tees (18 Holes)"
  */
-function courseLine(p: SlackNotifyPayload): string {
+function courseLine(p: SlackScorePayload): string {
   const holesLabel = formatCourseType(p.course_type);
   const holesStr = holesLabel ? ` (${holesLabel})` : '';
   return `${p.course_name} - ${p.tee_name}${holesStr}`;
@@ -107,7 +107,7 @@ function courseLine(p: SlackNotifyPayload): string {
  * Format the projected points line for display.
  * Shows "Points: Net X | Scratch Y", falling back to "-" when unavailable.
  */
-function pointsLine(p: SlackNotifyPayload): string {
+function pointsLine(p: SlackScorePayload): string {
   const parts: string[] = [];
   if (p.projected_net_points != null) {
     parts.push(`Net ${p.projected_net_points}`);
@@ -118,7 +118,7 @@ function pointsLine(p: SlackNotifyPayload): string {
   return parts.length > 0 ? `Points: ${parts.join(' | ')}` : 'Points: -';
 }
 
-function scoreLineMarkdown(payload: SlackNotifyPayload): string {
+function scoreLineMarkdown(payload: SlackScorePayload): string {
   const parts: string[] = [];
   const isPartial = payload.holes_played != null
     && payload.max_holes != null
@@ -158,15 +158,17 @@ export function formatSlackMessage(
 
   switch (event_type) {
     case 'tee_time':
-      return formatTeeTime(payload);
+      return formatTeeTime(payload as SlackScorePayload);
     case 'score_in_progress':
-      return formatScoreInProgress(payload, dbTemplates);
+      return formatScoreInProgress(payload as SlackScorePayload, dbTemplates);
     case 'round_complete':
-      return formatRoundComplete(payload, dbTemplates);
+      return formatRoundComplete(payload as SlackScorePayload, dbTemplates);
     case 'score_edit':
-      return formatScoreEdit(payload);
+      return formatScoreEdit(payload as SlackScorePayload);
     case 'retroactive':
-      return formatRetroactive(payload);
+      return formatRetroactive(payload as SlackScorePayload);
+    case 'feedback_submitted':
+      return formatFeedbackSubmitted(payload as SlackFeedbackPayload);
     default: {
       const _exhaustive: never = event_type;
       throw new Error(`Unknown event type: ${_exhaustive}`);
@@ -174,7 +176,7 @@ export function formatSlackMessage(
   }
 }
 
-function formatTeeTime(p: SlackNotifyPayload): SlackMessage {
+function formatTeeTime(p: SlackScorePayload): SlackMessage {
   const fallbackText = `New Tee Time — ${p.player_name} at ${p.course_name} (${p.tee_name})`;
 
   const lines: string[] = [
@@ -195,7 +197,7 @@ function formatTeeTime(p: SlackNotifyPayload): SlackMessage {
   return { text: fallbackText, blocks };
 }
 
-function formatScoreInProgress(p: SlackNotifyPayload, dbTemplates?: Record<string, string[]>): SlackMessage {
+function formatScoreInProgress(p: SlackScorePayload, dbTemplates?: Record<string, string[]>): SlackMessage {
   const fallbackText = `Score Update — ${p.player_name} at ${p.course_name}`;
 
   const lines: string[] = [
@@ -230,7 +232,7 @@ function formatScoreInProgress(p: SlackNotifyPayload, dbTemplates?: Record<strin
   return { text: fallbackText, blocks };
 }
 
-function formatRoundComplete(p: SlackNotifyPayload, dbTemplates?: Record<string, string[]>): SlackMessage {
+function formatRoundComplete(p: SlackScorePayload, dbTemplates?: Record<string, string[]>): SlackMessage {
   const fallbackText = `Round Complete — ${p.player_name} at ${p.course_name}`;
 
   const lines: string[] = [
@@ -265,7 +267,7 @@ function formatRoundComplete(p: SlackNotifyPayload, dbTemplates?: Record<string,
   return { text: fallbackText, blocks };
 }
 
-function formatScoreEdit(p: SlackNotifyPayload): SlackMessage {
+function formatScoreEdit(p: SlackScorePayload): SlackMessage {
   const fallbackText = `Score Updated — ${p.player_name} at ${p.course_name}`;
 
   const lines: string[] = [
@@ -294,7 +296,7 @@ function formatScoreEdit(p: SlackNotifyPayload): SlackMessage {
   return { text: fallbackText, blocks };
 }
 
-function formatRetroactive(p: SlackNotifyPayload): SlackMessage {
+function formatRetroactive(p: SlackScorePayload): SlackMessage {
   const fallbackText = `Retroactive Score — ${p.player_name} at ${p.course_name}`;
 
   const lines: string[] = [
@@ -312,6 +314,43 @@ function formatRetroactive(p: SlackNotifyPayload): SlackMessage {
   }
 
   lines.push(pointsLine(p));
+
+  const blocks: SlackBlock[] = [
+    sectionBlock(lines.join('\n')),
+  ];
+
+  return { text: fallbackText, blocks };
+}
+
+const FEEDBACK_TYPE_LABELS: Record<string, string> = {
+  bug: 'Bug Report',
+  feature_request: 'Feature Request',
+  other: 'Other',
+};
+
+const FEEDBACK_TYPE_EMOJI: Record<string, string> = {
+  bug: ':bug:',
+  feature_request: ':bulb:',
+  other: ':speech_balloon:',
+};
+
+function formatFeedbackSubmitted(p: SlackFeedbackPayload): SlackMessage {
+  const typeLabel = FEEDBACK_TYPE_LABELS[p.feedback_type] || p.feedback_type;
+  const emoji = FEEDBACK_TYPE_EMOJI[p.feedback_type] || ':memo:';
+  const fallbackText = `New Feedback — ${typeLabel} from ${p.user_name}: ${p.title}`;
+
+  const lines: string[] = [
+    `${emoji} *${typeLabel}* from *${p.user_name}*`,
+    `*${p.title}*`,
+    p.description,
+  ];
+
+  if (p.attachments && p.attachments.length > 0) {
+    const attachmentLinks = p.attachments
+      .map((url, i) => `<${url}|Attachment ${i + 1}>`)
+      .join('  ');
+    lines.push(`\n:paperclip: ${attachmentLinks}`);
+  }
 
   const blocks: SlackBlock[] = [
     sectionBlock(lines.join('\n')),
