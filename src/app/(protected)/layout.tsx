@@ -9,7 +9,7 @@ export default function ProtectedLayout({
   return (
     <div className="min-h-screen pb-24">
       <OfflineBanner />
-      <main className="max-w-lg mx-auto">
+      <main className="max-w-lg mx-auto overflow-x-hidden">
         {children}
       </main>
       <BottomNav />

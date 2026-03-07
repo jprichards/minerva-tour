@@ -553,7 +553,7 @@ export default function ScoreDetailPage() {
               type="datetime-local"
               value={teeTime}
               onChange={(e) => setTeeTime(e.target.value)}
-              className="w-full max-w-full overflow-hidden rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-minerva-500"
+              className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-minerva-500"
             />
           </div>
           <div>
