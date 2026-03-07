@@ -549,12 +549,19 @@ export default function ScoreDetailPage() {
         <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-5 space-y-3">
           <div>
             <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Tee Time</label>
-            <input
-              type="datetime-local"
-              value={teeTime}
-              onChange={(e) => setTeeTime(e.target.value)}
-              className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-minerva-500"
-            />
+            <div className="relative rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 mt-1">
+              <input
+                type="datetime-local"
+                value={teeTime}
+                onChange={(e) => setTeeTime(e.target.value)}
+                className="absolute inset-0 opacity-0 w-full h-full"
+              />
+              <span className="text-sm">
+                {teeTime
+                  ? new Date(teeTime + ':00').toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+                  : <span className="text-[var(--text-muted)]">Select date &amp; time</span>}
+              </span>
+            </div>
           </div>
           <div>
             <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
