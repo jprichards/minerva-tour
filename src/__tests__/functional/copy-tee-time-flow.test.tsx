@@ -70,7 +70,7 @@ let insertCallCount = 0;
 vi.mock('@/lib/supabase/client', () => {
   const createChain = () => {
     const chain: Record<string, unknown> = {};
-    ['select', 'insert', 'update', 'delete', 'upsert', 'eq', 'neq', 'in', 'is', 'not', 'gte', 'lte', 'order', 'limit'].forEach((m) => {
+    ['select', 'insert', 'update', 'delete', 'upsert', 'eq', 'neq', 'in', 'is', 'not', 'gte', 'lte', 'order', 'limit', 'range'].forEach((m) => {
       chain[m] = vi.fn().mockReturnValue(chain);
     });
     chain.single = vi.fn().mockResolvedValue({ data: null, error: null });

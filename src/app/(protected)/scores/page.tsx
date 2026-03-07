@@ -307,6 +307,12 @@ function ScoresContent() {
                       {(score.tee_time || score.event?.start_date) &&
                         new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
                       }
+                      {score.tee_time && (() => {
+                        const d = new Date(score.tee_time);
+                        return (d.getUTCHours() || d.getUTCMinutes())
+                          ? ` at ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })}`
+                          : '';
+                      })()}
                       {score.event?.name && (
                         <span> &middot; {score.event.name}</span>
                       )}

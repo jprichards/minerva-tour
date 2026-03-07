@@ -10,7 +10,8 @@ import { logAuditEvent } from '@/lib/audit';
 import { calculateNetScore, getMaxHoles, courseMatchesEventHoles, formatNetScore } from '@/lib/scoring';
 import { notifySlack } from '@/lib/slack-notify';
 import { useSeason } from '@/lib/hooks/useSeason';
-import { ArrowLeft, Search, ChevronRight, User as UserIcon, AlertCircle, CheckCircle } from 'lucide-react';
+import { fetchAllCourses } from '@/lib/courses';
+import { ArrowLeft, Search, ChevronRight, User as UserIcon, AlertCircle, CheckCircle, X } from 'lucide-react';
 import MemberPicker from '@/components/MemberPicker';
 import type { Course, User } from '@/types/database';
 
@@ -31,16 +32,17 @@ function AddScoreContent() {
   const teeTimeOnly = searchParams.get('tee_time_only') === 'true';
 
   const { profile, isPlayingGuest } = useUser();
-  const { canSubmitScores, isOffSeason, isRegularSeason, currentEvent } = useSeason();
+  const { canSubmitScores, isOffSeason, isRegularSeason, currentEvent, loading: seasonLoading } = useSeason();
   const { showToast } = useToast();
   const { mutate } = useSWRConfig();
   const supabase = createClient();
 
-  const [step, setStep] = useState<Step>(preselectedCourseId ? 'player' : 'course');
+  const [step, setStep] = useState<Step>('course');
   const [courses, setCourses] = useState<Course[]>([]);
   const [members, setMembers] = useState<User[]>([]);
   const [courseSearch, setCourseSearch] = useState('');
   const [memberSearch, setMemberSearch] = useState('');
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // Selected values
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -48,7 +50,11 @@ function AddScoreContent() {
   const [playingForSelf, setPlayingForSelf] = useState(true);
 
   // Score details
-  const [teeTime, setTeeTime] = useState('');
+  const [roundDate, setRoundDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
+  const [teeTimeOfDay, setTeeTimeOfDay] = useState('');
   const [grossScore, setGrossScore] = useState('');
   const [grossToPar, setGrossToPar] = useState('');
   const [scoreEntryMode, setScoreEntryMode] = useState<'gross' | 'toPar'>('gross');
@@ -62,37 +68,49 @@ function AddScoreContent() {
   const [copyDisabledIds, setCopyDisabledIds] = useState<string[]>([]);
   const [copyLoading, setCopyLoading] = useState(false);
 
+  // Track whether the preselected course was already resolved to prevent re-running
+  const [preselectionResolved, setPreselectionResolved] = useState(false);
+
   useEffect(() => {
     const fetchData = async () => {
-      // Fetch courses
-      const { data: coursesData } = await supabase
-        .from('courses')
-        .select('*')
-        .order('course_name');
-      setCourses(coursesData || []);
+      const coursesData = await fetchAllCourses(supabase);
+      setCourses(coursesData);
 
-      // If preselected course, verify it matches the active event's hole count
-      if (preselectedCourseId && coursesData) {
-        const course = coursesData.find((c) => c.id === preselectedCourseId);
-        if (course && courseMatchesEventHoles(course.type, currentEvent?.holes)) {
-          setSelectedCourse(course);
-        } else if (course) {
-          // Course doesn't match event holes — reset to course selection
-          setStep('course');
-        }
-      }
-
-      // Fetch members
       const { data: membersData } = await supabase
         .from('users')
         .select('*')
         .in('role', ['admin', 'member', 'playing_guest'])
         .order('full_name');
       setMembers(membersData || []);
+      setDataLoaded(true);
     };
 
     fetchData();
-  }, [preselectedCourseId, supabase, currentEvent?.holes]);
+  // Only fetch on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Resolve preselected course once both course data and season data are ready.
+  // Wait for season to finish loading so we know the actual event hole count
+  // before allowing the user to advance past step 1.
+  useEffect(() => {
+    if (!preselectedCourseId || preselectionResolved || courses.length === 0 || seasonLoading) return;
+
+    const course = courses.find((c) => c.id === preselectedCourseId);
+    if (!course) {
+      setPreselectionResolved(true);
+      return;
+    }
+
+    if (courseMatchesEventHoles(course.type, currentEvent?.holes)) {
+      setSelectedCourse(course);
+      if (step === 'course') setStep('player');
+      setPreselectionResolved(true);
+    } else {
+      setStep('course');
+      setPreselectionResolved(true);
+    }
+  }, [preselectedCourseId, courses, currentEvent?.holes, preselectionResolved, step, seasonLoading]);
 
   // If the active event changes and the selected course no longer matches, reset
   useEffect(() => {
@@ -163,10 +181,16 @@ function AddScoreContent() {
   const missingHolesPlayed = hasScoreEntry && isPartialRound && !holesPlayed;
   const missingScore = !hasScoreEntry && isPartialRound && !!holesPlayed;
   const incompleteScoreEntry = missingHolesPlayed || missingScore;
+  const combinedTeeTime = roundDate ? `${roundDate}T${teeTimeOfDay || '00:00'}` : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCourse || !selectedPlayer) return;
+    if (!selectedCourse || !selectedPlayer) {
+      setError(!selectedCourse ? 'Please select a course first.' : 'Please select a player first.');
+      if (!selectedCourse) setStep('course');
+      else if (!selectedPlayer) setStep('player');
+      return;
+    }
     if (incompleteScoreEntry) {
       setError(missingHolesPlayed
         ? 'Holes played is required when submitting a score.'
@@ -219,7 +243,7 @@ function AddScoreContent() {
       user_id: selectedPlayer.id,
       course_id: selectedCourse.id,
       event_id: currentEvent?.id || null,
-      tee_time: teeTime || null,
+      tee_time: combinedTeeTime,
       gross_score: grossScoreNum,
       holes_played: holesPlayedNum,
       is_complete: isComplete,
@@ -271,7 +295,7 @@ function AddScoreContent() {
       net_strokes_over_par: netStrokesOverPar,
       holes_played: holesPlayedNum,
       max_holes: maxHoles,
-      tee_time: teeTime || null,
+      tee_time: combinedTeeTime,
       event_name: currentEvent?.name || (currentEvent ? `Event ${currentEvent.event_number}` : null),
       is_complete: isComplete,
     });
@@ -306,7 +330,7 @@ function AddScoreContent() {
       user_id: uid,
       course_id: selectedCourse.id,
       event_id: currentEvent?.id || null,
-      tee_time: teeTime || null,
+      tee_time: combinedTeeTime,
       gross_score: null,
       holes_played: null,
       is_complete: false,
@@ -345,7 +369,7 @@ function AddScoreContent() {
           tee_name: selectedCourse.tee_name,
           course_type: selectedCourse.type,
           par: selectedCourse.par,
-          tee_time: teeTime || null,
+          tee_time: combinedTeeTime,
           event_name: currentEvent?.name || (currentEvent ? `Event ${currentEvent.event_number}` : null),
           is_complete: false,
         });
@@ -385,8 +409,16 @@ function AddScoreContent() {
       </div>
       )}
 
+      {/* Loading state while resolving preselected course */}
+      {preselectedCourseId && !preselectionResolved && (
+        <div className="space-y-3">
+          <div className="h-12 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
+          <div className="h-20 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
+        </div>
+      )}
+
       {/* Step 1: Select Course */}
-      {step === 'course' && (
+      {step === 'course' && (!preselectedCourseId || preselectionResolved) && (
         <div className="space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-faint)]" />
@@ -439,6 +471,18 @@ function AddScoreContent() {
               );
             })}
           </div>
+
+          {filteredCourses.length === 0 && courseSearch && (
+            <div className="text-center py-6">
+              <p className="text-sm text-[var(--text-muted)]">No matching courses found.</p>
+              {currentEvent?.holes && (
+                <p className="text-xs text-[var(--text-faint)] mt-1">
+                  Only {currentEvent.holes === 9 ? '9-hole' : '18-hole'} courses are shown for this event.
+                  Your course may exist with a different hole configuration.
+                </p>
+              )}
+            </div>
+          )}
 
           <p className="text-xs text-[var(--text-faint)] text-center mt-4">
             Don&apos;t see your course?{' '}
@@ -545,17 +589,51 @@ function AddScoreContent() {
             )}
           </div>
 
-          {/* Tee Time */}
-          <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-              Tee Time (optional)
-            </label>
-            <input
-              type="datetime-local"
-              value={teeTime}
-              onChange={(e) => setTeeTime(e.target.value)}
-              className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
-            />
+          {/* Round Date & Tee Time */}
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Date</label>
+              <div className="relative rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3">
+                <input
+                  type="date"
+                  value={roundDate}
+                  onChange={(e) => setRoundDate(e.target.value || roundDate)}
+                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                />
+                <span className="text-sm">
+                  {roundDate
+                    ? new Date(roundDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+                    : <span className="text-[var(--text-muted)]">Select date</span>}
+                </span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                Time <span className="font-normal text-[var(--text-faint)]">(opt.)</span>
+              </label>
+              <div className="relative rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3">
+                <input
+                  type="time"
+                  value={teeTimeOfDay}
+                  onChange={(e) => setTeeTimeOfDay(e.target.value)}
+                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                />
+                <span className="text-sm">
+                  {teeTimeOfDay
+                    ? new Date(`2000-01-01T${teeTimeOfDay}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                    : <span className="text-[var(--text-muted)]">&mdash;</span>}
+                </span>
+                {teeTimeOfDay && (
+                  <button
+                    type="button"
+                    onClick={() => setTeeTimeOfDay('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-[var(--bg-subtle)] z-20"
+                  >
+                    <X className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           {!teeTimeOnly && (
@@ -755,10 +833,10 @@ function AddScoreContent() {
             <p className="text-sm font-medium text-minerva-800">
               {selectedCourse?.course_name} &middot; {selectedCourse?.tee_name}
             </p>
-            {teeTime && (
+            {roundDate && (
               <p className="text-xs text-minerva-600">
-                {new Date(teeTime).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}{' '}
-                {new Date(teeTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                {new Date(roundDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
+                {teeTimeOfDay && ` at ${new Date(`2000-01-01T${teeTimeOfDay}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`}
               </p>
             )}
           </div>

@@ -115,7 +115,9 @@ vi.mock('@/lib/supabase/client', () => ({
       if (table === 'courses') {
         return {
           select: () => ({
-            order: () => Promise.resolve({ data: mockCourses, error: null }),
+            order: () => ({
+              range: () => Promise.resolve({ data: mockCourses, error: null }),
+            }),
           }),
         };
       }

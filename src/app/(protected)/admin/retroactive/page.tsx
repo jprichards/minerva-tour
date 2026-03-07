@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
 import { calculateNetScore, getMaxHoles } from '@/lib/scoring';
 import { notifySlack } from '@/lib/slack-notify';
+import { fetchAllCourses } from '@/lib/courses';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import type { User, Event, Course } from '@/types/database';
 
@@ -51,11 +52,8 @@ export default function AdminRetroactiveScoresPage() {
         .order('event_number', { ascending: true });
       setEvents(eventsData || []);
 
-      const { data: coursesData } = await supabase
-        .from('courses')
-        .select('*')
-        .order('course_name');
-      setCourses(coursesData || []);
+      const coursesData = await fetchAllCourses(supabase);
+      setCourses(coursesData);
 
       setLoading(false);
     };

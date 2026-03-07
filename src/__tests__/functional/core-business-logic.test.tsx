@@ -356,7 +356,8 @@ describe('Score Entry - Holes Played Required When Score Entered', () => {
       const self = () => chain;
       chain.select = vi.fn(self);
       chain.in = vi.fn(self);
-      chain.order = vi.fn(() => Promise.resolve({ data }));
+      chain.order = vi.fn(self);
+      chain.range = vi.fn(() => Promise.resolve({ data }));
       chain.insert = vi.fn(self);
       chain.single = vi.fn(() => Promise.resolve({ data: { id: 'new-score' }, error: null }));
       chain.eq = vi.fn(self);

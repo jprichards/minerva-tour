@@ -60,8 +60,14 @@ const scoreWithTeeTime = {
   event: null,
 };
 
+const scoreWithDateOnly = {
+  ...scoreWithEvent,
+  id: 'score-3',
+  tee_time: '2026-03-07T00:00:00Z',
+};
+
 // ── Mutable mock data ref ─────────────────────────────────────
-let mockScoreData: typeof scoreWithEvent | typeof scoreWithTeeTime = scoreWithEvent;
+let mockScoreData: typeof scoreWithEvent | typeof scoreWithTeeTime | typeof scoreWithDateOnly = scoreWithEvent;
 
 // Build a recursive proxy for chaining any Supabase method
 function createChainProxy(resolveData: unknown = null): unknown {
@@ -165,5 +171,19 @@ describe('Score Detail Page - Subheader & Footer', () => {
     mockScoreData = scoreWithEvent;
     render(<ScoreDetailPage />);
     expect(await screen.findByText(/Jason Richards/)).toBeInTheDocument();
+  });
+
+  it('shows time in subheader when tee_time has a non-midnight time', async () => {
+    mockScoreData = scoreWithTeeTime;
+    render(<ScoreDetailPage />);
+    await screen.findByText(/Jan 20, 2026/);
+    expect(screen.getByText(/2:30/)).toBeInTheDocument();
+  });
+
+  it('does not show time in subheader for date-only tee_time (midnight UTC)', async () => {
+    mockScoreData = scoreWithDateOnly;
+    render(<ScoreDetailPage />);
+    const el = await screen.findByText(/Mar 7, 2026/);
+    expect(el.textContent).not.toMatch(/\d{1,2}:\d{2}\s*.?[AP]M/i);
   });
 });
