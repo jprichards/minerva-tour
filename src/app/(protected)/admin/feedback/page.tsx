@@ -7,9 +7,10 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
+import { logAuditEvent } from '@/lib/audit';
 import {
   ArrowLeft, MessageSquare, Bug, Lightbulb, HelpCircle,
-  ChevronDown, ChevronUp, Paperclip, Send,
+  ChevronDown, ChevronUp, Paperclip, Send, Trash2,
 } from 'lucide-react';
 import type { Feedback, FeedbackStatus } from '@/types/database';
 
@@ -117,6 +118,33 @@ export default function AdminFeedbackPage() {
     } else {
       showToast('Response saved', 'success');
       setResponseText('');
+      mutate('admin-feedback');
+    }
+    setSaving(false);
+  };
+
+  const handleDelete = async (fb: Feedback & { user?: { full_name: string | null } }) => {
+    if (!confirm(`Delete "${fb.title}"? This cannot be undone.`)) return;
+    setSaving(true);
+
+    await cleanupAttachments(fb);
+
+    const { error } = await supabase
+      .from('feedback')
+      .delete()
+      .eq('id', fb.id);
+
+    if (error) {
+      showToast(`Error: ${error.message}`, 'error');
+    } else {
+      logAuditEvent('feedback_delete', 'feedback', fb.id, {
+        title: fb.title,
+        type: fb.type,
+        submitted_by: fb.user?.full_name || fb.user_id,
+        deleted_by_role: 'admin',
+      });
+      showToast('Feedback deleted', 'success');
+      setExpandedId(null);
       mutate('admin-feedback');
     }
     setSaving(false);
@@ -298,6 +326,18 @@ export default function AdminFeedbackPage() {
                           Last responded {new Date(fb.responded_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                         </p>
                       )}
+                    </div>
+
+                    {/* Delete */}
+                    <div className="border-t border-[var(--border-light)] pt-3">
+                      <button
+                        onClick={() => handleDelete(fb)}
+                        disabled={saving}
+                        className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600 transition-colors disabled:opacity-50"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Delete feedback
+                      </button>
                     </div>
                   </div>
                 )}

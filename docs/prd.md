@@ -933,6 +933,7 @@ Users can submit bug reports, feature requests, or general feedback directly wit
 - Attach up to 3 screenshots or videos (max 10MB each) to any submission
 - View "My Submissions" list with status badges (Open, In Progress, Resolved, Closed)
 - Expand submissions to see full description and admin response
+- Delete own submissions (with confirmation) — cleans up attachments from storage and logs an audit event
 - Accessible from Profile page ("Send Feedback" card) and More menu ("Feedback" link)
 
 ### **Admin Features:**
@@ -941,7 +942,8 @@ Users can submit bug reports, feature requests, or general feedback directly wit
 - Filter by status (Open, In Progress, Resolved, Closed) and type (Bug, Feature, Other)
 - Expand any entry to view description, attachments, and write a response
 - Change feedback status with one tap
-- **Attachment cleanup**: When feedback is closed, all uploaded files are deleted from storage and the attachments array is cleared to prevent indefinite storage growth
+- Delete any feedback entry (with confirmation) — cleans up attachments from storage and logs an audit event
+- **Attachment cleanup**: When feedback is closed or deleted, all uploaded files are deleted from storage and the attachments array is cleared to prevent indefinite storage growth
 
 ### **Database:**
 

@@ -6,7 +6,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { notifySlack } from '@/lib/slack-notify';
-import { MessageSquare, Bug, Lightbulb, HelpCircle, Paperclip, X, ChevronDown, ChevronUp, Send } from 'lucide-react';
+import { logAuditEvent } from '@/lib/audit';
+import { MessageSquare, Bug, Lightbulb, HelpCircle, Paperclip, X, ChevronDown, ChevronUp, Send, Trash2 } from 'lucide-react';
 import type { Feedback, FeedbackType } from '@/types/database';
 
 const MAX_FILES = 3;
@@ -156,6 +157,38 @@ export default function FeedbackPage() {
     setType('bug');
     mutate(['my-feedback', profile!.id]);
     setSubmitting(false);
+  };
+
+  const handleDeleteFeedback = async (fb: Feedback) => {
+    if (!confirm(`Delete "${fb.title}"? This cannot be undone.`)) return;
+
+    if (fb.attachments && fb.attachments.length > 0) {
+      const paths = fb.attachments.map((url) => {
+        const parts = url.split('/feedback-attachments/');
+        return parts.length > 1 ? parts[1] : '';
+      }).filter(Boolean);
+      if (paths.length > 0) {
+        await supabase.storage.from('feedback-attachments').remove(paths);
+      }
+    }
+
+    const { error } = await supabase
+      .from('feedback')
+      .delete()
+      .eq('id', fb.id);
+
+    if (error) {
+      showToast(`Error: ${error.message}`, 'error');
+    } else {
+      logAuditEvent('feedback_delete', 'feedback', fb.id, {
+        title: fb.title,
+        type: fb.type,
+        deleted_by_role: 'user',
+      });
+      showToast('Feedback deleted', 'success');
+      setExpandedId(null);
+      mutate(['my-feedback', profile!.id]);
+    }
   };
 
   const typeMeta = FEEDBACK_TYPES.find((t) => t.value === type)!;
@@ -344,6 +377,14 @@ export default function FeedbackPage() {
                           <p className="text-sm text-[var(--text-primary)]">{fb.admin_response}</p>
                         </div>
                       )}
+
+                      <button
+                        onClick={() => handleDeleteFeedback(fb)}
+                        className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600 transition-colors mt-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Delete
+                      </button>
                     </div>
                   )}
                 </div>

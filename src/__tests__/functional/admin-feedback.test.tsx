@@ -16,6 +16,11 @@ vi.mock('@/components/ui/Toast', () => ({
   useToast: () => ({ showToast: mockShowToast }),
 }));
 
+const mockLogAuditEvent = vi.fn();
+vi.mock('@/lib/audit', () => ({
+  logAuditEvent: (...args: unknown[]) => mockLogAuditEvent(...args),
+}));
+
 const mockRouter = { push: vi.fn() };
 vi.mock('next/navigation', async () => {
   const actual = await vi.importActual('next/navigation');
@@ -221,6 +226,93 @@ describe('Admin Feedback Inbox', () => {
       expect(titleEl).toBeInTheDocument();
       expect(titleEl.className).not.toMatch(/truncate/);
     });
+  });
+
+  it('shows delete button in expanded view', async () => {
+    render(<AdminFeedbackPage />);
+    await waitFor(() => {
+      expect(screen.getByText('App crashes on load')).toBeInTheDocument();
+    });
+
+    const entry = screen.getByText('App crashes on load').closest('button')!;
+    fireEvent.click(entry);
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete feedback')).toBeInTheDocument();
+    });
+  });
+
+  it('calls delete with confirmation and logs audit event', async () => {
+    window.confirm = vi.fn().mockReturnValue(true);
+
+    const deleteMock = vi.fn().mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    });
+
+    mockSupabaseClient.from.mockImplementation((table: string) => {
+      const chain = createChainProxy(mockFeedback);
+      (chain as Record<string, unknown>).delete = deleteMock;
+      return chain;
+    });
+
+    render(<AdminFeedbackPage />);
+    await waitFor(() => {
+      expect(screen.getByText('App crashes on load')).toBeInTheDocument();
+    });
+
+    const entry = screen.getByText('App crashes on load').closest('button')!;
+    fireEvent.click(entry);
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete feedback')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Delete feedback'));
+
+    expect(window.confirm).toHaveBeenCalledWith('Delete "App crashes on load"? This cannot be undone.');
+
+    await waitFor(() => {
+      expect(deleteMock).toHaveBeenCalled();
+      expect(mockLogAuditEvent).toHaveBeenCalledWith(
+        'feedback_delete',
+        'feedback',
+        'fb-1',
+        expect.objectContaining({
+          title: 'App crashes on load',
+          type: 'bug',
+          deleted_by_role: 'admin',
+        })
+      );
+      expect(mockShowToast).toHaveBeenCalledWith('Feedback deleted', 'success');
+    });
+  });
+
+  it('does not delete when confirmation is cancelled', async () => {
+    window.confirm = vi.fn().mockReturnValue(false);
+
+    const deleteMock = vi.fn();
+    mockSupabaseClient.from.mockImplementation(() => {
+      const chain = createChainProxy(mockFeedback);
+      (chain as Record<string, unknown>).delete = deleteMock;
+      return chain;
+    });
+
+    render(<AdminFeedbackPage />);
+    await waitFor(() => {
+      expect(screen.getByText('App crashes on load')).toBeInTheDocument();
+    });
+
+    const entry = screen.getByText('App crashes on load').closest('button')!;
+    fireEvent.click(entry);
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete feedback')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Delete feedback'));
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(deleteMock).not.toHaveBeenCalled();
   });
 
   it('redirects non-admin users', () => {

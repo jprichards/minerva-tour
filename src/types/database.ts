@@ -36,7 +36,8 @@ export type AuditActionType =
   | 'update_settings'
   | 'admin_edit_record'
   | 'update_playoff_matchup'
-  | 'manage_playoff_seeds';
+  | 'manage_playoff_seeds'
+  | 'feedback_delete';
 
 export interface User {
   id: string;

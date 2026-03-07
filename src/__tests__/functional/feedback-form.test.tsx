@@ -21,6 +21,11 @@ vi.mock('@/lib/slack-notify', () => ({
   notifySlack: (...args: unknown[]) => mockNotifySlack(...args),
 }));
 
+const mockLogAuditEvent = vi.fn();
+vi.mock('@/lib/audit', () => ({
+  logAuditEvent: (...args: unknown[]) => mockLogAuditEvent(...args),
+}));
+
 import FeedbackPage from '@/app/(protected)/feedback/page';
 
 function createChainProxy(resolvedData: unknown = [], resolvedError: unknown = null) {
@@ -245,5 +250,96 @@ describe('Feedback Page', () => {
       expect(screen.getByText('Admin Response')).toBeInTheDocument();
       expect(screen.getByText('Great idea! We will add this in the next release.')).toBeInTheDocument();
     });
+  });
+
+  it('shows delete button in expanded submission', async () => {
+    render(<FeedbackPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Scores not loading')).toBeInTheDocument();
+    });
+
+    const entry = screen.getByText('Scores not loading').closest('button')!;
+    fireEvent.click(entry);
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete')).toBeInTheDocument();
+    });
+  });
+
+  it('calls delete with confirmation and logs audit event', async () => {
+    window.confirm = vi.fn().mockReturnValue(true);
+
+    const deleteMock = vi.fn().mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    });
+
+    mockSupabaseClient.from.mockImplementation((table: string) => {
+      const chain = createChainProxy(mockFeedbackList);
+      (chain as Record<string, unknown>).delete = deleteMock;
+      return chain;
+    });
+
+    mockSupabaseClient.storage.from = vi.fn().mockReturnValue({
+      remove: vi.fn().mockResolvedValue({ data: [], error: null }),
+    });
+
+    render(<FeedbackPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Scores not loading')).toBeInTheDocument();
+    });
+
+    const entry = screen.getByText('Scores not loading').closest('button')!;
+    fireEvent.click(entry);
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Delete'));
+
+    expect(window.confirm).toHaveBeenCalledWith('Delete "Scores not loading"? This cannot be undone.');
+
+    await waitFor(() => {
+      expect(deleteMock).toHaveBeenCalled();
+      expect(mockLogAuditEvent).toHaveBeenCalledWith(
+        'feedback_delete',
+        'feedback',
+        'fb-1',
+        expect.objectContaining({
+          title: 'Scores not loading',
+          type: 'bug',
+          deleted_by_role: 'user',
+        })
+      );
+      expect(mockShowToast).toHaveBeenCalledWith('Feedback deleted', 'success');
+    });
+  });
+
+  it('does not delete when confirmation is cancelled', async () => {
+    window.confirm = vi.fn().mockReturnValue(false);
+
+    const deleteMock = vi.fn();
+    mockSupabaseClient.from.mockImplementation(() => {
+      const chain = createChainProxy(mockFeedbackList);
+      (chain as Record<string, unknown>).delete = deleteMock;
+      return chain;
+    });
+
+    render(<FeedbackPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Scores not loading')).toBeInTheDocument();
+    });
+
+    const entry = screen.getByText('Scores not loading').closest('button')!;
+    fireEvent.click(entry);
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Delete'));
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(deleteMock).not.toHaveBeenCalled();
   });
 });
