@@ -7,7 +7,9 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
-import { ArrowLeft, Edit, Trash2, Plus, Target, Clock } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Plus, Target, Clock, AlertCircle } from 'lucide-react';
+import { useSeason } from '@/lib/hooks/useSeason';
+import { courseMatchesEventHoles } from '@/lib/scoring';
 import type { Course, User } from '@/types/database';
 
 export default function CourseDetailPage() {
@@ -15,6 +17,7 @@ export default function CourseDetailPage() {
   const router = useRouter();
   const { isAdmin } = useUser();
   const { showToast } = useToast();
+  const { currentEvent } = useSeason();
   const [course, setCourse] = useState<Course | null>(null);
   const [createdByUser, setCreatedByUser] = useState<User | null>(null);
   const [updatedByUser, setUpdatedByUser] = useState<User | null>(null);
@@ -159,6 +162,20 @@ export default function CourseDetailPage() {
         </div>
       </div>
 
+      {/* Event compatibility warning */}
+      {currentEvent?.holes && !courseMatchesEventHoles(course.type, currentEvent.holes) && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
+          <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-amber-800">Not compatible with current event</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              The current event is {currentEvent.holes} holes, but this tee is configured as {course.type.replace(/_/g, ' ')}.
+              To use this course, add an {currentEvent.holes === 9 ? '9-hole' : '18-hole'} tee below.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="space-y-2">
         <Link
@@ -179,7 +196,16 @@ export default function CourseDetailPage() {
 
         <Link
           href={`/scores/add?course_id=${course.id}`}
-          className="flex items-center justify-center gap-2 w-full bg-minerva-600 text-white rounded-xl px-4 py-3 text-sm font-semibold hover:bg-minerva-700 transition-colors"
+          className={`flex items-center justify-center gap-2 w-full rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${
+            currentEvent?.holes && !courseMatchesEventHoles(course.type, currentEvent.holes)
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-minerva-600 text-white hover:bg-minerva-700'
+          }`}
+          onClick={(e) => {
+            if (currentEvent?.holes && !courseMatchesEventHoles(course.type, currentEvent.holes)) {
+              e.preventDefault();
+            }
+          }}
         >
           <Target className="w-4 h-4" />
           Start a Round
@@ -187,7 +213,16 @@ export default function CourseDetailPage() {
 
         <Link
           href={`/scores/add?course_id=${course.id}&tee_time_only=true`}
-          className="flex items-center justify-center gap-2 w-full bg-[var(--bg-card)] border border-minerva-200 text-minerva-700 rounded-xl px-4 py-3 text-sm font-medium hover:bg-minerva-50 transition-colors"
+          className={`flex items-center justify-center gap-2 w-full rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+            currentEvent?.holes && !courseMatchesEventHoles(course.type, currentEvent.holes)
+              ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
+              : 'bg-[var(--bg-card)] border border-minerva-200 text-minerva-700 hover:bg-minerva-50'
+          }`}
+          onClick={(e) => {
+            if (currentEvent?.holes && !courseMatchesEventHoles(course.type, currentEvent.holes)) {
+              e.preventDefault();
+            }
+          }}
         >
           <Clock className="w-4 h-4" />
           Add Tee Time

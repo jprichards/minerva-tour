@@ -31,16 +31,17 @@ function AddScoreContent() {
   const teeTimeOnly = searchParams.get('tee_time_only') === 'true';
 
   const { profile, isPlayingGuest } = useUser();
-  const { canSubmitScores, isOffSeason, isRegularSeason, currentEvent } = useSeason();
+  const { canSubmitScores, isOffSeason, isRegularSeason, currentEvent, loading: seasonLoading } = useSeason();
   const { showToast } = useToast();
   const { mutate } = useSWRConfig();
   const supabase = createClient();
 
-  const [step, setStep] = useState<Step>(preselectedCourseId ? 'player' : 'course');
+  const [step, setStep] = useState<Step>('course');
   const [courses, setCourses] = useState<Course[]>([]);
   const [members, setMembers] = useState<User[]>([]);
   const [courseSearch, setCourseSearch] = useState('');
   const [memberSearch, setMemberSearch] = useState('');
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // Selected values
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -62,37 +63,52 @@ function AddScoreContent() {
   const [copyDisabledIds, setCopyDisabledIds] = useState<string[]>([]);
   const [copyLoading, setCopyLoading] = useState(false);
 
+  // Track whether the preselected course was already resolved to prevent re-running
+  const [preselectionResolved, setPreselectionResolved] = useState(false);
+
   useEffect(() => {
     const fetchData = async () => {
-      // Fetch courses
       const { data: coursesData } = await supabase
         .from('courses')
         .select('*')
         .order('course_name');
       setCourses(coursesData || []);
 
-      // If preselected course, verify it matches the active event's hole count
-      if (preselectedCourseId && coursesData) {
-        const course = coursesData.find((c) => c.id === preselectedCourseId);
-        if (course && courseMatchesEventHoles(course.type, currentEvent?.holes)) {
-          setSelectedCourse(course);
-        } else if (course) {
-          // Course doesn't match event holes — reset to course selection
-          setStep('course');
-        }
-      }
-
-      // Fetch members
       const { data: membersData } = await supabase
         .from('users')
         .select('*')
         .in('role', ['admin', 'member', 'playing_guest'])
         .order('full_name');
       setMembers(membersData || []);
+      setDataLoaded(true);
     };
 
     fetchData();
-  }, [preselectedCourseId, supabase, currentEvent?.holes]);
+  // Only fetch on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Resolve preselected course once both course data and season data are ready.
+  // Wait for season to finish loading so we know the actual event hole count
+  // before allowing the user to advance past step 1.
+  useEffect(() => {
+    if (!preselectedCourseId || preselectionResolved || courses.length === 0 || seasonLoading) return;
+
+    const course = courses.find((c) => c.id === preselectedCourseId);
+    if (!course) {
+      setPreselectionResolved(true);
+      return;
+    }
+
+    if (courseMatchesEventHoles(course.type, currentEvent?.holes)) {
+      setSelectedCourse(course);
+      if (step === 'course') setStep('player');
+      setPreselectionResolved(true);
+    } else {
+      setStep('course');
+      setPreselectionResolved(true);
+    }
+  }, [preselectedCourseId, courses, currentEvent?.holes, preselectionResolved, step, seasonLoading]);
 
   // If the active event changes and the selected course no longer matches, reset
   useEffect(() => {
@@ -166,7 +182,12 @@ function AddScoreContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCourse || !selectedPlayer) return;
+    if (!selectedCourse || !selectedPlayer) {
+      setError(!selectedCourse ? 'Please select a course first.' : 'Please select a player first.');
+      if (!selectedCourse) setStep('course');
+      else if (!selectedPlayer) setStep('player');
+      return;
+    }
     if (incompleteScoreEntry) {
       setError(missingHolesPlayed
         ? 'Holes played is required when submitting a score.'
@@ -385,8 +406,16 @@ function AddScoreContent() {
       </div>
       )}
 
+      {/* Loading state while resolving preselected course */}
+      {preselectedCourseId && !preselectionResolved && (
+        <div className="space-y-3">
+          <div className="h-12 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
+          <div className="h-20 bg-[var(--bg-skeleton)] rounded-xl animate-pulse" />
+        </div>
+      )}
+
       {/* Step 1: Select Course */}
-      {step === 'course' && (
+      {step === 'course' && (!preselectedCourseId || preselectionResolved) && (
         <div className="space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-faint)]" />
@@ -439,6 +468,18 @@ function AddScoreContent() {
               );
             })}
           </div>
+
+          {filteredCourses.length === 0 && courseSearch && (
+            <div className="text-center py-6">
+              <p className="text-sm text-[var(--text-muted)]">No matching courses found.</p>
+              {currentEvent?.holes && (
+                <p className="text-xs text-[var(--text-faint)] mt-1">
+                  Only {currentEvent.holes === 9 ? '9-hole' : '18-hole'} courses are shown for this event.
+                  Your course may exist with a different hole configuration.
+                </p>
+              )}
+            </div>
+          )}
 
           <p className="text-xs text-[var(--text-faint)] text-center mt-4">
             Don&apos;t see your course?{' '}
