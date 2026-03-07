@@ -96,6 +96,22 @@ const mockScores = [
     user: { full_name: 'Jason Richards', email: 'jason@test.com', profile_picture_url: null },
     event: null,
   },
+  {
+    id: 'score-4',
+    user_id: 'user-1',
+    gross_score: 88,
+    net_score: 75,
+    net_strokes_over_par: 3,
+    holes_played: 18,
+    is_complete: true,
+    course_handicap: 13,
+    tee_time: '2026-03-07T00:00:00Z',
+    created_at: '2026-03-07T00:00:00Z',
+    event_id: null,
+    course: { course_name: 'Bethpage Black', tee_name: 'Black', type: '18_holes', par: 71, rating: 77.5, slope: 155 },
+    user: { full_name: 'Jason Richards', email: 'jason@test.com', profile_picture_url: null },
+    event: null,
+  },
 ];
 
 vi.mock('swr', () => ({
@@ -232,6 +248,31 @@ describe('Scores Page - Date Display', () => {
       // Event 4 start_date was Jun 1 — should NOT appear since tee_time is Jun 7
       expect(screen.queryByText(/Jun 1, 2025/)).not.toBeInTheDocument();
     });
+  });
+});
+
+describe('Scores Page - Conditional Time Display', () => {
+  beforeEach(() => {
+    mockSearchParams = new URLSearchParams();
+    vi.clearAllMocks();
+  });
+
+  it('shows time for scores with non-midnight tee_time', async () => {
+    render(<ScoresPage />);
+    await waitFor(() => {
+      // score-3: '2026-01-20T14:30:00Z' → should show "2:30" time
+      expect(screen.getByText(/at 2:30/)).toBeInTheDocument();
+    });
+  });
+
+  it('does not show time for date-only tee_time (midnight UTC)', async () => {
+    render(<ScoresPage />);
+    await waitFor(() => {
+      // score-4: '2026-03-07T00:00:00Z' → should show date but no time
+      expect(screen.getByText(/Mar 7, 2026/)).toBeInTheDocument();
+    });
+    // No "12:00 AM" or midnight time should appear
+    expect(screen.queryByText(/12:00/)).not.toBeInTheDocument();
   });
 });
 

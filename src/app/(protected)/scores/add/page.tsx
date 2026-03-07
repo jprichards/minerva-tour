@@ -11,7 +11,7 @@ import { calculateNetScore, getMaxHoles, courseMatchesEventHoles, formatNetScore
 import { notifySlack } from '@/lib/slack-notify';
 import { useSeason } from '@/lib/hooks/useSeason';
 import { fetchAllCourses } from '@/lib/courses';
-import { ArrowLeft, Search, ChevronRight, User as UserIcon, AlertCircle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Search, ChevronRight, User as UserIcon, AlertCircle, CheckCircle, X } from 'lucide-react';
 import MemberPicker from '@/components/MemberPicker';
 import type { Course, User } from '@/types/database';
 
@@ -50,7 +50,11 @@ function AddScoreContent() {
   const [playingForSelf, setPlayingForSelf] = useState(true);
 
   // Score details
-  const [teeTime, setTeeTime] = useState('');
+  const [roundDate, setRoundDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
+  const [teeTimeOfDay, setTeeTimeOfDay] = useState('');
   const [grossScore, setGrossScore] = useState('');
   const [grossToPar, setGrossToPar] = useState('');
   const [scoreEntryMode, setScoreEntryMode] = useState<'gross' | 'toPar'>('gross');
@@ -177,6 +181,7 @@ function AddScoreContent() {
   const missingHolesPlayed = hasScoreEntry && isPartialRound && !holesPlayed;
   const missingScore = !hasScoreEntry && isPartialRound && !!holesPlayed;
   const incompleteScoreEntry = missingHolesPlayed || missingScore;
+  const combinedTeeTime = roundDate ? `${roundDate}T${teeTimeOfDay || '00:00'}` : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -238,7 +243,7 @@ function AddScoreContent() {
       user_id: selectedPlayer.id,
       course_id: selectedCourse.id,
       event_id: currentEvent?.id || null,
-      tee_time: teeTime || null,
+      tee_time: combinedTeeTime,
       gross_score: grossScoreNum,
       holes_played: holesPlayedNum,
       is_complete: isComplete,
@@ -290,7 +295,7 @@ function AddScoreContent() {
       net_strokes_over_par: netStrokesOverPar,
       holes_played: holesPlayedNum,
       max_holes: maxHoles,
-      tee_time: teeTime || null,
+      tee_time: combinedTeeTime,
       event_name: currentEvent?.name || (currentEvent ? `Event ${currentEvent.event_number}` : null),
       is_complete: isComplete,
     });
@@ -325,7 +330,7 @@ function AddScoreContent() {
       user_id: uid,
       course_id: selectedCourse.id,
       event_id: currentEvent?.id || null,
-      tee_time: teeTime || null,
+      tee_time: combinedTeeTime,
       gross_score: null,
       holes_played: null,
       is_complete: false,
@@ -364,7 +369,7 @@ function AddScoreContent() {
           tee_name: selectedCourse.tee_name,
           course_type: selectedCourse.type,
           par: selectedCourse.par,
-          tee_time: teeTime || null,
+          tee_time: combinedTeeTime,
           event_name: currentEvent?.name || (currentEvent ? `Event ${currentEvent.event_number}` : null),
           is_complete: false,
         });
@@ -584,17 +589,51 @@ function AddScoreContent() {
             )}
           </div>
 
-          {/* Tee Time */}
-          <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-              Tee Time (optional)
-            </label>
-            <input
-              type="datetime-local"
-              value={teeTime}
-              onChange={(e) => setTeeTime(e.target.value)}
-              className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
-            />
+          {/* Round Date & Tee Time */}
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Date</label>
+              <div className="relative rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3">
+                <input
+                  type="date"
+                  value={roundDate}
+                  onChange={(e) => setRoundDate(e.target.value || roundDate)}
+                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                />
+                <span className="text-sm">
+                  {roundDate
+                    ? new Date(roundDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+                    : <span className="text-[var(--text-muted)]">Select date</span>}
+                </span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                Time <span className="font-normal text-[var(--text-faint)]">(opt.)</span>
+              </label>
+              <div className="relative rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3">
+                <input
+                  type="time"
+                  value={teeTimeOfDay}
+                  onChange={(e) => setTeeTimeOfDay(e.target.value)}
+                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                />
+                <span className="text-sm">
+                  {teeTimeOfDay
+                    ? new Date(`2000-01-01T${teeTimeOfDay}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                    : <span className="text-[var(--text-muted)]">&mdash;</span>}
+                </span>
+                {teeTimeOfDay && (
+                  <button
+                    type="button"
+                    onClick={() => setTeeTimeOfDay('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-[var(--bg-subtle)] z-20"
+                  >
+                    <X className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           {!teeTimeOnly && (
@@ -794,10 +833,10 @@ function AddScoreContent() {
             <p className="text-sm font-medium text-minerva-800">
               {selectedCourse?.course_name} &middot; {selectedCourse?.tee_name}
             </p>
-            {teeTime && (
+            {roundDate && (
               <p className="text-xs text-minerva-600">
-                {new Date(teeTime).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}{' '}
-                {new Date(teeTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                {new Date(roundDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
+                {teeTimeOfDay && ` at ${new Date(`2000-01-01T${teeTimeOfDay}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`}
               </p>
             )}
           </div>

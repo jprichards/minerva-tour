@@ -37,7 +37,8 @@ export default function ScoreDetailPage() {
   const [scoreEntryMode, setScoreEntryMode] = useState<'gross' | 'toPar'>('gross');
   const [holesPlayed, setHolesPlayed] = useState('');
   const [isPartialRound, setIsPartialRound] = useState(false);
-  const [teeTime, setTeeTime] = useState('');
+  const [roundDate, setRoundDate] = useState('');
+  const [teeTimeOfDay, setTeeTimeOfDay] = useState('');
 
   // Course change fields
   const [changingCourse, setChangingCourse] = useState(false);
@@ -67,7 +68,16 @@ export default function ScoreDetailPage() {
         const courseType = data.course?.type || '18_holes';
         const maxH = getMaxHoles(courseType);
         setIsPartialRound(data.holes_played != null && data.holes_played < maxH);
-        setTeeTime(data.tee_time ? new Date(data.tee_time).toISOString().slice(0, 16) : '');
+        if (data.tee_time) {
+          const dt = new Date(data.tee_time);
+          setRoundDate(dt.toISOString().split('T')[0]);
+          const h = dt.getUTCHours(), m = dt.getUTCMinutes();
+          setTeeTimeOfDay((h || m) ? `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}` : '');
+        } else {
+          const d = new Date();
+          setRoundDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+          setTeeTimeOfDay('');
+        }
         if (data.course) setEditCourse(data.course as unknown as Course);
       }
 
@@ -104,6 +114,7 @@ export default function ScoreDetailPage() {
   const editMissingHoles = editHasScore && isPartialRound && !holesPlayed;
   const editMissingScore = !editHasScore && isPartialRound && !!holesPlayed;
   const editIncomplete = editMissingHoles || editMissingScore;
+  const combinedTeeTime = roundDate ? `${roundDate}T${teeTimeOfDay || '00:00'}` : null;
 
   const handleSave = async () => {
     if (!score || !editCourse) return;
@@ -154,7 +165,7 @@ export default function ScoreDetailPage() {
         course_id: activeCourse.id,
         gross_score: grossScoreNum,
         holes_played: holesPlayedNum,
-        tee_time: teeTime || null,
+        tee_time: combinedTeeTime,
         is_complete: isComplete,
         course_handicap: courseHandicap,
         net_score: netScoreVal,
@@ -216,7 +227,7 @@ export default function ScoreDetailPage() {
       net_strokes_over_par: netStrokesOverPar,
       holes_played: holesPlayedNum,
       max_holes: maxHoles,
-      tee_time: teeTime || null,
+      tee_time: combinedTeeTime,
       event_name: score.event?.name || (score.event ? `Event ${score.event.event_number}` : null),
       old_gross_score: score.gross_score,
       old_net_score: score.net_strokes_over_par,
@@ -408,7 +419,16 @@ export default function ScoreDetailPage() {
             } else {
               setGrossToPar('');
             }
-            setTeeTime(score?.tee_time ? new Date(score.tee_time).toISOString().slice(0, 16) : '');
+            if (score?.tee_time) {
+              const dt = new Date(score.tee_time);
+              setRoundDate(dt.toISOString().split('T')[0]);
+              const h = dt.getUTCHours(), m = dt.getUTCMinutes();
+              setTeeTimeOfDay((h || m) ? `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}` : '');
+            } else {
+              const d = new Date();
+              setRoundDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+              setTeeTimeOfDay('');
+            }
           }} className="p-2 rounded-lg hover:bg-[var(--bg-subtle)]">
             <Edit className="w-5 h-5 text-[var(--text-muted)]" />
           </button>
@@ -522,8 +542,8 @@ export default function ScoreDetailPage() {
             <> &middot; {score.event.name || `Event ${score.event.event_number}`}{score.event.is_major ? ' (Major)' : ''}</>
           )}
           {score.tee_time && (
-            <> &middot; {new Date(score.tee_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}{' '}
-            {new Date(score.tee_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })}</>
+            <> &middot; {new Date(score.tee_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
+            {(() => { const d = new Date(score.tee_time!); return (d.getUTCHours() || d.getUTCMinutes()) ? ` at ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })}` : ''; })()}</>
           )}
         </p>
       </div>
@@ -548,20 +568,49 @@ export default function ScoreDetailPage() {
       {/* Edit Form */}
       {editing && (
         <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-5 space-y-3">
-          <div>
-            <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Tee Time</label>
-            <div className="relative rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 mt-1">
-              <input
-                type="datetime-local"
-                value={teeTime}
-                onChange={(e) => setTeeTime(e.target.value)}
-                className="absolute inset-0 opacity-0 w-full h-full"
-              />
-              <span className="text-sm">
-                {teeTime
-                  ? new Date(teeTime + ':00').toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
-                  : <span className="text-[var(--text-muted)]">Select date &amp; time</span>}
-              </span>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Date</label>
+              <div className="relative rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 mt-1">
+                <input
+                  type="date"
+                  value={roundDate}
+                  onChange={(e) => setRoundDate(e.target.value || roundDate)}
+                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                />
+                <span className="text-sm">
+                  {roundDate
+                    ? new Date(roundDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+                    : <span className="text-[var(--text-muted)]">Select date</span>}
+                </span>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
+                Time <span className="normal-case tracking-normal font-normal text-[var(--text-faint)]">(opt.)</span>
+              </label>
+              <div className="relative rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 mt-1">
+                <input
+                  type="time"
+                  value={teeTimeOfDay}
+                  onChange={(e) => setTeeTimeOfDay(e.target.value)}
+                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                />
+                <span className="text-sm">
+                  {teeTimeOfDay
+                    ? new Date(`2000-01-01T${teeTimeOfDay}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                    : <span className="text-[var(--text-muted)]">&mdash;</span>}
+                </span>
+                {teeTimeOfDay && (
+                  <button
+                    type="button"
+                    onClick={() => setTeeTimeOfDay('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-[var(--bg-subtle)] z-20"
+                  >
+                    <X className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           <div>
