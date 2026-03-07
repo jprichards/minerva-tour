@@ -546,14 +546,14 @@ export default function ScoreDetailPage() {
 
       {/* Edit Form */}
       {editing && (
-        <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-5 space-y-3 overflow-hidden">
-          <div className="overflow-hidden">
+        <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-5 space-y-3">
+          <div>
             <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Tee Time</label>
             <input
               type="datetime-local"
               value={teeTime}
               onChange={(e) => setTeeTime(e.target.value)}
-              className="w-full max-w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-minerva-500"
+              className="w-full max-w-full overflow-hidden rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-minerva-500"
             />
           </div>
           <div>
