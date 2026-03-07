@@ -8,6 +8,13 @@ import { Users, UserPlus, FileText, Calendar, Settings, Shield, Database, Swords
 
 const adminLinks = [
   {
+    href: '/admin/settings',
+    label: 'App Settings',
+    description: 'Google Photos URL, rules link, app config',
+    icon: Cog,
+    color: 'bg-[var(--bg-subtle)] text-[var(--text-muted)]',
+  },
+  {
     href: '/admin/users',
     label: 'User Management',
     description: 'View users, change roles, delete accounts',
@@ -83,13 +90,6 @@ const adminLinks = [
     description: 'Browse and edit database tables',
     icon: Database,
     color: 'bg-indigo-100 text-indigo-600',
-  },
-  {
-    href: '/admin/settings',
-    label: 'App Settings',
-    description: 'Google Photos URL, rules link, app config',
-    icon: Cog,
-    color: 'bg-[var(--bg-subtle)] text-[var(--text-muted)]',
   },
 ];
 
