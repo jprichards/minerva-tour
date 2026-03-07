@@ -63,6 +63,7 @@ const mockScore = {
   net_score: null,
   net_strokes_over_par: null,
   submitted_by: 'user-1',
+  created_at: '2026-03-01T00:00:00Z',
   course: {
     id: 'course-1',
     course_name: 'Pine Valley',

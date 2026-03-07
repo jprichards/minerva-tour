@@ -43,6 +43,8 @@ const mockScoreData = {
   course_handicap: null,
   net_score: null,
   net_strokes_over_par: null,
+  submitted_by: 'user-1',
+  created_at: '2026-03-01T00:00:00Z',
   course: {
     id: 'course-1',
     course_name: 'Pine Valley',
@@ -169,7 +171,7 @@ describe('Score Detail - Entry Mode Toggle', () => {
     });
   });
 
-  it('clears gross score when switching to toPar mode and vice versa', async () => {
+  it('converts values when switching between gross and toPar modes', async () => {
     render(<ScoreDetailPage />);
 
     await waitFor(() => {
@@ -182,19 +184,19 @@ describe('Score Detail - Entry Mode Toggle', () => {
       expect(screen.getByText('Gross Score')).toBeInTheDocument();
     });
 
+    // Enter gross 85 on a par-72 course → switching to toPar should show +13
     const grossInput = screen.getByPlaceholderText(/e\.g\. \d+/);
     fireEvent.change(grossInput, { target: { value: '85' } });
     expect(grossInput).toHaveValue(85);
 
     fireEvent.click(screen.getByText('Gross to Par'));
     const toParInput = screen.getByPlaceholderText('e.g. 5 for over, -2 for under');
-    expect(toParInput).toHaveValue(null);
+    expect(toParInput).toHaveValue(13); // 85 - 72 = 13
 
-    fireEvent.change(toParInput, { target: { value: '10' } });
+    // Switch back to gross → should convert +13 back to 85
     fireEvent.click(screen.getByText('Gross Score'));
-
     const newGrossInput = screen.getByPlaceholderText(/e\.g\. \d+/);
-    expect(newGrossInput).toHaveValue(null);
+    expect(newGrossInput).toHaveValue(85); // 72 + 13 = 85
   });
 
   it('shows negative over/under par correctly (under par)', async () => {
@@ -218,6 +220,39 @@ describe('Score Detail - Entry Mode Toggle', () => {
     await waitFor(() => {
       expect(screen.getByText('= Gross 70')).toBeInTheDocument();
     });
+  });
+
+  it('populates edit fields from current score state when entering edit mode', async () => {
+    mockSingle.mockResolvedValue({
+      data: {
+        ...mockScoreData,
+        gross_score: 82,
+        holes_played: 14,
+        is_complete: false,
+      },
+      error: null,
+    });
+
+    render(<ScoreDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Tee Time Detail')).toBeInTheDocument();
+    });
+
+    clickEditButton();
+
+    await waitFor(() => {
+      expect(screen.getByText('Gross Score')).toBeInTheDocument();
+    });
+
+    const grossInput = screen.getByPlaceholderText(/e\.g\. \d+/) as HTMLInputElement;
+    expect(grossInput.value).toBe('82');
+
+    const partialSwitch = screen.getByRole('switch');
+    expect(partialSwitch.getAttribute('aria-checked')).toBe('true');
+
+    const holesInput = screen.getByDisplayValue('14') as HTMLInputElement;
+    expect(holesInput.value).toBe('14');
   });
 
   it('resets entry mode when canceling edit', async () => {

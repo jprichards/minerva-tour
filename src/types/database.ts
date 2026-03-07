@@ -135,6 +135,7 @@ export interface Score {
   user?: User;
   course?: Course;
   event?: Event;
+  submitter?: Pick<User, 'full_name' | 'email'>;
 }
 
 export interface PlayoffBracket {

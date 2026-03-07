@@ -1,18 +1,17 @@
 ##Open##
 
-- Incremental score update buttons
+- ~~Incremental score update buttons~~ (Done - Quick Score panel on tee time detail page)
 - Bulk update handicaps in admin mode
 - tile discrepency between my profile and other member profiles
   - other member - # rounds, avg net, best net, worst net
   - my profile - # rounds, avg net, best net
 - event history should show both people if they both tied for first place,
 including the medal image
-- Playoff auto-seeding -- currently manual. The PRD says seeds come from 
-season standings (top 6 regular season), but the admin UI requires manual 
+- Playoff auto-seeding -- currently manual. The PRD says seeds come from   
+season standings (top 6 regular season), but the admin UI requires manual   
 selection. This is a feature gap, not a formula/calculation gap.
-- ~~a way to copy a tee time or a round and link a diff member. As commish, I'm typically creating the scores for a 4some, way easier than doing it 4 times incl course lookup.~~ DONE - Copy to Members feature added (post-submit flow + score detail page)
-- viewing a tee time, would like a way to enter score as over par instead of gross score
 - some audit logs data have null info that should be populated
+- refactor score/tee times detail page
 
 ##Fixed pending verification##
 
@@ -29,6 +28,7 @@ selection. This is a feature gap, not a formula/calculation gap.
 
 ##Done##
 
+- viewing a tee time, would like a way to enter score as over par instead of gross score
 - Admin > Feedback inbox truncates title
 - Lock handicaps before event
   - users cant update hdcps in-app, all driven by admin, so this is inherently locked?
@@ -40,6 +40,8 @@ selection. This is a feature gap, not a formula/calculation gap.
 and it converted it to 8p
 - handicap history on profile show date inputted, since we'll have 2
 or more handicap updates per month for 2 events per month
+- a way to copy a tee time or a round and link a diff member. As commish, I'm typically creating the scores for a 4some, way easier than doing it 4 times incl course lookup. 
+  - DONE - Copy to Members feature added (post-submit flow + score detail page)
 - Deleted score still appears on leaderboard with 1 point (Robby Dewling, 2026 S1E1).
   - SWR leaderboard cache was not invalidated on score delete/edit/create.
   - Also: delete silently succeeded when RLS blocked it (0 rows, no error).

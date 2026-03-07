@@ -12,6 +12,7 @@ import { notifySlack } from '@/lib/slack-notify';
 import { useSeason } from '@/lib/hooks/useSeason';
 import { ArrowLeft, Edit, Trash2, Save, Search, ChevronRight, X, Copy } from 'lucide-react';
 import MemberPicker from '@/components/MemberPicker';
+import QuickScore from '@/components/QuickScore';
 import type { Score, Event, Course, User } from '@/types/database';
 
 export default function ScoreDetailPage() {
@@ -53,7 +54,7 @@ export default function ScoreDetailPage() {
     const fetchScore = async () => {
       const { data, error } = await supabase
         .from('scores')
-        .select('*, course:courses(*), user:users!user_id(full_name, email, handicap_index), event:events(*)')
+        .select('*, course:courses(*), user:users!user_id(full_name, email, handicap_index), submitter:users!submitted_by(full_name, email), event:events(*)')
         .eq('id', id)
         .single();
 
@@ -220,6 +221,16 @@ export default function ScoreDetailPage() {
       old_net_score: score.net_strokes_over_par,
     });
 
+    mutate('leaderboard');
+    mutate((key: unknown) => Array.isArray(key) && key[0] === 'scores', undefined, { revalidate: true });
+
+    const { data: updated } = await supabase
+      .from('scores')
+      .select('*, course:courses(*), user:users!user_id(full_name, email, handicap_index), submitter:users!submitted_by(full_name, email), event:events(*)')
+      .eq('id', id)
+      .single();
+    if (updated) setScore(updated as unknown as Score);
+
     showToast('Score updated!');
     setSaving(false);
     setEditing(false);
@@ -227,17 +238,7 @@ export default function ScoreDetailPage() {
     setCourseSearch('');
     setScoreEntryMode('gross');
     setGrossToPar('');
-
-    mutate('leaderboard');
-    mutate((key: unknown) => Array.isArray(key) && key[0] === 'scores', undefined, { revalidate: true });
-
     router.refresh();
-    const { data: updated } = await supabase
-      .from('scores')
-      .select('*, course:courses(*), user:users!user_id(full_name, email, handicap_index), event:events(*)')
-      .eq('id', id)
-      .single();
-    if (updated) setScore(updated as unknown as Score);
   };
 
   const handleStartCopy = async () => {
@@ -368,7 +369,19 @@ export default function ScoreDetailPage() {
     <div className="p-4 space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-lg hover:bg-[var(--bg-subtle)]">
+        <button onClick={() => {
+          if (editing) {
+            setEditing(false);
+            setChangingCourse(false);
+            setCourseSearch('');
+            setScoreEntryMode('gross');
+            setGrossToPar('');
+            setGrossScore(score?.gross_score?.toString() || '');
+            if (score?.course) setEditCourse(score.course as unknown as Course);
+          } else {
+            router.back();
+          }
+        }} className="p-2 -ml-2 rounded-lg hover:bg-[var(--bg-subtle)]">
           <ArrowLeft className="w-5 h-5 text-[var(--text-muted)]" />
         </button>
         <div className="flex-1">
@@ -380,6 +393,21 @@ export default function ScoreDetailPage() {
           <button onClick={() => {
             setEditing(true);
             if (score?.course) setEditCourse(score.course as unknown as Course);
+            setGrossScore(score?.gross_score?.toString() || '');
+            setHolesPlayed(score?.holes_played?.toString() || '');
+            const maxH = getMaxHoles(score?.course?.type || '18_holes');
+            setIsPartialRound(score?.holes_played != null && score.holes_played < maxH);
+            setScoreEntryMode('gross');
+            if (score?.gross_score != null && score?.course) {
+              const hp = score.holes_played ?? maxH;
+              const partialPar = hp < maxH
+                ? Math.round(score.course.par * (hp / maxH))
+                : score.course.par;
+              setGrossToPar((score.gross_score - partialPar).toString());
+            } else {
+              setGrossToPar('');
+            }
+            setTeeTime(score?.tee_time ? new Date(score.tee_time).toISOString().slice(0, 16) : '');
           }} className="p-2 rounded-lg hover:bg-[var(--bg-subtle)]">
             <Edit className="w-5 h-5 text-[var(--text-muted)]" />
           </button>
@@ -452,8 +480,8 @@ export default function ScoreDetailPage() {
         </div>
       )}
 
-      {/* Score Card */}
-      <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-5 space-y-4">
+      {/* Subheader Card: Course info + condensed player/event/tee time */}
+      <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-5 space-y-3">
         {/* Course Info */}
         <div>
           <div className="flex items-center justify-between">
@@ -486,26 +514,39 @@ export default function ScoreDetailPage() {
           )}
         </div>
 
-        {/* Player */}
-        <div className="border-t border-[var(--border-light)] pt-3">
-          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Player</p>
-          <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">
-            {score.user?.full_name || score.user?.email}
-          </p>
-        </div>
+        {/* Condensed: Player | Event | Tee Time */}
+        <p className="text-sm text-[var(--text-muted)] border-t border-[var(--border-light)] pt-3">
+          {score.user?.full_name || score.user?.email}
+          {score.event && (
+            <> &middot; {score.event.name || `Event ${score.event.event_number}`}{score.event.is_major ? ' (Major)' : ''}</>
+          )}
+          {score.tee_time && (
+            <> &middot; {new Date(score.tee_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}{' '}
+            {new Date(score.tee_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })}</>
+          )}
+        </p>
+      </div>
 
-        {/* Date */}
-        {(score.tee_time || score.event?.start_date) && !editing && (
-          <div className="border-t border-[var(--border-light)] pt-3">
-            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Date</p>
-            <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">
-              {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
-            </p>
-          </div>
-        )}
+      {/* Quick Score - tap-to-increment panel for active tee times */}
+      {!editing && canEdit && !copying && score && (
+        <QuickScore
+          score={score}
+          onSaved={async () => {
+            mutate('leaderboard');
+            mutate((key: unknown) => Array.isArray(key) && key[0] === 'scores', undefined, { revalidate: true });
+            const { data: updated } = await supabase
+              .from('scores')
+              .select('*, course:courses(*), user:users!user_id(full_name, email, handicap_index), submitter:users!submitted_by(full_name, email), event:events(*)')
+              .eq('id', id)
+              .single();
+            if (updated) setScore(updated as unknown as Score);
+          }}
+        />
+      )}
 
-        {/* Tee Time */}
-        {editing ? (
+      {/* Edit Form */}
+      {editing && (
+        <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-5 space-y-3">
           <div>
             <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Tee Time</label>
             <input
@@ -515,213 +556,204 @@ export default function ScoreDetailPage() {
               className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-minerva-500"
             />
           </div>
-        ) : score.tee_time ? (
-          <div className="border-t border-[var(--border-light)] pt-3">
-            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Tee Time</p>
-            <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">
-              {new Date(score.tee_time).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}{' '}
-              {new Date(score.tee_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}
-            </p>
-          </div>
-        ) : null}
+          <div>
+            <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
+              Score {editMissingScore && <span className="text-red-500">*</span>}
+            </label>
+            <div className="flex bg-[var(--bg-subtle)] rounded-lg p-0.5 mt-1 mb-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (scoreEntryMode === 'toPar' && grossToPar !== '' && editCourse) {
+                    const maxH = getMaxHoles(editCourse.type);
+                    const hp = isPartialRound && holesPlayed ? parseInt(holesPlayed) : maxH;
+                    const partialPar = hp < maxH ? Math.round(editCourse.par * (hp / maxH)) : editCourse.par;
+                    setGrossScore((partialPar + parseInt(grossToPar)).toString());
+                  }
+                  setScoreEntryMode('gross');
+                  setGrossToPar('');
+                }}
+                className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  scoreEntryMode === 'gross' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
+                }`}
+              >
+                Gross Score
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (scoreEntryMode === 'gross' && grossScore !== '' && editCourse) {
+                    const maxH = getMaxHoles(editCourse.type);
+                    const hp = isPartialRound && holesPlayed ? parseInt(holesPlayed) : maxH;
+                    const partialPar = hp < maxH ? Math.round(editCourse.par * (hp / maxH)) : editCourse.par;
+                    setGrossToPar((parseInt(grossScore) - partialPar).toString());
+                  }
+                  setScoreEntryMode('toPar');
+                  setGrossScore('');
+                }}
+                className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  scoreEntryMode === 'toPar' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
+                }`}
+              >
+                Gross to Par
+              </button>
+            </div>
 
-        {/* Score Details */}
-        {editing ? (
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
-                Score {editMissingScore && <span className="text-red-500">*</span>}
-              </label>
-              <div className="flex bg-[var(--bg-subtle)] rounded-lg p-0.5 mt-1 mb-2">
-                <button
-                  type="button"
-                  onClick={() => { setScoreEntryMode('gross'); setGrossToPar(''); }}
-                  className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    scoreEntryMode === 'gross' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
-                  }`}
-                >
-                  Gross Score
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setScoreEntryMode('toPar'); setGrossScore(''); }}
-                  className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    scoreEntryMode === 'toPar' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
-                  }`}
-                >
-                  Gross to Par
-                </button>
-              </div>
-
-              {scoreEntryMode === 'gross' ? (
+            {scoreEntryMode === 'gross' ? (
+              <input
+                type="number"
+                value={grossScore}
+                onChange={(e) => setGrossScore(e.target.value)}
+                placeholder={`e.g. ${(editCourse?.par || 72) + 10}`}
+                className={`w-full rounded-xl border bg-[var(--input-bg)] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500 ${
+                  editMissingScore ? 'border-red-400 focus:ring-red-400' : 'border-[var(--input-border)]'
+                }`}
+              />
+            ) : (
+              <div>
                 <input
                   type="number"
-                  value={grossScore}
-                  onChange={(e) => setGrossScore(e.target.value)}
-                  placeholder={`e.g. ${(editCourse?.par || 72) + 10}`}
+                  value={grossToPar}
+                  onChange={(e) => setGrossToPar(e.target.value)}
+                  placeholder="e.g. 5 for over, -2 for under"
                   className={`w-full rounded-xl border bg-[var(--input-bg)] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500 ${
                     editMissingScore ? 'border-red-400 focus:ring-red-400' : 'border-[var(--input-border)]'
                   }`}
                 />
-              ) : (
-                <div>
-                  <input
-                    type="number"
-                    value={grossToPar}
-                    onChange={(e) => setGrossToPar(e.target.value)}
-                    placeholder="e.g. 5 for over, -2 for under"
-                    className={`w-full rounded-xl border bg-[var(--input-bg)] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500 ${
-                      editMissingScore ? 'border-red-400 focus:ring-red-400' : 'border-[var(--input-border)]'
-                    }`}
-                  />
-                  {grossToPar !== '' && editCourse && (
-                    <p className="text-xs text-[var(--text-muted)] mt-1">
-                      = Gross {(() => {
-                        const par = editCourse.par;
-                        const maxH = getMaxHoles(editCourse.type);
-                        const hp = isPartialRound && holesPlayed ? parseInt(holesPlayed) : maxH;
-                        const partialPar = hp < maxH ? Math.round(par * (hp / maxH)) : par;
-                        return partialPar + parseInt(grossToPar || '0');
-                      })()}
-                    </p>
-                  )}
-                </div>
-              )}
-              {editMissingScore && (
-                <p className="text-xs text-red-500 mt-1">Required when holes played is entered.</p>
-              )}
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
-                Partial round?
-              </span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={isPartialRound}
-                onClick={() => {
-                  const next = !isPartialRound;
-                  setIsPartialRound(next);
-                  if (!next) setHolesPlayed('');
-                }}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  isPartialRound ? 'bg-minerva-600' : 'bg-gray-300'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
-                    isPartialRound ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-            {isPartialRound && (
-              <div>
-                <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
-                  Holes Played {editMissingHoles && <span className="text-red-500">*</span>}
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max={getMaxHoles(editCourse?.type || score.course?.type || '18_holes') - 1}
-                  value={holesPlayed}
-                  onChange={(e) => setHolesPlayed(e.target.value)}
-                  className={`w-full rounded-xl border bg-[var(--input-bg)] px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-minerva-500 ${
-                    editMissingHoles ? 'border-red-400 focus:ring-red-400' : 'border-[var(--input-border)]'
-                  }`}
-                />
-                {editMissingHoles && (
-                  <p className="text-xs text-red-500 mt-1">Required when submitting a score.</p>
+                {grossToPar !== '' && editCourse && (
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                    = Gross {(() => {
+                      const par = editCourse.par;
+                      const maxH = getMaxHoles(editCourse.type);
+                      const hp = isPartialRound && holesPlayed ? parseInt(holesPlayed) : maxH;
+                      const partialPar = hp < maxH ? Math.round(par * (hp / maxH)) : par;
+                      return partialPar + parseInt(grossToPar || '0');
+                    })()}
+                  </p>
                 )}
               </div>
             )}
+            {editMissingScore && (
+              <p className="text-xs text-red-500 mt-1">Required when holes played is entered.</p>
+            )}
           </div>
-        ) : (
-          <>
-            {score.gross_score && (
-              <div className="border-t border-[var(--border-light)] pt-3 grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Gross</p>
-                  <p className="text-xl font-bold text-[var(--text-primary)] mt-0.5">
-                    {formatGrossScore(score.gross_score, score.course?.par || 72)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Holes</p>
-                  <p className="text-xl font-bold text-[var(--text-primary)] mt-0.5">{score.holes_played ?? getMaxHoles(score.course?.type || '18_holes')}</p>
-                </div>
-              </div>
-            )}
-
-            {score.net_strokes_over_par != null && (
-              <div className="border-t border-[var(--border-light)] pt-3 grid grid-cols-3 gap-4">
-                <div>
-                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Net</p>
-                  <p className={`text-xl font-bold mt-0.5 ${
-                    score.net_strokes_over_par < 0 ? 'text-red-600' :
-                    score.net_strokes_over_par === 0 ? 'text-green-600' :
-                    'text-[var(--text-primary)]'
-                  }`}>
-                    {formatNetScore(score.net_strokes_over_par)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Course Hcp</p>
-                  <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">{score.course_handicap}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Net Score</p>
-                  <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">{score.net_score}</p>
-                </div>
-              </div>
-            )}
-
-            {score.points_awarded != null && (
-              <div className="border-t border-[var(--border-light)] pt-3">
-                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Points</p>
-                <p className="text-lg font-bold text-yellow-600 mt-0.5">{score.points_awarded}</p>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Event Info */}
-        {score.event && (
-          <div className="border-t border-[var(--border-light)] pt-3">
-            <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Event</p>
-            <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">
-              {score.event.name || `Event ${score.event.event_number}`}
-              {score.event.is_major && ' (Major)'}
-            </p>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
+              Partial round?
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isPartialRound}
+              onClick={() => {
+                const next = !isPartialRound;
+                setIsPartialRound(next);
+                if (!next) setHolesPlayed('');
+              }}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                isPartialRound ? 'bg-minerva-600' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
+                  isPartialRound ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
           </div>
-        )}
-      </div>
+          {isPartialRound && (
+            <div>
+              <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
+                Holes Played {editMissingHoles && <span className="text-red-500">*</span>}
+              </label>
+              <input
+                type="number"
+                min="1"
+                max={getMaxHoles(editCourse?.type || score.course?.type || '18_holes') - 1}
+                value={holesPlayed}
+                onChange={(e) => setHolesPlayed(e.target.value)}
+                className={`w-full rounded-xl border bg-[var(--input-bg)] px-4 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-minerva-500 ${
+                  editMissingHoles ? 'border-red-400 focus:ring-red-400' : 'border-[var(--input-border)]'
+                }`}
+              />
+              {editMissingHoles && (
+                <p className="text-xs text-red-500 mt-1">Required when submitting a score.</p>
+              )}
+            </div>
+          )}
 
-      {/* Actions */}
-      {editing && (
-        <div className="space-y-2">
-          <button
-            onClick={handleSave}
-            disabled={saving || editIncomplete}
-            className="flex items-center justify-center gap-2 w-full bg-minerva-600 text-white rounded-xl px-4 py-3 text-sm font-semibold hover:bg-minerva-700 disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" />
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
-          <button
-            onClick={() => {
-              setEditing(false);
-              setChangingCourse(false);
-              setCourseSearch('');
-              setScoreEntryMode('gross');
-              setGrossToPar('');
-              setGrossScore(score?.gross_score?.toString() || '');
-              if (score?.course) setEditCourse(score.course as unknown as Course);
-            }}
-            className="w-full text-[var(--text-muted)] text-sm py-2"
-          >
-            Cancel
-          </button>
+          <div className="pt-2 space-y-2">
+            <button
+              onClick={handleSave}
+              disabled={saving || editIncomplete}
+              className="flex items-center justify-center gap-2 w-full bg-minerva-600 text-white rounded-xl px-4 py-3 text-sm font-semibold hover:bg-minerva-700 disabled:opacity-50"
+            >
+              <Save className="w-4 h-4" />
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+            <button
+              onClick={() => {
+                setEditing(false);
+                setChangingCourse(false);
+                setCourseSearch('');
+                setScoreEntryMode('gross');
+                setGrossToPar('');
+                setGrossScore(score?.gross_score?.toString() || '');
+                if (score?.course) setEditCourse(score.course as unknown as Course);
+              }}
+              className="w-full text-[var(--text-muted)] text-sm py-2"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Score Details Card (view mode only, when score data exists) */}
+      {!editing && !copying && score.gross_score != null && (
+        <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-5 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Gross</p>
+              <p className="text-xl font-bold text-[var(--text-primary)] mt-0.5">
+                {formatGrossScore(score.gross_score, score.course?.par || 72)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Holes</p>
+              <p className="text-xl font-bold text-[var(--text-primary)] mt-0.5">{score.holes_played ?? getMaxHoles(score.course?.type || '18_holes')}</p>
+            </div>
+          </div>
+
+          {score.net_strokes_over_par != null && (
+            <div className="border-t border-[var(--border-light)] pt-3 grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Net</p>
+                <p className={`text-xl font-bold mt-0.5 ${
+                  score.net_strokes_over_par < 0 ? 'text-red-600' :
+                  score.net_strokes_over_par === 0 ? 'text-green-600' :
+                  'text-[var(--text-primary)]'
+                }`}>
+                  {formatNetScore(score.net_strokes_over_par)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Course Hcp</p>
+                <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">{score.course_handicap}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Net Score</p>
+                <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">{score.net_score}</p>
+              </div>
+            </div>
+          )}
+
+          {score.points_awarded != null && (
+            <div className="border-t border-[var(--border-light)] pt-3">
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Points</p>
+              <p className="text-lg font-bold text-yellow-600 mt-0.5">{score.points_awarded}</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -773,6 +805,20 @@ export default function ScoreDetailPage() {
         <p className="text-xs text-[var(--text-faint)] text-center">
           Scores from past events cannot be edited. Contact an admin for corrections.
         </p>
+      )}
+
+      {/* Created on / Created by */}
+      {!editing && (
+        <div className="text-xs text-[var(--text-faint)] text-center space-y-0.5 pt-2">
+          <p>
+            Created on{' '}
+            {new Date(score.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}{' '}
+            {new Date(score.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })}
+          </p>
+          {score.submitter && (
+            <p>Created by {score.submitter.full_name || score.submitter.email}</p>
+          )}
+        </div>
       )}
     </div>
   );

@@ -106,7 +106,7 @@ vi.mock('@/lib/supabase/client', () => ({
 
 import ScoreDetailPage from '@/app/(protected)/scores/[id]/page';
 
-describe('Score Detail Page - Date Display', () => {
+describe('Score Detail Page - Subheader & Footer', () => {
   beforeEach(() => {
     mockScoreData = scoreWithEvent;
     vi.clearAllMocks();
@@ -117,17 +117,14 @@ describe('Score Detail Page - Date Display', () => {
     expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
-  it('shows actual round date (tee_time) over event start_date', async () => {
+  it('shows tee time date in condensed subheader (not event start_date)', async () => {
     mockScoreData = scoreWithEvent;
     render(<ScoreDetailPage />);
 
-    // tee_time: 2025-05-10 should show, NOT event start_date May 1
-    const dateLabel = await screen.findByText('Date', {}, { timeout: 3000 });
-    expect(dateLabel).toBeInTheDocument();
-    // May 10 appears in both Date and Tee Time sections
-    const matches = await screen.findAllByText(/May 10, 2025/);
-    expect(matches.length).toBeGreaterThanOrEqual(1);
-    // Event start_date (May 1) should NOT appear as the date
+    // tee_time: 2025-05-10 should show in the condensed subheader
+    const match = await screen.findByText(/May 10, 2025/);
+    expect(match).toBeInTheDocument();
+    // Event start_date (May 1) should NOT appear
     expect(screen.queryByText(/May 1, 2025/)).not.toBeInTheDocument();
   });
 
@@ -135,29 +132,27 @@ describe('Score Detail Page - Date Display', () => {
     mockScoreData = scoreWithTeeTime;
     render(<ScoreDetailPage />);
 
-    const dateLabel = await screen.findByText('Date', {}, { timeout: 3000 });
-    expect(dateLabel).toBeInTheDocument();
-    // tee_time: '2026-01-20T14:30:00Z' → "January 20, 2026"
-    // Appears in both Date section and Tee Time section
-    const matches = await screen.findAllByText(/January 20, 2026/);
-    expect(matches.length).toBeGreaterThanOrEqual(1);
+    // tee_time: '2026-01-20T14:30:00Z' in condensed subheader (short month format)
+    const match = await screen.findByText(/Jan 20, 2026/);
+    expect(match).toBeInTheDocument();
   });
 
-  it('does NOT show import date (Feb 2026) as the round date', async () => {
+  it('shows created_at in footer, not in subheader', async () => {
     mockScoreData = scoreWithEvent;
     render(<ScoreDetailPage />);
 
-    await screen.findByText('Date', {}, { timeout: 3000 });
-    expect(screen.queryByText(/February 15, 2026/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/February 14, 2026/)).not.toBeInTheDocument();
-    // Should also not show event start date when tee_time is available
+    await screen.findByText(/May 10, 2025/);
+    // created_at (Feb 15, 2026) should appear in "Created on" footer
+    expect(screen.getByText(/Created on/)).toBeInTheDocument();
+    expect(screen.getByText(/Feb 15, 2026/)).toBeInTheDocument();
+    // Event start_date should not appear
     expect(screen.queryByText(/May 1, 2025/)).not.toBeInTheDocument();
   });
 
-  it('shows event name in Event section', async () => {
+  it('shows event name in condensed subheader', async () => {
     mockScoreData = scoreWithEvent;
     render(<ScoreDetailPage />);
-    expect(await screen.findByText('Event 3')).toBeInTheDocument();
+    expect(await screen.findByText(/Event 3/)).toBeInTheDocument();
   });
 
   it('shows course info', async () => {
@@ -166,9 +161,9 @@ describe('Score Detail Page - Date Display', () => {
     expect(await screen.findByText('Pine Valley')).toBeInTheDocument();
   });
 
-  it('shows player name', async () => {
+  it('shows player name in condensed subheader', async () => {
     mockScoreData = scoreWithEvent;
     render(<ScoreDetailPage />);
-    expect(await screen.findByText('Jason Richards')).toBeInTheDocument();
+    expect(await screen.findByText(/Jason Richards/)).toBeInTheDocument();
   });
 });
