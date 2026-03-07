@@ -255,6 +255,75 @@ describe('Score Detail - Entry Mode Toggle', () => {
     expect(holesInput.value).toBe('14');
   });
 
+  it('saves partial round with is_complete=false', async () => {
+    const partialScore = {
+      ...mockScoreData,
+      gross_score: 42,
+      holes_played: 9,
+      is_complete: false,
+    };
+    mockSingle.mockResolvedValue({ data: { ...partialScore }, error: null });
+
+    render(<ScoreDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Tee Time Detail')).toBeInTheDocument();
+    });
+
+    clickEditButton();
+
+    await waitFor(() => {
+      expect(screen.getByText('Gross Score')).toBeInTheDocument();
+    });
+
+    const grossInput = screen.getByPlaceholderText(/e\.g\. \d+/) as HTMLInputElement;
+    expect(grossInput.value).toBe('42');
+
+    fireEvent.click(screen.getByText('Save Changes'));
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalled();
+    });
+
+    const updatePayload = mockUpdate.mock.calls[0][0];
+    expect(updatePayload.is_complete).toBe(false);
+    expect(updatePayload.gross_score).toBe(42);
+    expect(updatePayload.holes_played).toBe(9);
+  });
+
+  it('saves full round with is_complete=true', async () => {
+    const fullScore = {
+      ...mockScoreData,
+      gross_score: 85,
+      holes_played: 18,
+      is_complete: true,
+    };
+    mockSingle.mockResolvedValue({ data: { ...fullScore }, error: null });
+
+    render(<ScoreDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Round Detail')).toBeInTheDocument();
+    });
+
+    clickEditButton();
+
+    await waitFor(() => {
+      expect(screen.getByText('Gross Score')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Save Changes'));
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalled();
+    });
+
+    const updatePayload = mockUpdate.mock.calls[0][0];
+    expect(updatePayload.is_complete).toBe(true);
+    expect(updatePayload.gross_score).toBe(85);
+    expect(updatePayload.holes_played).toBe(18);
+  });
+
   it('resets entry mode when canceling edit', async () => {
     render(<ScoreDetailPage />);
 

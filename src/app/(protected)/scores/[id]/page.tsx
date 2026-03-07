@@ -122,7 +122,7 @@ export default function ScoreDetailPage() {
     const holesPlayedNum = grossScoreNum != null
       ? (isPartialRound && holesPlayed ? parseInt(holesPlayed) : maxHoles)
       : null;
-    const isComplete = grossScoreNum != null && holesPlayedNum != null;
+    const isComplete = grossScoreNum != null && holesPlayedNum != null && holesPlayedNum >= maxHoles;
 
     let courseHandicap = null;
     let netScoreVal = null;
@@ -130,7 +130,7 @@ export default function ScoreDetailPage() {
 
     const handicapIndex = (score.user as unknown as { handicap_index: number | null })?.handicap_index;
 
-    if (isComplete && grossScoreNum && holesPlayedNum && handicapIndex != null) {
+    if (grossScoreNum != null && holesPlayedNum != null && handicapIndex != null) {
       const result = calculateNetScore(
         grossScoreNum,
         handicapIndex,

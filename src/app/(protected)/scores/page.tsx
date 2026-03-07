@@ -8,7 +8,7 @@ import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { Plus, Search, Clock, CheckCircle, Target, Link2, User as UserIcon, Calendar } from 'lucide-react';
-import { formatNetScore, getMaxHoles } from '@/lib/scoring';
+import { formatNetScore, getMaxHoles, calculateNetScore } from '@/lib/scoring';
 import type { Score } from '@/types/database';
 
 type TabType = 'completed' | 'teetimes';
@@ -50,7 +50,7 @@ function ScoresContent() {
     async () => {
       let query = supabase
         .from('scores')
-        .select('*, course:courses(*), user:users!user_id(full_name, email, profile_picture_url), event:events(*)')
+        .select('*, course:courses(*), user:users!user_id(full_name, email, profile_picture_url, handicap_index), event:events(*)')
         .order('tee_time', { ascending: false });
 
       if (tab === 'teetimes') {
@@ -290,7 +290,18 @@ function ScoresContent() {
                     </p>
                     <p className="text-xs text-[var(--text-muted)] truncate">
                       {score.user?.full_name || score.user?.email || 'Unknown'}
-                      <span className="text-[var(--text-faint)]"> &middot; {score.holes_played ?? getMaxHoles(score.course?.type || '18_holes')} holes</span>
+                      {!score.is_complete && score.gross_score != null ? (
+                        <span className="text-[var(--text-faint)]"> &middot; {score.gross_score} {(() => {
+                          const netOP = score.net_strokes_over_par ?? (
+                            score.course && score.user?.handicap_index != null
+                              ? calculateNetScore(score.gross_score!, score.user.handicap_index, score.course.slope, score.course.rating, score.course.par, score.holes_played || 0, getMaxHoles(score.course.type)).netStrokesOverPar
+                              : null
+                          );
+                          return netOP != null ? `(net ${formatNetScore(netOP)}) ` : '';
+                        })()}thru {score.holes_played} of {getMaxHoles(score.course?.type || '18_holes')}</span>
+                      ) : (
+                        <span className="text-[var(--text-faint)]"> &middot; {score.holes_played ?? getMaxHoles(score.course?.type || '18_holes')} holes</span>
+                      )}
                     </p>
                     <p className="text-xs text-[var(--text-faint)] truncate">
                       {(score.tee_time || score.event?.start_date) &&
@@ -316,6 +327,10 @@ function ScoresContent() {
                         </p>
                       )}
                     </>
+                  ) : score.gross_score != null ? (
+                    <span className="inline-block bg-blue-100 text-blue-700 text-xs font-medium px-2 py-1 rounded-lg">
+                      In Progress
+                    </span>
                   ) : (
                     <span className="inline-block bg-amber-100 text-amber-700 text-xs font-medium px-2 py-1 rounded-lg">
                       Pending

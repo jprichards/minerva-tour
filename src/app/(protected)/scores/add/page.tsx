@@ -196,9 +196,9 @@ function AddScoreContent() {
     let courseHandicap = null;
     let netScore = null;
     let netStrokesOverPar = null;
-    const isComplete = grossScoreNum != null && holesPlayedNum != null && hasScoreEntry;
+    const isComplete = grossScoreNum != null && holesPlayedNum != null && hasScoreEntry && holesPlayedNum >= maxHoles;
 
-    if (isComplete && grossScoreNum && holesPlayedNum && selectedPlayer.handicap_index != null) {
+    if (grossScoreNum != null && holesPlayedNum != null && selectedPlayer.handicap_index != null) {
       const result = calculateNetScore(
         grossScoreNum,
         selectedPlayer.handicap_index,

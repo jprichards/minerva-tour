@@ -7,7 +7,7 @@ import { useUser } from '@/lib/hooks/useUser';
 import { Trophy, Medal, TrendingUp, AlertCircle, Download } from 'lucide-react';
 import { downloadCSV, downloadPDF, generateLeaderboardHTML } from '@/lib/export';
 import { useSeason } from '@/lib/hooks/useSeason';
-import { calculateRegularEventPoints, calculateMajorEventPoints, splitTiedPoints, formatNetScore, calculateScratchScore, calculatePlayingHandicap, calculateProjectedScore, getMaxHoles } from '@/lib/scoring';
+import { calculateRegularEventPoints, calculateMajorEventPoints, splitTiedPoints, formatNetScore, calculateNetScore, calculateScratchScore, calculatePlayingHandicap, calculateProjectedScore, getMaxHoles } from '@/lib/scoring';
 import type { Score, Event, Season } from '@/types/database';
 
 type ViewMode = 'event' | 'season';
@@ -21,6 +21,9 @@ interface LeaderboardEntry {
   bestGrossScore: number | null;
   grossOverPar: number | null;
   scratchOverRating: number | null;
+  actualGross: number | null;
+  actualNetOverPar: number | null;
+  actualScratchOverRating: number | null;
   holesPlayed: number | null;
   maxHoles: number;
   courseName: string;
@@ -244,6 +247,9 @@ export default function LeaderboardPage() {
         let netOverPar = bestScore.net_strokes_over_par;
         let scratchOver: number | null = null;
         let displayGross = bestScore.gross_score;
+        let actGross = bestScore.gross_score;
+        let actNetOverPar = bestScore.net_strokes_over_par;
+        let actScratchOverRating: number | null = null;
 
         if (isPartial && bestScore.gross_score != null && bestScore.course) {
           const hcpIdx = bestScore.handicap_index_used ?? bestScore.user?.handicap_index ?? 0;
@@ -258,6 +264,19 @@ export default function LeaderboardPage() {
           netOverPar = projected.projectedNetOverPar;
           scratchOver = projected.projectedScratchOverRating;
           displayGross = projected.projectedGross;
+
+          const actualNet = calculateNetScore(
+            bestScore.gross_score, hcpIdx, bestScore.course.slope,
+            bestScore.course.rating, bestScore.course.par,
+            bestScore.holes_played || 0, maxH
+          );
+          actNetOverPar = actualNet.netStrokesOverPar;
+
+          const actualScratch = calculateScratchScore(
+            bestScore.gross_score, bestScore.course.rating, bestScore.course.par,
+            bestScore.holes_played || 0, maxH
+          );
+          actScratchOverRating = actualScratch.scratchStrokesOverRating;
         } else {
           const scratchResult = bestScore.gross_score != null && bestScore.course?.rating != null
             ? calculateScratchScore(
@@ -266,6 +285,7 @@ export default function LeaderboardPage() {
               )
             : null;
           scratchOver = scratchResult?.scratchStrokesOverRating ?? null;
+          actScratchOverRating = scratchOver;
         }
 
         entries.push({
@@ -278,6 +298,9 @@ export default function LeaderboardPage() {
             ? displayGross - bestScore.course.par
             : null,
           scratchOverRating: scratchOver,
+          actualGross: actGross,
+          actualNetOverPar: actNetOverPar,
+          actualScratchOverRating: actScratchOverRating,
           holesPlayed: bestScore.holes_played,
           maxHoles: maxH,
           courseName: bestScore.course?.course_name || '',
@@ -288,48 +311,46 @@ export default function LeaderboardPage() {
       }
     }
 
-    // Sort with tiebreakers: primary score -> handicap (lower wins) -> holes played (more wins)
+    // Sort by actual net/scratch scores so partial rounds rank by their current score
     if (scoringMode === 'net') {
       entries.sort((a, b) => {
-        const diff = (a.bestNetOverPar ?? 999) - (b.bestNetOverPar ?? 999);
+        const aNet = a.actualNetOverPar ?? a.bestNetOverPar ?? 999;
+        const bNet = b.actualNetOverPar ?? b.bestNetOverPar ?? 999;
+        const diff = aNet - bNet;
         if (diff !== 0) return diff;
-        // Tiebreaker 1: lower handicap wins (stored as gross - net approximation)
-        const aHcpApprox = (a.bestGrossScore ?? 999) - (a.bestNetOverPar ?? 0);
-        const bHcpApprox = (b.bestGrossScore ?? 999) - (b.bestNetOverPar ?? 0);
-        if (aHcpApprox !== bHcpApprox) return aHcpApprox - bHcpApprox;
-        // Tiebreaker 2: more holes played wins
-        return (b.holesPlayed ?? 0) - (a.holesPlayed ?? 0);
+        // Tiebreaker 1: more holes played wins (completed rounds beat partial at same score)
+        const holesDiff = (b.holesPlayed ?? 0) - (a.holesPlayed ?? 0);
+        if (holesDiff !== 0) return holesDiff;
+        // Tiebreaker 2: lower handicap wins
+        const aHcpApprox = (a.actualGross ?? 999) - aNet;
+        const bHcpApprox = (b.actualGross ?? 999) - bNet;
+        return aHcpApprox - bHcpApprox;
       });
     } else {
-      // Scratch: sort by strokes over course rating (normalized for difficulty)
       entries.sort((a, b) => {
-        const diff = (a.scratchOverRating ?? 999) - (b.scratchOverRating ?? 999);
+        const aScratch = a.actualScratchOverRating ?? a.scratchOverRating ?? 999;
+        const bScratch = b.actualScratchOverRating ?? b.scratchOverRating ?? 999;
+        const diff = aScratch - bScratch;
         if (diff !== 0) return diff;
         return (b.holesPlayed ?? 0) - (a.holesPlayed ?? 0);
       });
     }
 
     // Calculate projected points with tie splitting per PRD
-    // Include all entries (complete + in-progress) -- in-progress rounds are
-    // projected as if their current score would hold through completion
-    const scoredEntries = entries.filter((e) =>
-      (scoringMode === 'net' ? e.bestNetOverPar : e.scratchOverRating) != null
-    );
+    const getDisplayScore = (e: LeaderboardEntry) =>
+      scoringMode === 'net'
+        ? (e.actualNetOverPar ?? e.bestNetOverPar)
+        : (e.actualScratchOverRating ?? e.scratchOverRating);
+
+    const scoredEntries = entries.filter((e) => getDisplayScore(e) != null);
     const numParticipants = scoredEntries.length;
 
     let i = 0;
     while (i < scoredEntries.length) {
-      const currentScore = scoringMode === 'net'
-        ? scoredEntries[i].bestNetOverPar
-        : scoredEntries[i].scratchOverRating;
+      const currentScore = getDisplayScore(scoredEntries[i]);
 
       let j = i;
-      while (
-        j < scoredEntries.length &&
-        (scoringMode === 'net'
-          ? scoredEntries[j].bestNetOverPar
-          : scoredEntries[j].scratchOverRating) === currentScore
-      ) {
+      while (j < scoredEntries.length && getDisplayScore(scoredEntries[j]) === currentScore) {
         j++;
       }
 
@@ -699,25 +720,31 @@ export default function LeaderboardPage() {
                         {entry.courseName} &middot; {entry.teeName}
                       </p>
                       <p className="text-xs text-[var(--text-faint)]">
-                        {entry.bestGrossScore ?? '-'} ({entry.bestNetOverPar != null ? formatNetScore(entry.bestNetOverPar) : '-'}) | Thru {entry.isComplete ? 'F' : entry.holesPlayed}
+                        {entry.actualGross ?? '-'} ({entry.actualNetOverPar != null ? formatNetScore(entry.actualNetOverPar) : '-'}) | Thru {entry.isComplete ? 'F' : entry.holesPlayed}
+                        {!entry.isComplete && entry.bestGrossScore != null && entry.actualGross !== entry.bestGrossScore && (
+                          <span className="text-[10px] text-[var(--text-muted)] opacity-80">
+                            {' - '}Projected: {entry.bestGrossScore} ({entry.bestNetOverPar != null ? formatNetScore(entry.bestNetOverPar) : '-'})
+                          </span>
+                        )}
                       </p>
                     </div>
 
                     {/* Score & Points */}
                     <div className="text-right flex-shrink-0">
-                      <p className={`text-lg font-bold ${
-                        (scoringMode === 'net' ? entry.bestNetOverPar : entry.scratchOverRating) != null
-                          ? ((scoringMode === 'net' ? entry.bestNetOverPar! : entry.scratchOverRating!) < 0
-                            ? 'text-red-600'
-                            : (scoringMode === 'net' ? entry.bestNetOverPar! : entry.scratchOverRating!) === 0
-                            ? 'text-green-600'
-                            : 'text-[var(--text-primary)]')
-                          : 'text-[var(--text-faint)]'
-                      }`}>
-                        {scoringMode === 'net'
-                          ? entry.bestNetOverPar != null ? formatNetScore(entry.bestNetOverPar) : '-'
-                          : entry.scratchOverRating != null ? formatNetScore(entry.scratchOverRating) : '-'}
-                      </p>
+                      {(() => {
+                        const displayNet = scoringMode === 'net'
+                          ? (entry.isComplete ? entry.bestNetOverPar : entry.actualNetOverPar) ?? entry.bestNetOverPar
+                          : (entry.isComplete ? entry.scratchOverRating : entry.actualScratchOverRating) ?? entry.scratchOverRating;
+                        return (
+                          <p className={`text-lg font-bold ${
+                            displayNet != null
+                              ? (displayNet < 0 ? 'text-red-600' : displayNet === 0 ? 'text-green-600' : 'text-[var(--text-primary)]')
+                              : 'text-[var(--text-faint)]'
+                          }`}>
+                            {displayNet != null ? formatNetScore(displayNet) : '-'}
+                          </p>
+                        );
+                      })()}
                       {entry.projectedPoints > 0 && (
                         <p className="text-xs text-yellow-600 font-medium">
                           {entry.projectedPoints} pts
