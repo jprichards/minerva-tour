@@ -2,7 +2,6 @@
 
 - Incremental score update buttons
 - Bulk update handicaps in admin mode
-- Admin > Feedback inbox truncates title
 - tile discrepency between my profile and other member profiles
   - other member - # rounds, avg net, best net, worst net
   - my profile - # rounds, avg net, best net
@@ -11,8 +10,9 @@ including the medal image
 - Playoff auto-seeding -- currently manual. The PRD says seeds come from 
 season standings (top 6 regular season), but the admin UI requires manual 
 selection. This is a feature gap, not a formula/calculation gap.
-- a way to copy a tee time or a round and link a diff member. As commish, I'm typically creating the scores for a 4some, way easier than doing it 4 times incl course lookup.
+- ~~a way to copy a tee time or a round and link a diff member. As commish, I'm typically creating the scores for a 4some, way easier than doing it 4 times incl course lookup.~~ DONE - Copy to Members feature added (post-submit flow + score detail page)
 - viewing a tee time, would like a way to enter score as over par instead of gross score
+- some audit logs data have null info that should be populated
 
 ##Fixed pending verification##
 
@@ -26,13 +26,10 @@ selection. This is a feature gap, not a formula/calculation gap.
   - 736 scores across 2018-2026 had wrong NOP. 
   - Fix script: scripts/fix-nop-rating-vs-par.mjs.
   - Applied 2025-03-06: all 736 corrected. Import scripts also patched (rating→par).
-- Deleted score still appears on leaderboard with 1 point (Robby Dewling, 2026 S1E1).
-  - SWR leaderboard cache was not invalidated on score delete/edit/create.
-  - Also: delete silently succeeded when RLS blocked it (0 rows, no error).
-  - Fix: invalidate SWR 'leaderboard' cache on all score mutations + verify delete returned rows.
 
 ##Done##
 
+- Admin > Feedback inbox truncates title
 - Lock handicaps before event
   - users cant update hdcps in-app, all driven by admin, so this is inherently locked?
 - Share button on home screen (replaces notification bell). Uses Web Share API with clipboard fallback.
@@ -43,5 +40,9 @@ selection. This is a feature gap, not a formula/calculation gap.
 and it converted it to 8p
 - handicap history on profile show date inputted, since we'll have 2
 or more handicap updates per month for 2 events per month
+- Deleted score still appears on leaderboard with 1 point (Robby Dewling, 2026 S1E1).
+  - SWR leaderboard cache was not invalidated on score delete/edit/create.
+  - Also: delete silently succeeded when RLS blocked it (0 rows, no error).
+  - Fix: invalidate SWR 'leaderboard' cache on all score mutations + verify delete returned rows.
 
 ##Won't Do##

@@ -10,8 +10,9 @@ import { logAuditEvent } from '@/lib/audit';
 import { calculateNetScore, getMaxHoles, formatNetScore, formatGrossScore, courseMatchesEventHoles } from '@/lib/scoring';
 import { notifySlack } from '@/lib/slack-notify';
 import { useSeason } from '@/lib/hooks/useSeason';
-import { ArrowLeft, Edit, Trash2, Save, Search, ChevronRight, X } from 'lucide-react';
-import type { Score, Event, Course } from '@/types/database';
+import { ArrowLeft, Edit, Trash2, Save, Search, ChevronRight, X, Copy } from 'lucide-react';
+import MemberPicker from '@/components/MemberPicker';
+import type { Score, Event, Course, User } from '@/types/database';
 
 export default function ScoreDetailPage() {
   const { id } = useParams();
@@ -41,6 +42,12 @@ export default function ScoreDetailPage() {
   const [editCourse, setEditCourse] = useState<Course | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [courseSearch, setCourseSearch] = useState('');
+
+  // Copy to members fields
+  const [copying, setCopying] = useState(false);
+  const [copyMembers, setCopyMembers] = useState<User[]>([]);
+  const [copyLoading, setCopyLoading] = useState(false);
+  const [copyDisabledIds, setCopyDisabledIds] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchScore = async () => {
@@ -233,6 +240,91 @@ export default function ScoreDetailPage() {
     if (updated) setScore(updated as unknown as Score);
   };
 
+  const handleStartCopy = async () => {
+    if (!score) return;
+    setCopying(true);
+
+    const { data: membersData } = await supabase
+      .from('users')
+      .select('*')
+      .in('role', ['admin', 'member', 'playing_guest'])
+      .order('full_name');
+    setCopyMembers(membersData || []);
+
+    const { data: existingScores } = await supabase
+      .from('scores')
+      .select('user_id')
+      .eq('course_id', score.course_id)
+      .eq('event_id', score.event_id);
+
+    const existingUserIds = (existingScores || []).map((s: { user_id: string }) => s.user_id);
+    setCopyDisabledIds(existingUserIds.filter((uid: string) => uid !== score.user_id));
+  };
+
+  const handleCopyToMembers = async (memberIds: string[]) => {
+    if (!score) return;
+    setCopyLoading(true);
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const rows = memberIds.map((uid) => ({
+      user_id: uid,
+      course_id: score.course_id,
+      event_id: score.event_id,
+      tee_time: score.tee_time,
+      gross_score: null,
+      holes_played: null,
+      is_complete: false,
+      course_handicap: null,
+      net_score: null,
+      net_strokes_over_par: null,
+      submitted_by: user?.id,
+    }));
+
+    const { data: inserted, error: insertError } = await supabase
+      .from('scores')
+      .insert(rows)
+      .select();
+
+    if (insertError) {
+      showToast('Failed to copy tee time.', 'error');
+      setCopyLoading(false);
+      return;
+    }
+
+    if (inserted) {
+      const courseName = score.course?.course_name || '';
+      const teeName = score.course?.tee_name || '';
+      for (const row of inserted) {
+        const member = copyMembers.find((m) => m.id === row.user_id);
+        await logAuditEvent('score_submission', 'score', row.id, {
+          player: member?.full_name || member?.email,
+          course: courseName,
+          tee: teeName,
+          copied_from_score_id: score.id,
+        });
+
+        notifySlack({
+          event_type: 'tee_time',
+          player_name: member?.full_name || member?.email || 'Unknown',
+          handicap_index: member?.handicap_index,
+          course_name: courseName,
+          tee_name: teeName,
+          course_type: score.course?.type,
+          par: score.course?.par || 72,
+          tee_time: score.tee_time || null,
+          event_name: score.event?.name || (score.event ? `Event ${score.event.event_number}` : null),
+          is_complete: false,
+        });
+      }
+    }
+
+    mutate((key: unknown) => Array.isArray(key) && key[0] === 'scores', undefined, { revalidate: true });
+    showToast(`Tee time copied to ${memberIds.length} member${memberIds.length !== 1 ? 's' : ''}!`);
+    setCopyLoading(false);
+    setCopying(false);
+  };
+
   const handleDelete = async () => {
     if (!score) return;
     if (!confirm('Delete this score? This cannot be undone.')) return;
@@ -252,7 +344,7 @@ export default function ScoreDetailPage() {
     mutate((key: unknown) => Array.isArray(key) && key[0] === 'scores', undefined, { revalidate: true });
 
     showToast('Score deleted.');
-    router.push('/scores');
+    router.push(score.is_complete ? '/scores?tab=completed' : '/scores?tab=teetimes');
   };
 
   if (loading) {
@@ -633,7 +725,41 @@ export default function ScoreDetailPage() {
         </div>
       )}
 
-      {!editing && canDelete && (
+      {/* Copy to Members */}
+      {!editing && canEdit && copying && (
+        <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-4 space-y-3">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Copy Tee Time to Members</h2>
+            <button
+              onClick={() => setCopying(false)}
+              className="p-1.5 rounded-lg hover:bg-[var(--bg-subtle)]"
+            >
+              <X className="w-4 h-4 text-[var(--text-muted)]" />
+            </button>
+          </div>
+          <MemberPicker
+            members={copyMembers}
+            excludeIds={[score.user_id]}
+            disabledIds={copyDisabledIds}
+            disabledReason="Already has tee time"
+            onConfirm={handleCopyToMembers}
+            onCancel={() => setCopying(false)}
+            loading={copyLoading}
+          />
+        </div>
+      )}
+
+      {!editing && canEdit && !copying && (
+        <button
+          onClick={handleStartCopy}
+          className="flex items-center justify-center gap-2 w-full bg-minerva-50 text-minerva-700 rounded-xl px-4 py-3 text-sm font-medium hover:bg-minerva-100 transition-colors"
+        >
+          <Copy className="w-4 h-4" />
+          Copy to Members
+        </button>
+      )}
+
+      {!editing && canDelete && !copying && (
         <button
           onClick={handleDelete}
           className="flex items-center justify-center gap-2 w-full bg-red-50 text-red-600 rounded-xl px-4 py-3 text-sm font-medium hover:bg-red-100 transition-colors"

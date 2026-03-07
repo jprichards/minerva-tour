@@ -177,7 +177,7 @@ describe('Score Delete - SWR Cache Invalidation', () => {
     fireEvent.click(deleteButton);
 
     await waitFor(() => {
-      expect(mockRouter.push).toHaveBeenCalledWith('/scores');
+      expect(mockRouter.push).toHaveBeenCalledWith('/scores?tab=completed');
     });
   });
 

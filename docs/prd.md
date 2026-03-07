@@ -237,6 +237,7 @@ The app is mobile-first (used on phones, often outdoors). Layout and visual desi
   - **Net E target**: Display the gross score needed to shoot net even, calculated as `Playing Handicap + Par`, shown with its to-par value (e.g. “90 (+18)”). Shown on tee time detail, round detail, and score submission pages.
 - **Editing/deleting**: Members can edit or delete only scores in the current event window. Past events are locked; admins can correct those.
 - **Other member**: Members can submit and update scores on behalf of other members (with a clear way to select who is playing).
+- **Copy to members**: After creating a tee time (or round), users can copy it to one or more other members without re-selecting the course. Two entry points: (1) a post-submit success screen with a multi-select member picker, and (2) a "Copy to Members" button on the tee time / round detail page. Copies always create tee-time-only records (course, tee time, event — no score). Duplicate detection prevents creating a second tee time for the same member/course/event combination.
 - **Completed rounds**: List completed rounds (e.g. grouped by person, best net first). Include course, tee, holes, gross, net; support search/filter.
 - **Score corrections**: Admins can correct scores (including wrong course data) and edit locked (past event) scores.
 - **Validation**: Honor system—no strict validation on score values.

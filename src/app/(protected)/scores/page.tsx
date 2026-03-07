@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import useSWR from 'swr';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
@@ -23,6 +23,7 @@ export default function ScoresPage() {
 
 function ScoresContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const initialTab = (searchParams.get('tab') as TabType) || 'completed';
   const playerFilter = searchParams.get('player') || '';
   const [tab, setTab] = useState<TabType>(initialTab);
@@ -33,6 +34,16 @@ function ScoresContent() {
   const hasSetDefaultYear = useRef(false);
   const { profile } = useUser();
   const supabase = createClient();
+
+  const switchTab = useCallback((newTab: TabType) => {
+    setTab(newTab);
+    setEventFilter('all');
+    hasSetDefaultYear.current = false;
+    setYearFilter('pending');
+    const params = new URLSearchParams(window.location.search);
+    params.set('tab', newTab);
+    router.replace(`/scores?${params.toString()}`, { scroll: false });
+  }, [router]);
 
   const { data: scores = [], isLoading: loading } = useSWR(
     ['scores', tab, profile?.id ?? null],
@@ -160,7 +171,7 @@ function ScoresContent() {
       {/* Tabs */}
       <div className="flex bg-[var(--bg-subtle)] rounded-xl p-1">
         <button
-          onClick={() => setTab('completed')}
+          onClick={() => switchTab('completed')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium rounded-lg transition-colors ${
             tab === 'completed' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
           }`}
@@ -169,7 +180,7 @@ function ScoresContent() {
           Completed
         </button>
         <button
-          onClick={() => setTab('teetimes')}
+          onClick={() => switchTab('teetimes')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium rounded-lg transition-colors ${
             tab === 'teetimes' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
           }`}

@@ -10,10 +10,11 @@ import { logAuditEvent } from '@/lib/audit';
 import { calculateNetScore, getMaxHoles, courseMatchesEventHoles, formatNetScore } from '@/lib/scoring';
 import { notifySlack } from '@/lib/slack-notify';
 import { useSeason } from '@/lib/hooks/useSeason';
-import { ArrowLeft, Search, ChevronRight, User as UserIcon, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Search, ChevronRight, User as UserIcon, AlertCircle, CheckCircle } from 'lucide-react';
+import MemberPicker from '@/components/MemberPicker';
 import type { Course, User } from '@/types/database';
 
-type Step = 'course' | 'player' | 'details';
+type Step = 'course' | 'player' | 'details' | 'success';
 
 export default function AddScorePage() {
   return (
@@ -55,6 +56,11 @@ function AddScoreContent() {
   const [isPartialRound, setIsPartialRound] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Post-submit copy state
+  const [copiedMemberIds, setCopiedMemberIds] = useState<string[]>([]);
+  const [copyDisabledIds, setCopyDisabledIds] = useState<string[]>([]);
+  const [copyLoading, setCopyLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -274,12 +280,88 @@ function AddScoreContent() {
     mutate((key: unknown) => Array.isArray(key) && key[0] === 'scores', undefined, { revalidate: true });
 
     showToast(isComplete ? 'Score submitted!' : 'Tee time saved!');
-    router.push('/scores');
+    setCopiedMemberIds([selectedPlayer.id]);
+
+    // Find members who already have a tee time for this course+event
+    if (currentEvent?.id) {
+      const { data: existingScores } = await supabase
+        .from('scores')
+        .select('user_id')
+        .eq('course_id', selectedCourse.id)
+        .eq('event_id', currentEvent.id);
+      const existingUserIds = (existingScores || []).map((s: { user_id: string }) => s.user_id);
+      setCopyDisabledIds(existingUserIds.filter((uid: string) => uid !== selectedPlayer.id));
+    }
+
+    setStep('success');
+  };
+
+  const handleCopyToMembers = async (memberIds: string[]) => {
+    if (!selectedCourse || memberIds.length === 0) return;
+    setCopyLoading(true);
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const rows = memberIds.map((uid) => ({
+      user_id: uid,
+      course_id: selectedCourse.id,
+      event_id: currentEvent?.id || null,
+      tee_time: teeTime || null,
+      gross_score: null,
+      holes_played: null,
+      is_complete: false,
+      course_handicap: null,
+      net_score: null,
+      net_strokes_over_par: null,
+      submitted_by: user?.id,
+    }));
+
+    const { data: inserted, error: insertError } = await supabase
+      .from('scores')
+      .insert(rows)
+      .select();
+
+    if (insertError) {
+      showToast('Failed to copy tee time.', 'error');
+      setCopyLoading(false);
+      return;
+    }
+
+    if (inserted) {
+      for (const row of inserted) {
+        const member = members.find((m) => m.id === row.user_id);
+        await logAuditEvent('score_submission', 'score', row.id, {
+          player: member?.full_name || member?.email,
+          course: selectedCourse.course_name,
+          tee: selectedCourse.tee_name,
+          copied_from_tee_time: true,
+        });
+
+        notifySlack({
+          event_type: 'tee_time',
+          player_name: member?.full_name || member?.email || 'Unknown',
+          handicap_index: member?.handicap_index,
+          course_name: selectedCourse.course_name,
+          tee_name: selectedCourse.tee_name,
+          course_type: selectedCourse.type,
+          par: selectedCourse.par,
+          tee_time: teeTime || null,
+          event_name: currentEvent?.name || (currentEvent ? `Event ${currentEvent.event_number}` : null),
+          is_complete: false,
+        });
+      }
+    }
+
+    mutate((key: unknown) => Array.isArray(key) && key[0] === 'scores', undefined, { revalidate: true });
+    setCopiedMemberIds((prev) => [...prev, ...memberIds]);
+    showToast(`Tee time copied to ${memberIds.length} member${memberIds.length !== 1 ? 's' : ''}!`);
+    setCopyLoading(false);
   };
 
   return (
     <div className="p-4">
       {/* Header */}
+      {step !== 'success' && (
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => {
@@ -301,6 +383,7 @@ function AddScoreContent() {
           </p>
         </div>
       </div>
+      )}
 
       {/* Step 1: Select Course */}
       {step === 'course' && (
@@ -656,6 +739,52 @@ function AddScoreContent() {
               : 'Submit Score'}
           </button>
         </form>
+      )}
+
+      {/* Step 4: Success — Copy to Members */}
+      {step === 'success' && (
+        <div className="space-y-5">
+          <div className="text-center py-4">
+            <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+            <h2 className="text-lg font-bold text-[var(--text-primary)]">
+              {teeTimeOnly || !hasScoreEntry ? 'Tee Time Saved' : 'Score Submitted'}
+            </h2>
+          </div>
+
+          <div className="bg-minerva-50 rounded-xl p-3 space-y-1">
+            <p className="text-sm font-medium text-minerva-800">
+              {selectedCourse?.course_name} &middot; {selectedCourse?.tee_name}
+            </p>
+            {teeTime && (
+              <p className="text-xs text-minerva-600">
+                {new Date(teeTime).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}{' '}
+                {new Date(teeTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
+              Copy tee time to other members?
+            </h3>
+            <MemberPicker
+              members={members}
+              excludeIds={copiedMemberIds}
+              disabledIds={copyDisabledIds}
+              disabledReason="Already has tee time"
+              onConfirm={handleCopyToMembers}
+              onCancel={() => router.push('/scores')}
+              loading={copyLoading}
+            />
+          </div>
+
+          <button
+            onClick={() => router.push('/scores')}
+            className="w-full text-[var(--text-muted)] text-sm py-2"
+          >
+            Done
+          </button>
+        </div>
       )}
     </div>
   );
