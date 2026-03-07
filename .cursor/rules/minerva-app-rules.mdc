@@ -49,3 +49,20 @@ After implementing + writing tests, always run:
 npx vitest run          # Must show 0 failures
 npm run build           # Must compile without errors
 ```
+
+# Mobile-First UI
+
+This is a mobile-first app. The primary target device is **iPhone** (375px–430px viewport width). Every UI change must prioritize iPhone compatibility:
+
+- Always use `overflow-hidden` on card/container elements to prevent content bleed on small screens.
+- Inputs (especially native ones like `datetime-local`, `date`, `select`) must be constrained with `w-full max-w-full` and wrapped in `overflow-hidden` containers — iOS Safari renders these with internal widths that can exceed their parents.
+- Use `min-w-0` on flex children that contain text to prevent flex items from overflowing.
+- Avoid fixed widths (`w-64`, `w-[300px]`, etc.) — prefer responsive utilities (`w-full`, `max-w-sm`, etc.).
+- Test layout assumptions at 375px width mentally; anything that works at 375px will work on all larger iPhones.
+- Horizontal padding on page-level containers should not exceed `p-4` / `px-4`.
+- Tap targets must be at least 44×44px (Apple HIG minimum).
+- Text truncation (`truncate`, `line-clamp-*`) is preferred over wrapping when space is tight, unless the full text is essential.
+
+# Git Policy
+
+NEVER commit or push unless the user explicitly asks you to. After tests and build pass, stop and wait for the user to tell you to commit/push.

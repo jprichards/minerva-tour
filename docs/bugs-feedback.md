@@ -1,20 +1,20 @@
 ##Open##
 
-- ~~Incremental score update buttons~~ (Done - Quick Score panel on tee time detail page)
 - Bulk update handicaps in admin mode
 - tile discrepency between my profile and other member profiles
   - other member - # rounds, avg net, best net, worst net
   - my profile - # rounds, avg net, best net
 - event history should show both people if they both tied for first place,
 including the medal image
-- Playoff auto-seeding -- currently manual. The PRD says seeds come from   
-season standings (top 6 regular season), but the admin UI requires manual   
+- Playoff auto-seeding -- currently manual. The PRD says seeds come from  
+season standings (top 6 regular season), but the admin UI requires manual  
 selection. This is a feature gap, not a formula/calculation gap.
 - some audit logs data have null info that should be populated
 - refactor score/tee times detail page
 
 ##Fixed pending verification##
 
+- Incremental score update buttons 
 - Incorporate 95% scoring math
 - Glide Round History "Gross Score" column stores Projected Gross (not Actual Gross) for scores entered via direct gross entry. 
   - 797 scores across 2020-2025 affected. 
