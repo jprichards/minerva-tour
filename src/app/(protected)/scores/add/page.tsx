@@ -10,6 +10,7 @@ import { logAuditEvent } from '@/lib/audit';
 import { calculateNetScore, getMaxHoles, courseMatchesEventHoles, formatNetScore } from '@/lib/scoring';
 import { notifySlack } from '@/lib/slack-notify';
 import { useSeason } from '@/lib/hooks/useSeason';
+import { fetchAllCourses } from '@/lib/courses';
 import { ArrowLeft, Search, ChevronRight, User as UserIcon, AlertCircle, CheckCircle } from 'lucide-react';
 import MemberPicker from '@/components/MemberPicker';
 import type { Course, User } from '@/types/database';
@@ -68,11 +69,8 @@ function AddScoreContent() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: coursesData } = await supabase
-        .from('courses')
-        .select('*')
-        .order('course_name');
-      setCourses(coursesData || []);
+      const coursesData = await fetchAllCourses(supabase);
+      setCourses(coursesData);
 
       const { data: membersData } = await supabase
         .from('users')

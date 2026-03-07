@@ -10,6 +10,7 @@ import { logAuditEvent } from '@/lib/audit';
 import { calculateNetScore, getMaxHoles, formatNetScore, formatGrossScore, courseMatchesEventHoles } from '@/lib/scoring';
 import { notifySlack } from '@/lib/slack-notify';
 import { useSeason } from '@/lib/hooks/useSeason';
+import { fetchAllCourses } from '@/lib/courses';
 import { ArrowLeft, Edit, Trash2, Save, Search, ChevronRight, X, Copy } from 'lucide-react';
 import MemberPicker from '@/components/MemberPicker';
 import QuickScore from '@/components/QuickScore';
@@ -496,8 +497,8 @@ export default function ScoreDetailPage() {
               <button
                 onClick={async () => {
                   if (courses.length === 0) {
-                    const { data } = await supabase.from('courses').select('*').order('course_name');
-                    setCourses(data || []);
+                    const allCourses = await fetchAllCourses(supabase);
+                    setCourses(allCourses);
                   }
                   setChangingCourse(true);
                 }}

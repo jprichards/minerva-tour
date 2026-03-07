@@ -66,6 +66,7 @@ function setupMockFrom() {
     is: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
+    range: vi.fn().mockReturnThis(),
     single: vi.fn().mockResolvedValue({ data: null, error: null }),
     then: vi.fn(),
   };
@@ -74,7 +75,17 @@ function setupMockFrom() {
     const chain = { ...chainMethods };
 
     if (table === 'courses') {
-      chain.order = vi.fn().mockResolvedValue({ data: mockCourses, error: null });
+      // fetchAllCourses calls .from('courses').select('*').order('course_name').range(0, 999)
+      let rangeCallCount = 0;
+      chain.range = vi.fn().mockImplementation(() => {
+        rangeCallCount++;
+        // First call returns courses, subsequent calls return empty (end of pagination)
+        if (rangeCallCount === 1) {
+          return Promise.resolve({ data: mockCourses, error: null });
+        }
+        return Promise.resolve({ data: [], error: null });
+      });
+      chain.order = vi.fn().mockReturnValue(chain);
     } else if (table === 'users') {
       chain.in = vi.fn().mockReturnValue({
         ...chain,
