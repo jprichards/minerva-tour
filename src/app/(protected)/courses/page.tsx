@@ -122,14 +122,14 @@ export default function CoursesPage() {
                           </span>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-800">{course.tee_name}</p>
+                          <p className="text-sm font-medium text-[var(--text-primary)]">{course.tee_name}</p>
                           <p className="text-xs text-[var(--text-muted)]">
                             {course.type.replace(/_/g, ' ')} &middot; Par {course.par} &middot;
                             Rating {course.rating} / Slope {course.slope}
                           </p>
                         </div>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-gray-300" />
+                      <ChevronRight className="w-4 h-4 text-[var(--text-faint)]" />
                     </Link>
                   ))}
                 </div>
