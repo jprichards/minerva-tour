@@ -169,6 +169,15 @@ describe('Feedback Page', () => {
     });
   });
 
+  it('does not truncate feedback titles in submissions list', async () => {
+    render(<FeedbackPage />);
+    await waitFor(() => {
+      const titleEl = screen.getByText('Scores not loading');
+      expect(titleEl).toBeInTheDocument();
+      expect(titleEl.className).not.toMatch(/truncate/);
+    });
+  });
+
   it('expands a submission to show description and admin response', async () => {
     render(<FeedbackPage />);
     await waitFor(() => {

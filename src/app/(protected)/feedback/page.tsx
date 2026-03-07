@@ -295,7 +295,7 @@ export default function FeedbackPage() {
                       {ftMeta && <ftMeta.icon className={`w-4 h-4 ${ftMeta.color.split(' ')[1]}`} />}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[var(--text-primary)] truncate">{fb.title}</p>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">{fb.title}</p>
                       <p className="text-xs text-[var(--text-muted)]">
                         {new Date(fb.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                       </p>
