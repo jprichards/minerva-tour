@@ -110,4 +110,36 @@ describe('Stats Page - Notable Rounds Date Display', () => {
     expect(worstSection.textContent).toContain('2023');
     expect(worstSection.textContent).not.toContain('2026');
   });
+
+  it('best round card has dark mode background and border classes', () => {
+    render(<StatsPage />);
+    const bestLabel = screen.getByText('Best Round');
+    const bestCard = bestLabel.closest('a')!;
+    expect(bestCard.className).toContain('dark:bg-green-900/30');
+    expect(bestCard.className).toContain('dark:border-green-800');
+  });
+
+  it('worst round card has dark mode background and border classes', () => {
+    render(<StatsPage />);
+    const worstLabel = screen.getByText('Worst Round');
+    const worstCard = worstLabel.closest('a')!;
+    expect(worstCard.className).toContain('dark:bg-red-900/30');
+    expect(worstCard.className).toContain('dark:border-red-800');
+  });
+
+  it('best round course name has dark-readable text classes', () => {
+    render(<StatsPage />);
+    const bestCard = screen.getByText('Best Round').closest('a')!;
+    const courseName = bestCard.querySelector('p.dark\\:text-gray-100');
+    expect(courseName).toBeInTheDocument();
+    expect(courseName!.textContent).toBe('Torrey Pines');
+  });
+
+  it('worst round course name has dark-readable text classes', () => {
+    render(<StatsPage />);
+    const worstCard = screen.getByText('Worst Round').closest('a')!;
+    const courseName = worstCard.querySelector('p.dark\\:text-gray-100');
+    expect(courseName).toBeInTheDocument();
+    expect(courseName!.textContent).toBe('Augusta National');
+  });
 });
