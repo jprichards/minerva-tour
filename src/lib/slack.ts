@@ -60,10 +60,13 @@ function formatTeeTimeDate(dateTimeStr: string): string {
     const [hourStr, minStr] = timePart.split(':');
     let hour = parseInt(hourStr);
     const min = minStr?.slice(0, 2) || '00';
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    if (hour === 0) hour = 12;
-    else if (hour > 12) hour -= 12;
-    timeFormatted = ` at ${hour}:${min} ${ampm}`;
+    const hasExplicitTime = hour !== 0 || min !== '00';
+    if (hasExplicitTime) {
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      if (hour === 0) hour = 12;
+      else if (hour > 12) hour -= 12;
+      timeFormatted = ` at ${hour}:${min} ${ampm}`;
+    }
   }
 
   return `${dayOfWeek}, ${monthName} ${day}${timeFormatted}`;
