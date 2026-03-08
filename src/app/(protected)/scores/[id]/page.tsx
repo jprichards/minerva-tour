@@ -10,7 +10,7 @@ import { logAuditEvent } from '@/lib/audit';
 import { calculateNetScore, getMaxHoles, formatNetScore, formatGrossScore, courseMatchesEventHoles } from '@/lib/scoring';
 import { notifySlack } from '@/lib/slack-notify';
 import { useSeason } from '@/lib/hooks/useSeason';
-import { fetchAllCourses } from '@/lib/courses';
+import { fetchAllCourses, formatCourseType } from '@/lib/courses';
 import { ArrowLeft, Edit, Trash2, Save, Search, ChevronRight, X, Copy } from 'lucide-react';
 import MemberPicker from '@/components/MemberPicker';
 import QuickScore from '@/components/QuickScore';
@@ -490,7 +490,7 @@ export default function ScoreDetailPage() {
                   <div>
                     <p className="text-sm font-medium text-[var(--text-primary)]">{course.course_name}</p>
                     <p className="text-xs text-[var(--text-muted)]">
-                      {course.tee_name} &middot; {course.type.replace(/_/g, ' ')} &middot;
+                      {course.tee_name} &middot; {formatCourseType(course.type)} &middot;
                       Par {course.par} &middot; {course.rating}/{course.slope}
                     </p>
                   </div>
@@ -509,7 +509,7 @@ export default function ScoreDetailPage() {
             <div className="min-w-0 flex-1">
               <p className="text-lg font-bold text-[var(--text-primary)]">{(editing ? editCourse : score.course)?.course_name}</p>
               <p className="text-sm text-[var(--text-muted)]">
-                {(editing ? editCourse : score.course)?.tee_name} &middot; {(editing ? editCourse : score.course)?.type.replace(/_/g, ' ')} &middot;
+                {(editing ? editCourse : score.course)?.tee_name} &middot; {formatCourseType((editing ? editCourse : score.course)?.type || '')} &middot;
                 Par {(editing ? editCourse : score.course)?.par}
               </p>
             </div>

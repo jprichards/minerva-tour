@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { Plus, Search, MapPin, ChevronRight } from 'lucide-react';
-import { fetchAllCourses } from '@/lib/courses';
+import { fetchAllCourses, formatCourseType } from '@/lib/courses';
 import type { Course } from '@/types/database';
 
 export default function CoursesPage() {
@@ -125,7 +125,7 @@ export default function CoursesPage() {
                         <div>
                           <p className="text-sm font-medium text-[var(--text-primary)]">{course.tee_name}</p>
                           <p className="text-xs text-[var(--text-muted)]">
-                            {course.type.replace(/_/g, ' ')} &middot; Par {course.par} &middot;
+                            {formatCourseType(course.type)} &middot; Par {course.par} &middot;
                             Rating {course.rating} / Slope {course.slope}
                           </p>
                         </div>

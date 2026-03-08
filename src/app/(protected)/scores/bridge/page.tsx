@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
 import { ArrowLeft, Link2, CheckCircle, AlertCircle } from 'lucide-react';
 import { formatNetScore, calculateNetScore } from '@/lib/scoring';
+import { formatCourseType } from '@/lib/courses';
 import type { Score, Event } from '@/types/database';
 
 interface ScoreWithCourse extends Omit<Score, 'course'> {
@@ -25,7 +26,7 @@ interface ScoreWithCourse extends Omit<Score, 'course'> {
 export default function BridgeScoresPage() {
   const router = useRouter();
   const { profile } = useUser();
-  const { currentEvent: seasonEvent } = useSeason();
+  const { season, currentEvent: seasonEvent } = useSeason();
   const { showToast } = useToast();
   const supabase = createClient();
 
@@ -116,8 +117,9 @@ export default function BridgeScoresPage() {
       const avgSlope = (first.course.slope + second.course.slope) / 2;
 
       // Calculate net score using the full function
+      const allowance = season?.handicap_allowance ?? 95;
       const netResult = profile.handicap_index != null
-        ? calculateNetScore(combinedGross, profile.handicap_index, avgSlope, avgRating, combinedPar, 18, 18)
+        ? calculateNetScore(combinedGross, profile.handicap_index, avgSlope, avgRating, combinedPar, 18, 18, allowance)
         : { courseHandicap: 0, netScore: combinedGross, netStrokesOverPar: combinedGross - combinedPar };
       const handicap = netResult.courseHandicap;
       const netStrokesOverPar = netResult.netStrokesOverPar;
@@ -209,7 +211,7 @@ export default function BridgeScoresPage() {
                       <div>
                         <p className="text-sm font-medium text-[var(--text-primary)]">{score.course.course_name}</p>
                         <p className="text-xs text-[var(--text-muted)]">
-                          {score.course.tee_name} &middot; {score.course.type.replace(/_/g, ' ')} &middot; {new Date(score.created_at).toLocaleDateString()}
+                          {score.course.tee_name} &middot; {formatCourseType(score.course.type)} &middot; {new Date(score.created_at).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="text-right flex items-center gap-2">
@@ -243,7 +245,7 @@ export default function BridgeScoresPage() {
                       <div>
                         <p className="text-sm font-medium text-[var(--text-primary)]">{score.course.course_name}</p>
                         <p className="text-xs text-[var(--text-muted)]">
-                          {score.course.tee_name} &middot; {score.course.type.replace(/_/g, ' ')} &middot; {new Date(score.created_at).toLocaleDateString()}
+                          {score.course.tee_name} &middot; {formatCourseType(score.course.type)} &middot; {new Date(score.created_at).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="text-right flex items-center gap-2">

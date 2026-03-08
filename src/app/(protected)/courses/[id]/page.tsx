@@ -10,6 +10,7 @@ import { logAuditEvent } from '@/lib/audit';
 import { ArrowLeft, Edit, Trash2, Plus, Target, Clock, AlertCircle } from 'lucide-react';
 import { useSeason } from '@/lib/hooks/useSeason';
 import { courseMatchesEventHoles } from '@/lib/scoring';
+import { formatCourseType } from '@/lib/courses';
 import type { Course, User } from '@/types/database';
 
 export default function CourseDetailPage() {
@@ -128,7 +129,7 @@ export default function CourseDetailPage() {
           <div>
             <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Type</p>
             <p className="text-sm font-semibold text-[var(--text-primary)] mt-0.5">
-              {course.type.replace(/_/g, ' ')}
+              {formatCourseType(course.type)}
             </p>
           </div>
           <div>
@@ -169,7 +170,7 @@ export default function CourseDetailPage() {
           <div>
             <p className="text-sm font-semibold text-amber-800">Not compatible with current event</p>
             <p className="text-xs text-amber-700 mt-0.5">
-              The current event is {currentEvent.holes} holes, but this tee is configured as {course.type.replace(/_/g, ' ')}.
+              The current event is {currentEvent.holes} holes, but this tee is configured as {formatCourseType(course.type)}.
               To use this course, add an {currentEvent.holes === 9 ? '9-hole' : '18-hole'} tee below.
             </p>
           </div>
