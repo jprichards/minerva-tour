@@ -269,7 +269,7 @@ export default function ProfilePage() {
             {stats.bestRound && (
               <Link href={`/scores/${stats.bestRound.id}`} className="flex items-center justify-between bg-green-50 dark:bg-green-900/30 rounded-xl p-3 border border-green-100 dark:border-green-800">
                 <div>
-                  <p className="text-xs text-green-600 dark:text-green-400 font-medium">Best Round</p>
+                  <p className="text-xs text-green-600 dark:text-green-400 font-medium">Best Net Round</p>
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{stats.bestRound.course?.course_name}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(stats.bestRound.tee_time || stats.bestRound.created_at).toLocaleDateString('en-US', { timeZone: 'UTC' })}</p>
                 </div>
@@ -282,7 +282,7 @@ export default function ProfilePage() {
             {stats.worstRound && stats.worstRound.id !== stats.bestRound?.id && (
               <Link href={`/scores/${stats.worstRound.id}`} className="flex items-center justify-between bg-red-50 dark:bg-red-900/30 rounded-xl p-3 border border-red-100 dark:border-red-800">
                 <div>
-                  <p className="text-xs text-red-600 dark:text-red-400 font-medium">Worst Round</p>
+                  <p className="text-xs text-red-600 dark:text-red-400 font-medium">Worst Net Round</p>
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{stats.worstRound.course?.course_name}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(stats.worstRound.tee_time || stats.worstRound.created_at).toLocaleDateString('en-US', { timeZone: 'UTC' })}</p>
                 </div>

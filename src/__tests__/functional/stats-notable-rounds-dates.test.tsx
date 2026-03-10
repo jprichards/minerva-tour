@@ -95,7 +95,7 @@ describe('Stats Page - Notable Rounds Date Display', () => {
   it('shows best round with tee_time date, not created_at', () => {
     render(<StatsPage />);
     // Best round is s1 with net_strokes_over_par -4, tee_time = June 15, 2024
-    const bestLabel = screen.getByText('Best Round');
+    const bestLabel = screen.getByText('Best Net Round');
     const bestSection = bestLabel.closest('a')!;
     // Should contain the tee_time date (6/15/2024), not the created_at date (2/14/2026)
     expect(bestSection.textContent).toContain('2024');
@@ -104,7 +104,7 @@ describe('Stats Page - Notable Rounds Date Display', () => {
 
   it('shows worst round with tee_time date, not created_at', () => {
     render(<StatsPage />);
-    const worstLabel = screen.getByText('Worst Round');
+    const worstLabel = screen.getByText('Worst Net Round');
     const worstSection = worstLabel.closest('a')!;
     // Should contain tee_time date (9/20/2023), not created_at (2/14/2026)
     expect(worstSection.textContent).toContain('2023');
@@ -113,7 +113,7 @@ describe('Stats Page - Notable Rounds Date Display', () => {
 
   it('best round card has dark mode background and border classes', () => {
     render(<StatsPage />);
-    const bestLabel = screen.getByText('Best Round');
+    const bestLabel = screen.getByText('Best Net Round');
     const bestCard = bestLabel.closest('a')!;
     expect(bestCard.className).toContain('dark:bg-green-900/30');
     expect(bestCard.className).toContain('dark:border-green-800');
@@ -121,7 +121,7 @@ describe('Stats Page - Notable Rounds Date Display', () => {
 
   it('worst round card has dark mode background and border classes', () => {
     render(<StatsPage />);
-    const worstLabel = screen.getByText('Worst Round');
+    const worstLabel = screen.getByText('Worst Net Round');
     const worstCard = worstLabel.closest('a')!;
     expect(worstCard.className).toContain('dark:bg-red-900/30');
     expect(worstCard.className).toContain('dark:border-red-800');
@@ -129,7 +129,7 @@ describe('Stats Page - Notable Rounds Date Display', () => {
 
   it('best round course name has dark-readable text classes', () => {
     render(<StatsPage />);
-    const bestCard = screen.getByText('Best Round').closest('a')!;
+    const bestCard = screen.getByText('Best Net Round').closest('a')!;
     const courseName = bestCard.querySelector('p.dark\\:text-gray-100');
     expect(courseName).toBeInTheDocument();
     expect(courseName!.textContent).toBe('Torrey Pines');
@@ -137,7 +137,7 @@ describe('Stats Page - Notable Rounds Date Display', () => {
 
   it('worst round course name has dark-readable text classes', () => {
     render(<StatsPage />);
-    const worstCard = screen.getByText('Worst Round').closest('a')!;
+    const worstCard = screen.getByText('Worst Net Round').closest('a')!;
     const courseName = worstCard.querySelector('p.dark\\:text-gray-100');
     expect(courseName).toBeInTheDocument();
     expect(courseName!.textContent).toBe('Augusta National');

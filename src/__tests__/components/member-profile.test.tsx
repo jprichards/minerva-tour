@@ -70,13 +70,13 @@ describe('Member Profile - Notable Rounds & Courses', () => {
       expect(screen.getByText('Notable Rounds')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Best Round')).toBeInTheDocument();
-    expect(screen.getByText('Worst Round')).toBeInTheDocument();
+    expect(screen.getByText('Best Net Round')).toBeInTheDocument();
+    expect(screen.getByText('Worst Net Round')).toBeInTheDocument();
 
-    const bestLink = screen.getByText('Best Round').closest('a');
+    const bestLink = screen.getByText('Best Net Round').closest('a');
     expect(bestLink).toHaveAttribute('href', '/scores/s-1');
 
-    const worstLink = screen.getByText('Worst Round').closest('a');
+    const worstLink = screen.getByText('Worst Net Round').closest('a');
     expect(worstLink).toHaveAttribute('href', '/scores/s-2');
   });
 
@@ -87,11 +87,11 @@ describe('Member Profile - Notable Rounds & Courses', () => {
       expect(screen.getByText('Notable Rounds')).toBeInTheDocument();
     });
 
-    const bestSection = screen.getByText('Best Round').closest('a')!;
+    const bestSection = screen.getByText('Best Net Round').closest('a')!;
     expect(bestSection).toHaveTextContent('Augusta National');
     expect(bestSection).toHaveTextContent('Gross: 69');
 
-    const worstSection = screen.getByText('Worst Round').closest('a')!;
+    const worstSection = screen.getByText('Worst Net Round').closest('a')!;
     expect(worstSection).toHaveTextContent('Pebble Beach');
     expect(worstSection).toHaveTextContent('Gross: 82');
   });

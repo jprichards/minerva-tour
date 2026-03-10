@@ -109,13 +109,13 @@ describe('Profile Page - Stat Tiles', () => {
       expect(screen.getByText('Notable Rounds')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Best Round')).toBeInTheDocument();
-    expect(screen.getByText('Worst Round')).toBeInTheDocument();
+    expect(screen.getByText('Best Net Round')).toBeInTheDocument();
+    expect(screen.getByText('Worst Net Round')).toBeInTheDocument();
 
-    const bestLink = screen.getByText('Best Round').closest('a');
+    const bestLink = screen.getByText('Best Net Round').closest('a');
     expect(bestLink).toHaveAttribute('href', '/scores/score-1');
 
-    const worstLink = screen.getByText('Worst Round').closest('a');
+    const worstLink = screen.getByText('Worst Net Round').closest('a');
     expect(worstLink).toHaveAttribute('href', '/scores/score-4');
   });
 
