@@ -2,11 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import type { Score } from '@/types/database';
 
-const { eqMock, updateMock, notifySlackMock } = vi.hoisted(() => {
+const { eqMock, updateMock, notifySlackMock, logAuditEventMock } = vi.hoisted(() => {
   const eqMock = vi.fn().mockResolvedValue({ error: null });
   const updateMock = vi.fn().mockReturnValue({ eq: eqMock });
   const notifySlackMock = vi.fn();
-  return { eqMock, updateMock, notifySlackMock };
+  const logAuditEventMock = vi.fn().mockResolvedValue(undefined);
+  return { eqMock, updateMock, notifySlackMock, logAuditEventMock };
 });
 
 vi.mock('@/lib/supabase/client', () => ({
@@ -20,7 +21,7 @@ vi.mock('@/lib/slack-notify', () => ({
 }));
 
 vi.mock('@/lib/audit', () => ({
-  logAuditEvent: vi.fn().mockResolvedValue(undefined),
+  logAuditEvent: logAuditEventMock,
 }));
 
 import { useQuickScoreSave } from '@/lib/hooks/useQuickScoreSave';
@@ -306,5 +307,41 @@ describe('useQuickScoreSave', () => {
     });
 
     expect(onSaved).toHaveBeenCalledTimes(1);
+  });
+
+  it('logs enriched audit event with player, course, and before/after', async () => {
+    const score = makeScore({ gross_score: 80, holes_played: 18 });
+    const { result } = renderHook(() => useQuickScoreSave({ score }));
+
+    act(() => {
+      result.current.scheduleUpdate({ grossToPar: 3, holesPlayed: 9 });
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(800);
+    });
+
+    expect(logAuditEventMock).toHaveBeenCalledWith(
+      'score_edit',
+      'score',
+      'score-1',
+      expect.objectContaining({
+        player: 'John Smith',
+        quick_score: true,
+        before: expect.objectContaining({
+          course: 'Pine Valley',
+          tee: 'White',
+          gross_score: 80,
+          holes_played: 18,
+        }),
+        after: expect.objectContaining({
+          course: 'Pine Valley',
+          tee: 'White',
+          gross_score: 39,
+          holes_played: 9,
+          is_complete: false,
+        }),
+      }),
+    );
   });
 });

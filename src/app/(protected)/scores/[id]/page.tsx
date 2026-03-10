@@ -182,15 +182,28 @@ export default function ScoreDetailPage() {
     }
 
     await logAuditEvent('score_edit', 'score', score.id, {
+      player: (score.user as unknown as { full_name: string | null })?.full_name,
       before: {
+        course: score.course?.course_name,
+        tee: score.course?.tee_name,
         gross_score: score.gross_score,
         holes_played: score.holes_played,
-        ...(courseChanged && { course: score.course?.course_name, tee: score.course?.tee_name }),
+        net_strokes_over_par: score.net_strokes_over_par,
+        course_handicap: score.course_handicap,
+        net_score: score.net_score,
+        tee_time: score.tee_time,
+        is_complete: score.is_complete,
       },
       after: {
+        course: activeCourse.course_name,
+        tee: activeCourse.tee_name,
         gross_score: grossScoreNum,
         holes_played: holesPlayedNum,
-        ...(courseChanged && { course: activeCourse.course_name, tee: activeCourse.tee_name }),
+        net_strokes_over_par: netStrokesOverPar,
+        course_handicap: courseHandicap,
+        net_score: netScoreVal,
+        tee_time: combinedTeeTime,
+        is_complete: isComplete,
       },
     });
 
@@ -354,7 +367,16 @@ export default function ScoreDetailPage() {
 
     await logAuditEvent('score_delete', 'score', score.id, {
       player: score.user?.full_name,
+      course: score.course?.course_name,
+      tee: score.course?.tee_name,
       gross_score: score.gross_score,
+      holes_played: score.holes_played,
+      net_strokes_over_par: score.net_strokes_over_par,
+      course_handicap: score.course_handicap,
+      net_score: score.net_score,
+      tee_time: score.tee_time,
+      is_complete: score.is_complete,
+      event_name: score.event?.name || null,
     });
 
     mutate('leaderboard');

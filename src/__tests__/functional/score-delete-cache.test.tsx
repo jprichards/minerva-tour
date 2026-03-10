@@ -135,6 +135,7 @@ vi.mock('@/lib/supabase/client', () => ({
   }),
 }));
 
+import { logAuditEvent } from '@/lib/audit';
 import ScoreDetailPage from '@/app/(protected)/scores/[id]/page';
 
 describe('Score Delete - SWR Cache Invalidation', () => {
@@ -178,6 +179,29 @@ describe('Score Delete - SWR Cache Invalidation', () => {
 
     await waitFor(() => {
       expect(mockRouter.push).toHaveBeenCalledWith('/scores?tab=completed');
+    });
+  });
+
+  it('logs enriched audit event with full score metadata on delete', async () => {
+    render(<ScoreDetailPage />);
+
+    const deleteButton = await screen.findByText('Delete Score', {}, { timeout: 3000 });
+    fireEvent.click(deleteButton);
+
+    await waitFor(() => {
+      expect(logAuditEvent).toHaveBeenCalledWith('score_delete', 'score', 'score-1', {
+        player: 'Test User',
+        course: 'Pine Valley',
+        tee: 'Blue',
+        gross_score: 85,
+        holes_played: 18,
+        net_strokes_over_par: 0,
+        course_handicap: 13,
+        net_score: 72,
+        tee_time: '2026-03-01T14:00:00Z',
+        is_complete: true,
+        event_name: 'Event 1',
+      });
     });
   });
 

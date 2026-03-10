@@ -88,10 +88,26 @@ export function useQuickScoreSave({ score, onSaved, allowance = 95 }: QuickScore
       .eq('id', score.id);
 
     if (!error) {
+      const playerUser = score.user as unknown as { full_name: string | null; email: string | null };
       await logAuditEvent('score_edit', 'score', score.id, {
+        player: playerUser?.full_name || playerUser?.email,
         quick_score: true,
-        gross_score: grossScore,
-        holes_played: holesPlayedVal,
+        before: {
+          course: course.course_name,
+          tee: course.tee_name,
+          gross_score: previousGrossRef.current,
+          holes_played: score.holes_played,
+        },
+        after: {
+          course: course.course_name,
+          tee: course.tee_name,
+          gross_score: grossScore,
+          holes_played: holesPlayedVal,
+          net_strokes_over_par: netStrokesOverPar,
+          course_handicap: courseHandicap,
+          net_score: netScoreVal,
+          is_complete: isComplete,
+        },
       });
       onSaved?.();
     }

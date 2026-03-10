@@ -129,6 +129,7 @@ vi.mock('@/lib/supabase/client', () => ({
   }),
 }));
 
+import { logAuditEvent } from '@/lib/audit';
 import ScoreDetailPage from '@/app/(protected)/scores/[id]/page';
 
 function findEditButton(container: HTMLElement): HTMLElement | null {
@@ -291,6 +292,40 @@ describe('Score Detail Page - Course/Tee Change', () => {
     await waitFor(() => {
       expect(mockUpdatePayload).toBeTruthy();
       expect(mockUpdatePayload?.course_id).toBe('c-1');
+    });
+  });
+
+  it('logs enriched audit event with full before/after metadata on save', async () => {
+    const { container } = render(<ScoreDetailPage />);
+
+    await screen.findByText('Pine Valley');
+    fireEvent.click(findEditButton(container)!);
+    fireEvent.click(await screen.findByText('Change'));
+
+    const magnoliaBtn = await screen.findByText('Bobby Jones - Magnolia');
+    fireEvent.click(magnoliaBtn.closest('button')!);
+
+    fireEvent.click(screen.getByText('Save Changes'));
+
+    await waitFor(() => {
+      expect(logAuditEvent).toHaveBeenCalledWith(
+        'score_edit',
+        'score',
+        'score-1',
+        expect.objectContaining({
+          player: 'Jason Richards',
+          before: expect.objectContaining({
+            course: 'Pine Valley',
+            tee: 'Blue',
+            gross_score: null,
+            holes_played: null,
+          }),
+          after: expect.objectContaining({
+            course: 'Bobby Jones - Magnolia',
+            tee: 'White',
+          }),
+        }),
+      );
     });
   });
 });
