@@ -720,10 +720,16 @@ export default function LeaderboardPage() {
                         {entry.courseName} &middot; {entry.teeName}
                       </p>
                       <p className="text-xs text-[var(--text-faint)]">
-                        {entry.actualGross ?? '-'} ({entry.actualNetOverPar != null ? formatNetScore(entry.actualNetOverPar) : '-'}) | Thru {entry.isComplete ? 'F' : entry.holesPlayed}
+                        {entry.actualGross ?? '-'} ({(() => {
+                          const val = scoringMode === 'net' ? entry.actualNetOverPar : entry.actualScratchOverRating;
+                          return val != null ? formatNetScore(val) : '-';
+                        })()}) | Thru {entry.isComplete ? 'F' : entry.holesPlayed}
                         {!entry.isComplete && entry.bestGrossScore != null && entry.actualGross !== entry.bestGrossScore && (
                           <span className="text-[10px] text-[var(--text-muted)] opacity-80">
-                            {' - '}Projected: {entry.bestGrossScore} ({entry.bestNetOverPar != null ? formatNetScore(entry.bestNetOverPar) : '-'})
+                            {' - '}Projected: {entry.bestGrossScore} ({(() => {
+                              const val = scoringMode === 'net' ? entry.bestNetOverPar : entry.scratchOverRating;
+                              return val != null ? formatNetScore(val) : '-';
+                            })()})
                           </span>
                         )}
                       </p>

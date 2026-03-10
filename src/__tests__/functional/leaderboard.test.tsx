@@ -209,6 +209,30 @@ describe('Leaderboard Page', () => {
     expect(ashbyCard.textContent).not.toContain('Pebble Beach');
   });
 
+  it('shows net score in detail line on Net tab and scratch score on Scratch tab', async () => {
+    render(<LeaderboardPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Ashby Foltz')).toBeInTheDocument();
+    });
+
+    // Net tab (default): detail line should show gross (net) — "82 (-2)"
+    const ashbyCard = () => screen.getByText('Ashby Foltz').closest('div[class*="rounded-xl"]')!;
+    expect(ashbyCard().textContent).toContain('82');
+    expect(ashbyCard().textContent).toContain('(-2)');
+
+    // Switch to Scratch tab
+    fireEvent.click(screen.getByText('Scratch'));
+    await waitFor(() => {
+      expect(screen.getByText('Ashby Foltz')).toBeInTheDocument();
+    });
+
+    // Scratch tab: detail line should show gross (scratch) — "82 (+10)"
+    // Rating 72.0, Par 72 → scratchCH = ROUND(0) = 0, scratch = 82 - 0 - 72 = +10
+    expect(ashbyCard().textContent).toContain('82');
+    expect(ashbyCard().textContent).toContain('(+10)');
+    expect(ashbyCard().textContent).not.toContain('(-2)');
+  });
+
   it('renders season standings view', async () => {
     render(<LeaderboardPage />);
     const seasonBtn = screen.getByText('Season Standings');
