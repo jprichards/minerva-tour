@@ -66,6 +66,20 @@ describe('formatSlackMessage', () => {
       expect(text).toContain('Tee Time: Sunday, Mar 15 at 1:00 PM');
     });
 
+    it('omits time portion when tee_time is midnight (no explicit time set)', () => {
+      const payload: SlackNotifyPayload = {
+        ...basePayload,
+        event_type: 'tee_time',
+        tee_time: '2026-03-15T00:00:00Z',
+      };
+
+      const msg = formatSlackMessage(payload);
+      const text = allBlockText(msg);
+
+      expect(text).toContain('Tee Time: Sunday, Mar 15');
+      expect(text).not.toContain('12:00 AM');
+    });
+
     it('omits tee time line when no tee_time provided', () => {
       const payload: SlackNotifyPayload = {
         ...basePayload,

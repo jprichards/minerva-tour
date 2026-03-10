@@ -26,7 +26,7 @@ interface ScoreWithCourse extends Omit<Score, 'course'> {
 export default function BridgeScoresPage() {
   const router = useRouter();
   const { profile } = useUser();
-  const { season, currentEvent: seasonEvent } = useSeason();
+  const { currentEvent: seasonEvent } = useSeason();
   const { showToast } = useToast();
   const supabase = createClient();
 
@@ -117,9 +117,8 @@ export default function BridgeScoresPage() {
       const avgSlope = (first.course.slope + second.course.slope) / 2;
 
       // Calculate net score using the full function
-      const allowance = season?.handicap_allowance ?? 95;
       const netResult = profile.handicap_index != null
-        ? calculateNetScore(combinedGross, profile.handicap_index, avgSlope, avgRating, combinedPar, 18, 18, allowance)
+        ? calculateNetScore(combinedGross, profile.handicap_index, avgSlope, avgRating, combinedPar, 18, 18)
         : { courseHandicap: 0, netScore: combinedGross, netStrokesOverPar: combinedGross - combinedPar };
       const handicap = netResult.courseHandicap;
       const netStrokesOverPar = netResult.netStrokesOverPar;
