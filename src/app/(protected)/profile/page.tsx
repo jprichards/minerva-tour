@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
-import { Edit, LogOut, Camera, TrendingUp, TrendingDown, Minus, Trophy, Target, Calendar, Sun, Moon, Monitor, MessageSquare } from 'lucide-react';
+import { Edit, LogOut, Camera, TrendingUp, TrendingDown, Minus, Trophy, Target, Calendar, Sun, Moon, Monitor, MessageSquare, BarChart3 } from 'lucide-react';
 import TrophyCase from '@/components/TrophyCase';
+import { formatNetScore } from '@/lib/scoring';
 import { getHandicapTrend } from '@/lib/handicap-trend';
 import { useThemeContext } from '@/components/ThemeProvider';
 import type { ThemePreference } from '@/lib/hooks/useTheme';
@@ -196,7 +197,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
           <Target className="w-5 h-5 text-minerva-600 mx-auto mb-1" />
           <p className="text-lg font-bold text-[var(--text-primary)]">{stats.totalRounds}</p>
@@ -212,9 +213,16 @@ export default function ProfilePage() {
         <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
           <Trophy className="w-5 h-5 text-yellow-600 mx-auto mb-1" />
           <p className="text-lg font-bold text-[var(--text-primary)]">
-            {stats.bestNet != null ? (stats.bestNet > 0 ? `+${stats.bestNet}` : stats.bestNet === 0 ? 'E' : stats.bestNet) : '--'}
+            {stats.bestNet != null ? formatNetScore(stats.bestNet) : '--'}
           </p>
           <p className="text-xs text-[var(--text-muted)]">Best Net</p>
+        </div>
+        <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
+          <BarChart3 className="w-5 h-5 text-red-500 mx-auto mb-1" />
+          <p className="text-lg font-bold text-[var(--text-primary)]">
+            {stats.worstNet != null ? formatNetScore(stats.worstNet) : '--'}
+          </p>
+          <p className="text-xs text-[var(--text-muted)]">Worst Net</p>
         </div>
       </div>
 
