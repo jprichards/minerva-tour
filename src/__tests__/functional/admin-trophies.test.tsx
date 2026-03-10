@@ -18,6 +18,9 @@ vi.mock('@/components/ui/Toast', () => ({
   useToast: () => ({ showToast: mockShowToast }),
 }));
 
+const { mockLogAuditEvent } = vi.hoisted(() => ({ mockLogAuditEvent: vi.fn() }));
+vi.mock('@/lib/audit', () => ({ logAuditEvent: mockLogAuditEvent }));
+
 import AdminTrophiesPage from '@/app/(protected)/admin/trophies/page';
 
 function createChainProxy(resolvedData: unknown = []) {
@@ -219,6 +222,47 @@ describe('Admin Trophies Page', () => {
     render(<AdminTrophiesPage />);
     await screen.findByText('Award a Trophy');
     expect(screen.getByPlaceholderText('e.g. Hole 7 at Pinehurst No. 2')).toBeInTheDocument();
+  });
+
+  it('logs trophy_delete audit event when trophy is deleted', async () => {
+    render(<AdminTrophiesPage />);
+    await screen.findByText('Hole in One Club');
+
+    const iconBtns = screen.getAllByRole('button').filter((b) => !b.textContent?.trim());
+    if (iconBtns.length >= 2) fireEvent.click(iconBtns[1]);
+
+    await waitFor(() => expect(screen.getByText('Delete')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Delete'));
+
+    await waitFor(() => {
+      expect(mockLogAuditEvent).toHaveBeenCalledWith('trophy_delete', 'trophy', 't1', expect.objectContaining({
+        user_name: 'John Smith',
+        award_name: 'Hole in One Club',
+        award_type: 'hole_in_one',
+      }));
+    });
+  });
+
+  it('logs trophy_edit audit event when trophy is saved', async () => {
+    render(<AdminTrophiesPage />);
+    await screen.findByText('Hole in One Club');
+
+    const iconBtns = screen.getAllByRole('button').filter((b) => !b.textContent?.trim());
+    fireEvent.click(iconBtns[0]);
+
+    await waitFor(() => expect(screen.getByText('Editing')).toBeInTheDocument());
+
+    const nameInput = screen.getByDisplayValue('Hole in One Club');
+    fireEvent.change(nameInput, { target: { value: 'Ace Club' } });
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() => {
+      expect(mockLogAuditEvent).toHaveBeenCalledWith('trophy_edit', 'trophy', 't1', expect.objectContaining({
+        user_name: 'John Smith',
+        before: expect.objectContaining({ award_name: 'Hole in One Club' }),
+        after: expect.objectContaining({ award_name: 'Ace Club' }),
+      }));
+    });
   });
 
   it('shows BJC team selector when Bobby Jones Cup preset is selected', async () => {

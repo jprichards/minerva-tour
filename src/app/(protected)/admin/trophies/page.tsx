@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
+import { logAuditEvent } from '@/lib/audit';
 import { ArrowLeft, Award, Trash2, Plus, ChevronDown, Pencil, Check, X } from 'lucide-react';
 import Link from 'next/link';
 import { AWARD_EMOJI, AWARD_DISPLAY_NAMES, type AwardType } from '@/lib/trophy-utils';
@@ -98,6 +99,15 @@ export default function AdminTrophiesPage() {
     if (error) {
       showToast(`Error: ${error.message}`, 'error');
     } else {
+      const selectedUser = users.find((u) => u.id === selectedUserId);
+      await logAuditEvent('trophy_award', 'trophy', undefined, {
+        user_name: selectedUser?.full_name || selectedUser?.email,
+        award_name: awardName,
+        award_type: awardType,
+        emoji,
+        year,
+        description: description.trim() || null,
+      });
       showToast(`Awarded "${awardName}" to member!`, 'success');
       resetForm();
       fetchData();
@@ -116,10 +126,18 @@ export default function AdminTrophiesPage() {
   };
 
   const handleDelete = async (id: string) => {
+    const trophy = trophies.find((t) => t.id === id);
     const { error } = await supabase.from('trophies').delete().eq('id', id);
     if (error) {
       showToast(`Error: ${error.message}`, 'error');
     } else {
+      await logAuditEvent('trophy_delete', 'trophy', id, {
+        user_name: trophy?.user?.full_name,
+        award_name: trophy?.award_name,
+        award_type: trophy?.award_type,
+        emoji: trophy?.emoji,
+        year: trophy?.year,
+      });
       showToast('Trophy removed', 'info');
       setDeleteConfirm(null);
       fetchData();
@@ -143,6 +161,7 @@ export default function AdminTrophiesPage() {
 
   const handleSaveEdit = async (id: string) => {
     setSaving(true);
+    const trophy = trophies.find((t) => t.id === id);
     const { error } = await supabase
       .from('trophies')
       .update({
@@ -156,6 +175,21 @@ export default function AdminTrophiesPage() {
     if (error) {
       showToast(`Error: ${error.message}`, 'error');
     } else {
+      await logAuditEvent('trophy_edit', 'trophy', id, {
+        user_name: trophy?.user?.full_name,
+        before: {
+          award_name: trophy?.award_name,
+          emoji: trophy?.emoji,
+          year: trophy?.year,
+          description: trophy?.description,
+        },
+        after: {
+          award_name: editFields.award_name.trim(),
+          emoji: editFields.emoji.trim(),
+          year: editFields.year,
+          description: editFields.description.trim() || null,
+        },
+      });
       showToast('Trophy updated', 'success');
       setEditingId(null);
       fetchData();

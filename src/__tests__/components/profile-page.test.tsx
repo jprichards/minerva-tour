@@ -29,6 +29,8 @@ vi.mock('@/components/ThemeProvider', () => ({
   }),
 }));
 
+vi.mock('@/lib/audit', () => ({ logAuditEvent: vi.fn() }));
+
 const mockScores = [
   { net_strokes_over_par: -2, gross_score: 70 },
   { net_strokes_over_par: 3, gross_score: 78 },

@@ -18,6 +18,8 @@ vi.mock('@/components/ui/Toast', () => ({
   }),
 }));
 
+vi.mock('@/lib/audit', () => ({ logAuditEvent: vi.fn() }));
+
 import ChirpsPage from '@/app/(protected)/chirps/page';
 
 function createMockChain(resolvedData: unknown = [], error: unknown = null) {

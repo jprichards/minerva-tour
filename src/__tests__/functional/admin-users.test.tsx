@@ -20,7 +20,8 @@ vi.mock('@/components/ui/Toast', () => ({
   ToastProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-vi.mock('@/lib/audit', () => ({ logAuditEvent: vi.fn() }));
+const { mockLogAuditEvent } = vi.hoisted(() => ({ mockLogAuditEvent: vi.fn() }));
+vi.mock('@/lib/audit', () => ({ logAuditEvent: mockLogAuditEvent }));
 
 const mockUsers = [
   { id: 'u1', full_name: 'Ashby Foltz', email: 'ashby@test.com', role: 'admin', handicap_index: 13.8, profile_picture_url: 'https://example.com/ashby.jpg' },
@@ -118,5 +119,42 @@ describe('Admin Users Page', () => {
 
     const inactiveOption = screen.getByRole('option', { name: 'Inactive' });
     expect(inactiveOption).toBeInTheDocument();
+  });
+
+  it('logs user_delete audit event when user is deleted', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    render(<AdminUsersPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Robby Dewling')).toBeInTheDocument();
+    });
+
+    const deleteButtons = screen.getAllByText('Delete');
+    fireEvent.click(deleteButtons[1]);
+
+    await waitFor(() => {
+      expect(mockLogAuditEvent).toHaveBeenCalledWith('user_delete', 'user', 'u2', {
+        full_name: 'Robby Dewling',
+        email: 'robby@test.com',
+        role: 'member',
+      });
+    });
+  });
+
+  it('logs profile_picture_upload audit event when admin uploads photo', async () => {
+    render(<AdminUsersPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Ashby Foltz')).toBeInTheDocument();
+    });
+
+    const fileInputs = document.querySelectorAll('input[type="file"][accept="image/*"]');
+    const file = new File(['photo'], 'avatar.png', { type: 'image/png' });
+    fireEvent.change(fileInputs[0], { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(mockLogAuditEvent).toHaveBeenCalledWith('profile_picture_upload', 'user', 'u1', {
+        target_user: 'Ashby Foltz',
+        uploaded_by: 'admin',
+      });
+    });
   });
 });

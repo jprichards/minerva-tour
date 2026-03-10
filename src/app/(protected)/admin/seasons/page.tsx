@@ -120,6 +120,14 @@ export default function AdminSeasonsPage() {
       return;
     }
 
+    const seasonEvents = events[season.id] || [];
+    const event = seasonEvents.find((e) => e.id === eventId);
+    await logAuditEvent('set_current_event', 'season', season.id, {
+      season_year: season.year,
+      event_id: eventId,
+      event_name: event?.name || null,
+    });
+
     showToast('Current event updated!');
     fetchData();
   };

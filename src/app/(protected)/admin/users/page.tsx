@@ -120,6 +120,12 @@ export default function AdminUsersPage() {
       return;
     }
 
+    await logAuditEvent('user_delete', 'user', user.id, {
+      full_name: user.full_name,
+      email: user.email,
+      role: user.role,
+    });
+
     showToast('User deleted.');
     setUsers((prev) => prev.filter((u) => u.id !== user.id));
   };
@@ -154,6 +160,10 @@ export default function AdminUsersPage() {
     if (updateError) {
       showToast('Failed to update profile picture.', 'error');
     } else {
+      await logAuditEvent('profile_picture_upload', 'user', user.id, {
+        target_user: user.full_name || user.email,
+        uploaded_by: 'admin',
+      });
       showToast('Profile picture updated!');
       setUsers((prev) =>
         prev.map((u) => u.id === user.id ? { ...u, profile_picture_url: publicUrl } : u)

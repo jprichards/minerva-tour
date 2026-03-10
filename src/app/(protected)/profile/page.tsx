@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { Edit, LogOut, Camera, TrendingUp, TrendingDown, Minus, Trophy, Target, Calendar, Sun, Moon, Monitor, MessageSquare, BarChart3 } from 'lucide-react';
 import TrophyCase from '@/components/TrophyCase';
+import { logAuditEvent } from '@/lib/audit';
 import { formatNetScore } from '@/lib/scoring';
 import { getHandicapTrend } from '@/lib/handicap-trend';
 import { useThemeContext } from '@/components/ThemeProvider';
@@ -106,12 +107,15 @@ export default function ProfilePage() {
       .from('profile-pictures')
       .getPublicUrl(filePath);
 
-    await supabase
+    const { error: updateError } = await supabase
       .from('users')
       .update({ profile_picture_url: publicUrl })
       .eq('id', profile.id);
 
-    // Refresh page
+    if (!updateError) {
+      await logAuditEvent('profile_picture_upload', 'user', profile.id, {});
+    }
+
     window.location.reload();
   };
 

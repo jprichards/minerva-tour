@@ -37,7 +37,16 @@ export type AuditActionType =
   | 'admin_edit_record'
   | 'update_playoff_matchup'
   | 'manage_playoff_seeds'
-  | 'feedback_delete';
+  | 'feedback_delete'
+  | 'user_delete'
+  | 'trophy_award'
+  | 'trophy_edit'
+  | 'trophy_delete'
+  | 'set_current_event'
+  | 'chirp_template_add'
+  | 'chirp_template_edit'
+  | 'chirp_template_delete'
+  | 'user_seen';
 
 export interface User {
   id: string;
@@ -124,7 +133,9 @@ export interface Score {
   course_handicap: number | null;
   net_score: number | null;
   net_strokes_over_par: number | null;
+  scratch_strokes_over_rating: number | null;
   points_awarded: number | null;
+  scratch_points_awarded: number | null;
   handicap_index_used: number | null;
   combined_with_score_id: string | null;
   is_retroactive: boolean;

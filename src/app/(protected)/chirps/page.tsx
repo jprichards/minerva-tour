@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
+import { logAuditEvent } from '@/lib/audit';
 import { ArrowLeft, ChevronDown, ChevronRight, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 import { ALL_BUCKETS, BUCKET_LABELS, CHIRP_WILDCARDS, type ChirpBucket } from '@/lib/chirps';
 
@@ -80,6 +81,10 @@ export default function ChirpsPage() {
     if (error) {
       showToast('Failed to add chirp.', 'error');
     } else if (data) {
+      await logAuditEvent('chirp_template_add', 'chirp_template', data.id, {
+        bucket,
+        template: addText.trim(),
+      });
       setTemplates((prev) => [...prev, data as ChirpTemplate]);
       showToast('Chirp added!');
       setAddText('');
@@ -100,6 +105,12 @@ export default function ChirpsPage() {
     if (error) {
       showToast('Failed to update chirp.', 'error');
     } else {
+      const original = templates.find((t) => t.id === id);
+      await logAuditEvent('chirp_template_edit', 'chirp_template', id, {
+        bucket: original?.bucket,
+        before: original?.template,
+        after: editText.trim(),
+      });
       setTemplates((prev) =>
         prev.map((t) => (t.id === id ? { ...t, template: editText.trim() } : t))
       );
@@ -120,6 +131,11 @@ export default function ChirpsPage() {
     if (error) {
       showToast('Failed to delete chirp.', 'error');
     } else {
+      const deleted = templates.find((t) => t.id === id);
+      await logAuditEvent('chirp_template_delete', 'chirp_template', id, {
+        bucket: deleted?.bucket,
+        template: deleted?.template,
+      });
       setTemplates((prev) => prev.filter((t) => t.id !== id));
       showToast('Chirp deleted.');
       setDeleteConfirm(null);
