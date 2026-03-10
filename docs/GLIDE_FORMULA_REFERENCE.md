@@ -214,7 +214,7 @@ This is equivalent to `Gross - Rating` (rounded).
 When gross is entered directly (col I): uses I directly (no outer round needed since all are integers).
 When using over-par entry: uses Actual Gross (col L) with outer ROUND.
 
-**App equivalent:** `calculateScratchScore()` -- currently `round(Gross - Rating)`. These are mathematically equivalent.
+**App equivalent:** `calculateScratchScore()` -- uses WHS-consistent formula `Gross - ROUND(Rating - Par) - Par`, matching the Glide approach of treating scratch as "net with index 0".
 
 ---
 

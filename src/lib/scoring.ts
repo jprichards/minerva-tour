@@ -157,7 +157,7 @@ export function calculateProjectedScore(
     return {
       projectedGross: grossScore,
       projectedNetOverPar: grossScore - playingHandicap - par,
-      projectedScratchOverRating: Math.round(grossScore - rating),
+      projectedScratchOverRating: grossScore - roundHalfAwayFromZero(rating - par) - par,
     };
   }
 
@@ -172,14 +172,27 @@ export function calculateProjectedScore(
   return {
     projectedGross,
     projectedNetOverPar: Math.round(projectedGross - playingHandicap) - par,
-    projectedScratchOverRating: Math.round(projectedGross - rating),
+    projectedScratchOverRating: projectedGross - roundHalfAwayFromZero(rating - par) - par,
   };
 }
 
 /**
- * Calculate scratch score (gross score relative to course rating, no handicap)
- * Scratch Strokes Over Rating = Gross Score − Course Rating (rounded)
- * For partial rounds, use proportional rating
+ * Spreadsheet-style ROUND: rounds half away from zero (matches Excel/Glide ROUND).
+ * JS Math.round rounds half toward +∞, which differs for negative .5 values:
+ *   Math.round(-1.5) → -1   vs   ROUND(-1.5) → -2
+ */
+function roundHalfAwayFromZero(x: number): number {
+  return Math.sign(x) * Math.round(Math.abs(x));
+}
+
+/**
+ * Calculate scratch score (gross score with handicap index 0, WHS-consistent).
+ *
+ * Uses the same structure as net scoring but with index=0:
+ *   Scratch CH = ROUND(Rating − Par)
+ *   Scratch Over Rating = Gross − Scratch CH − Par
+ *
+ * This matches Glide Col O: Gross − ROUND((0×Slope/113) + (Rating−Par)) − Par
  */
 export function calculateScratchScore(
   grossScore: number,
@@ -191,18 +204,20 @@ export function calculateScratchScore(
   scratchStrokesOverRating: number;
   isPartial: boolean;
 } {
+  const fullScratchCH = roundHalfAwayFromZero(rating - par);
   const isPartial = holesPlayed < maxHoles;
 
   if (isPartial) {
-    const partialRating = rating * (holesPlayed / maxHoles);
+    const partialScratchCH = calculatePartialCourseHandicap(fullScratchCH, holesPlayed, maxHoles);
+    const partialPar = calculatePartialPar(par, holesPlayed, maxHoles);
     return {
-      scratchStrokesOverRating: Math.round(grossScore - partialRating),
+      scratchStrokesOverRating: grossScore - partialScratchCH - partialPar,
       isPartial: true,
     };
   }
 
   return {
-    scratchStrokesOverRating: Math.round(grossScore - rating),
+    scratchStrokesOverRating: grossScore - fullScratchCH - par,
     isPartial: false,
   };
 }

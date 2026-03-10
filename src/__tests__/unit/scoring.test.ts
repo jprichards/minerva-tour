@@ -268,54 +268,69 @@ describe('calculateNetScore', () => {
 describe('calculateScratchScore', () => {
   it('calculates scratch strokes over rating for a complete round', () => {
     // Gross 85, Rating 70.5, Par 72, 18/18
-    // Scratch = round(85 - 70.5) = round(14.5) = 15
+    // ScratchCH = ROUND(70.5 - 72) = ROUND(-1.5) = -2
+    // Scratch = 85 - (-2) - 72 = 15
     const result = calculateScratchScore(85, 70.5, 72, 18, 18);
     expect(result.scratchStrokesOverRating).toBe(15);
     expect(result.isPartial).toBe(false);
   });
 
   it('calculates scratch for an even-with-rating round', () => {
-    // Gross 72, Rating 72.0 → round(72 - 72) = 0 (even)
+    // Gross 72, Rating 72.0, Par 72
+    // ScratchCH = ROUND(0) = 0, Scratch = 72 - 0 - 72 = 0
     const result = calculateScratchScore(72, 72.0, 72, 18, 18);
     expect(result.scratchStrokesOverRating).toBe(0);
   });
 
   it('calculates scratch for a below-rating round', () => {
-    // Gross 68, Rating 71.2 → round(68 - 71.2) = round(-3.2) = -3
+    // Gross 68, Rating 71.2, Par 72
+    // ScratchCH = ROUND(-0.8) = -1, Scratch = 68 - (-1) - 72 = -3
     const result = calculateScratchScore(68, 71.2, 72, 18, 18);
     expect(result.scratchStrokesOverRating).toBe(-3);
   });
 
   it('handles non-standard rating (easy course)', () => {
     // Gross 80, Rating 67.5, Par 72
-    // Scratch = round(80 - 67.5) = round(12.5) = 13
+    // ScratchCH = ROUND(-4.5) = -5, Scratch = 80 - (-5) - 72 = 13
     const result = calculateScratchScore(80, 67.5, 72, 18, 18);
     expect(result.scratchStrokesOverRating).toBe(13);
   });
 
+  it('handles rating above par (Atlanta National regression)', () => {
+    // Gross 85, Rating 73.5, Par 72 → Rating - Par = +1.5
+    // ScratchCH = ROUND(1.5) = 2, Scratch = 85 - 2 - 72 = 11
+    // Old formula round(85 - 73.5) = round(11.5) = 12 — was wrong by 1 stroke
+    const result = calculateScratchScore(85, 73.5, 72, 18, 18);
+    expect(result.scratchStrokesOverRating).toBe(11);
+    expect(result.isPartial).toBe(false);
+  });
+
   it('handles 9-hole course (complete)', () => {
     // Gross 42, Rating 35.0, Par 36, 9/9
-    // Scratch = round(42 - 35) = 7
+    // ScratchCH = ROUND(-1) = -1, Scratch = 42 - (-1) - 36 = 7
     const result = calculateScratchScore(42, 35.0, 36, 9, 9);
     expect(result.scratchStrokesOverRating).toBe(7);
     expect(result.isPartial).toBe(false);
   });
 
-  it('handles partial round with proportional rating', () => {
+  it('handles partial round with proportional scratch CH', () => {
     // Gross 45, Rating 70.0, Par 72, 9/18
-    // Partial rating = 70.0 * 9/18 = 35.0
-    // Scratch = round(45 - 35) = 10
+    // FullScratchCH = ROUND(70.0 - 72) = -2
+    // PartialScratchCH = round(-2 * 9/18) = -1
+    // PartialPar = round(72 * 9/18) = 36
+    // Scratch = 45 - (-1) - 36 = 10
     const result = calculateScratchScore(45, 70.0, 72, 9, 18);
     expect(result.scratchStrokesOverRating).toBe(10);
     expect(result.isPartial).toBe(true);
   });
 
   it('normalizes scores across different courses', () => {
-    // Easy course: Gross 75, Rating 68.0 → scratch = round(75 - 68) = 7
+    // Easy course: Gross 75, Rating 68.0, Par 70
+    // ScratchCH = ROUND(-2) = -2, Scratch = 75 - (-2) - 70 = 7
     const easy = calculateScratchScore(75, 68.0, 70, 18, 18);
-    // Hard course: Gross 82, Rating 74.5 → scratch = round(82 - 74.5) = round(7.5) = 8
+    // Hard course: Gross 82, Rating 74.5, Par 75
+    // ScratchCH = ROUND(-0.5) = -1, Scratch = 82 - (-1) - 75 = 8
     const hard = calculateScratchScore(82, 74.5, 75, 18, 18);
-    // The easy course score is better (7 < 8) even though gross is lower
     expect(easy.scratchStrokesOverRating).toBeLessThan(hard.scratchStrokesOverRating);
   });
 });
@@ -590,10 +605,11 @@ describe('formatGrossScore', () => {
 describe('calculateProjectedScore', () => {
   it('returns actual values for complete rounds (no projection)', () => {
     // PH=10, Par=72, Rating=71.2, Gross=82 through 18/18 holes
+    // ScratchCH = ROUND(71.2-72) = ROUND(-0.8) = -1, Scratch = 82-(-1)-72 = 11
     const result = calculateProjectedScore(82, 18, 18, 10, 72, 71.2);
     expect(result.projectedGross).toBe(82);
     expect(result.projectedNetOverPar).toBe(82 - 10 - 72); // 0
-    expect(result.projectedScratchOverRating).toBe(Math.round(82 - 71.2)); // 11
+    expect(result.projectedScratchOverRating).toBe(11);
   });
 
   it('returns actual values when holesPlayed is 0', () => {
@@ -610,7 +626,8 @@ describe('calculateProjectedScore', () => {
     const result = calculateProjectedScore(41, 9, 18, 10, 72, 71.0);
     expect(result.projectedGross).toBe(82);
     expect(result.projectedNetOverPar).toBe(0);
-    expect(result.projectedScratchOverRating).toBe(Math.round(82 - 71.0)); // 11
+    // ScratchCH = ROUND(71.0-72) = -1, Scratch = 82-(-1)-72 = 11
+    expect(result.projectedScratchOverRating).toBe(11);
   });
 
   it('projects early in a round (3 of 18)', () => {
@@ -631,7 +648,8 @@ describe('calculateProjectedScore', () => {
     const result = calculateProjectedScore(21, 5, 9, 5, 35, 34.8);
     expect(result.projectedGross).toBe(39);
     expect(result.projectedNetOverPar).toBe(-1);
-    expect(result.projectedScratchOverRating).toBe(Math.round(39 - 34.8)); // 4
+    // ScratchCH = ROUND(34.8-35) = 0, ProjScratch = 39-0-35 = 4
+    expect(result.projectedScratchOverRating).toBe(4);
   });
 
   it('handles player shooting well under handicap', () => {

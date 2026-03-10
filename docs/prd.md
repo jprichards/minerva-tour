@@ -144,7 +144,7 @@ Tour Champion:
 Scratch Champion:
 
 - The scratch champion is the player who scores the most points throughout the season without handicap assistance. Scores in the scratch competition are calculated as if every member is a 0.0 handicap. Event points are awarded in the same manner as for the net competition. The scratch competition runs for the entire length of the season (including playoff events) and the final event of the season (during the Championship match window) is considered a Major with elevated point payouts.
-- **Scratch scoring formula**: Scratch Strokes Over Rating = Gross Score − Course Rating (rounded to nearest stroke). This is the same formula as net scoring but with a 0.0 handicap, ensuring scratch scores are normalized across courses of different difficulty (just as net scores are).
+- **Scratch scoring formula**: Scratch Strokes Over Rating = Gross Score − ROUND(Rating − Par) − Par. This is the same structure as net scoring but with a 0.0 handicap index (Scratch CH = ROUND(Rating − Par)), ensuring scratch scores are normalized across courses of different difficulty. Uses spreadsheet-style rounding (half away from zero) to match Glide.
 - **Scratch standings**: Accumulate scratch points across ALL events in the season (regular + playoff). The leaderboard should show scratch standings alongside net standings.
 
 Unicorn:

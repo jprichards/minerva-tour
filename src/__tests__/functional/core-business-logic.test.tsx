@@ -74,15 +74,16 @@ describe('Scratch Scoring - Course Rating Normalization', () => {
 
   it('would rank incorrectly if using par instead of rating', () => {
     // This test proves why course rating matters:
-    // Easy course: Par 70, Rating 67.5 — gross 77 → par-based: +7, rating-based: +10
-    // Hard course: Par 72, Rating 74.5 — gross 82 → par-based: +10, rating-based: +8
+    // Easy course: Par 70, Rating 67.5 — gross 77
+    //   ScratchCH = ROUND(-2.5) = -3, Scratch = 77-(-3)-70 = +10
+    // Hard course: Par 72, Rating 74.5 — gross 82
+    //   ScratchCH = ROUND(2.5) = 3, Scratch = 82-3-72 = +7
     // Par-based would say easy course score (+7) is better
-    // Rating-based correctly says hard course (+8) is better than easy (+10)
+    // Rating-based correctly says hard course (+7) is better than easy (+10)
     const easy = calculateScratchScore(77, 67.5, 70, 18, 18);
     const hard = calculateScratchScore(82, 74.5, 72, 18, 18);
 
-    // Using rating: easy=10, hard=8. Hard is better.
-    expect(hard.scratchStrokesOverRating).toBe(8);
+    expect(hard.scratchStrokesOverRating).toBe(7);
     expect(easy.scratchStrokesOverRating).toBe(10);
     expect(hard.scratchStrokesOverRating).toBeLessThan(easy.scratchStrokesOverRating);
   });
