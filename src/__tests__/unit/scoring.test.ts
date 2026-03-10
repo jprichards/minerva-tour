@@ -14,49 +14,57 @@ import {
   calculateProjectedPoints,
   formatNetScore,
   formatGrossScore,
+  calculateUnroundedCourseHandicap,
+  calculateUnroundedPlayingHandicap,
+  calculateScoringDifferential,
 } from '@/lib/scoring';
 
 // ============================================
 // calculateCourseHandicap
 // ============================================
 describe('calculateCourseHandicap', () => {
-  it('calculates correctly for a standard index and slope', () => {
-    // Handicap 15.0, Slope 113 → 15 (exactly 113/113)
-    expect(calculateCourseHandicap(15.0, 113)).toBe(15);
+  it('calculates correctly when rating equals par', () => {
+    expect(calculateCourseHandicap(15.0, 113, 72.0, 72)).toBe(15);
   });
 
-  it('calculates for a high slope course', () => {
-    // Handicap 10.0, Slope 140 → round(10 * 140 / 113) = round(12.389) = 12
-    expect(calculateCourseHandicap(10.0, 140)).toBe(12);
+  it('includes (Rating - Par) adjustment', () => {
+    // 10.0 * 140 / 113 + (73.0 - 72) = 12.389 + 1.0 = 13.389 → 13
+    expect(calculateCourseHandicap(10.0, 140, 73.0, 72)).toBe(13);
   });
 
-  it('calculates for a low slope course', () => {
-    // Handicap 10.0, Slope 90 → round(10 * 90 / 113) = round(7.964) = 8
-    expect(calculateCourseHandicap(10.0, 90)).toBe(8);
+  it('handles negative (Rating - Par)', () => {
+    // 10.0 * 140 / 113 + (70.0 - 72) = 12.389 + (-2.0) = 10.389 → 10
+    expect(calculateCourseHandicap(10.0, 140, 70.0, 72)).toBe(10);
   });
 
-  it('returns 0 for a 0 handicap index', () => {
-    expect(calculateCourseHandicap(0, 130)).toBe(0);
+  it('returns (Rating - Par) rounded for a 0 handicap index', () => {
+    // 0 * 130 / 113 + (72.5 - 72) = 0 + 0.5 = 0.5 → 1
+    expect(calculateCourseHandicap(0, 130, 72.5, 72)).toBe(1);
+    // When rating = par, returns 0
+    expect(calculateCourseHandicap(0, 130, 72.0, 72)).toBe(0);
   });
 
   it('handles plus handicap (negative index)', () => {
-    // +2.0 handicap, Slope 120 → round(-2 * 120 / 113) = round(-2.123) = -2
-    expect(calculateCourseHandicap(-2.0, 120)).toBe(-2);
+    // -2.0 * 120 / 113 + (72.0 - 72) = -2.124 → -2
+    expect(calculateCourseHandicap(-2.0, 120, 72.0, 72)).toBe(-2);
   });
 
-  it('rounds to nearest integer (0.5 rounds up)', () => {
-    // Handicap 5.0, Slope 128 → round(5 * 128 / 113) = round(5.664) = 6
-    expect(calculateCourseHandicap(5.0, 128)).toBe(6);
+  it('matches Glide example: Devin Blankenship', () => {
+    // HI=8.7, Slope=132, Rating=71.0, Par=71
+    // (8.7 * 132 / 113) + (71.0 - 71) = 10.159 + 0 = 10.159 → 10
+    expect(calculateCourseHandicap(8.7, 132, 71.0, 71)).toBe(10);
   });
 
-  it('rounds down when below 0.5', () => {
-    // Handicap 5.0, Slope 115 → round(5 * 115 / 113) = round(5.088) = 5
-    expect(calculateCourseHandicap(5.0, 115)).toBe(5);
+  it('matches Glide example: George Lane', () => {
+    // HI=8.6, Slope=136, Rating=69.3, Par=71
+    // (8.6 * 136 / 113) + (69.3 - 71) = 10.348 + (-1.7) = 8.648 → 9
+    expect(calculateCourseHandicap(8.6, 136, 69.3, 71)).toBe(9);
   });
 
-  it('handles very high handicap', () => {
-    // Handicap 36.0, Slope 155 → round(36 * 155 / 113) = round(49.38) = 49
-    expect(calculateCourseHandicap(36.0, 155)).toBe(49);
+  it('matches Glide example: Blake Addleton', () => {
+    // HI=14.6, Slope=126, Rating=71.2, Par=72
+    // (14.6 * 126 / 113) + (71.2 - 72) = 16.271 + (-0.8) = 15.471 → 15
+    expect(calculateCourseHandicap(14.6, 126, 71.2, 72)).toBe(15);
   });
 });
 
@@ -155,59 +163,102 @@ describe('getMaxHoles', () => {
 // calculateNetScore (full integration of scoring)
 // ============================================
 describe('calculateNetScore', () => {
-  it('calculates complete 18-hole round correctly', () => {
-    // Gross 85, Handicap 10.0, Slope 130, Rating 70.5, Par 72, 18/18
-    const result = calculateNetScore(85, 10.0, 130, 70.5, 72, 18, 18);
-    // Course handicap = round(10 * 130 / 113) = round(11.504) = 12
-    expect(result.courseHandicap).toBe(12);
-    expect(result.netScore).toBe(85 - 12); // 73
-    // netStrokesOverPar = round(85 - 12 - 70.5) = round(2.5) = 3
-    expect(result.netStrokesOverPar).toBe(3);
+  it('matches Glide example: Devin Blankenship (Event 1)', () => {
+    // HI=8.7, Slope=132, Rating=71.0, Par=71, Gross=81, Allowance=95%
+    // UnroundedCH = (8.7*132/113) + (71.0-71) = 10.159
+    // PH = round(0.95 * 10.159) = round(9.651) = 10
+    // Net = 81 - 10 = 71, NOP = 81 - 10 - 71 = 0
+    const result = calculateNetScore(81, 8.7, 132, 71.0, 71, 18, 18, 95);
+    expect(result.courseHandicap).toBe(10);
+    expect(result.netScore).toBe(71);
+    expect(result.netStrokesOverPar).toBe(0);
     expect(result.isPartial).toBe(false);
   });
 
-  it('calculates partial round correctly', () => {
-    // Gross 45, Handicap 12.0, Slope 120, Rating 70.0, Par 72, 9/18
-    const result = calculateNetScore(45, 12.0, 120, 70.0, 72, 9, 18);
-    // Full course handicap = round(12 * 120 / 113) = round(12.743) = 13
-    // Partial handicap = round(13 * 9/18) = round(6.5) = 7
-    expect(result.courseHandicap).toBe(7);
-    // Partial par = round(72 * 9/18) = 36
-    // Net = 45 - 7 = 38
-    expect(result.netScore).toBe(38);
-    // Net strokes over par = round(38 - 36) = 2
-    expect(result.netStrokesOverPar).toBe(2);
-    expect(result.isPartial).toBe(true);
+  it('matches Glide example: George Lane (Event 1)', () => {
+    // HI=8.6, Slope=136, Rating=69.3, Par=71, Gross=89, Allowance=95%
+    // UnroundedCH = (8.6*136/113) + (69.3-71) = 10.348 + (-1.7) = 8.648
+    // PH = round(0.95 * 8.648) = round(8.216) = 8
+    // Net = 89 - 8 = 81, NOP = 89 - 8 - 71 = 10
+    const result = calculateNetScore(89, 8.6, 136, 69.3, 71, 18, 18, 95);
+    expect(result.courseHandicap).toBe(8);
+    expect(result.netScore).toBe(81);
+    expect(result.netStrokesOverPar).toBe(10);
+    expect(result.isPartial).toBe(false);
   });
 
-  it('handles even par round', () => {
-    // A scratch golfer on a standard course
-    const result = calculateNetScore(72, 0, 113, 72.0, 72, 18, 18);
-    expect(result.courseHandicap).toBe(0);
+  it('matches Glide example: Blake Addleton (Event 1)', () => {
+    // HI=14.6, Slope=126, Rating=71.2, Par=72, Gross=87, Allowance=95%
+    // UnroundedCH = (14.6*126/113) + (71.2-72) = 16.271 + (-0.8) = 15.471
+    // PH = round(0.95 * 15.471) = round(14.697) = 15
+    // Net = 87 - 15 = 72, NOP = 87 - 15 - 72 = 0
+    const result = calculateNetScore(87, 14.6, 126, 71.2, 72, 18, 18, 95);
+    expect(result.courseHandicap).toBe(15);
     expect(result.netScore).toBe(72);
     expect(result.netStrokesOverPar).toBe(0);
     expect(result.isPartial).toBe(false);
   });
 
-  it('handles under-par round', () => {
-    // Gross 68 on par 72 with low handicap
-    const result = calculateNetScore(68, 2.0, 130, 70.0, 72, 18, 18);
-    // Course handicap = round(2 * 130 / 113) = round(2.301) = 2
-    expect(result.courseHandicap).toBe(2);
-    // Net = 68 - 2 = 66
-    expect(result.netScore).toBe(66);
-    // Net over par = round(68 - 2 - 70) = round(-4) = -4
-    expect(result.netStrokesOverPar).toBe(-4);
+  it('matches Glide: Robby Dewling at Echelon', () => {
+    // HI=6.1, Slope=138, Rating=72.3, Par=72, Gross=88, Allowance=95%
+    // UnroundedCH = (6.1*138/113) + (72.3-72) = 7.448 + 0.3 = 7.748
+    // PH = round(0.95 * 7.748) = round(7.360) = 7
+    // NOP = 88 - 7 - 72 = 9
+    const result = calculateNetScore(88, 6.1, 138, 72.3, 72, 18, 18, 95);
+    expect(result.courseHandicap).toBe(7);
+    expect(result.netStrokesOverPar).toBe(9);
   });
 
-  it('handles 9-hole course type (not partial)', () => {
-    // 9 of 9 is not partial
-    const result = calculateNetScore(42, 15.0, 120, 35.0, 36, 9, 9);
+  it('uses default allowance of 95 when not specified', () => {
+    const withDefault = calculateNetScore(81, 8.7, 132, 71.0, 71, 18, 18);
+    const withExplicit = calculateNetScore(81, 8.7, 132, 71.0, 71, 18, 18, 95);
+    expect(withDefault.courseHandicap).toBe(withExplicit.courseHandicap);
+    expect(withDefault.netStrokesOverPar).toBe(withExplicit.netStrokesOverPar);
+  });
+
+  it('handles 100% allowance', () => {
+    // HI=10.0, Slope=130, Rating=71.5, Par=72, Gross=85, Allowance=100%
+    // UnroundedCH = (10*130/113) + (71.5-72) = 11.504 + (-0.5) = 11.004
+    // PH = round(1.0 * 11.004) = 11
+    // NOP = 85 - 11 - 72 = 2
+    const result = calculateNetScore(85, 10.0, 130, 71.5, 72, 18, 18, 100);
+    expect(result.courseHandicap).toBe(11);
+    expect(result.netStrokesOverPar).toBe(2);
+  });
+
+  it('calculates partial round correctly', () => {
+    // HI=12.0, Slope=120, Rating=70.0, Par=72, Gross=45, 9/18 holes, 95%
+    // UnroundedCH = (12*120/113) + (70-72) = 12.743 + (-2) = 10.743
+    // Full PH = round(0.95 * 10.743) = round(10.206) = 10
+    // Partial PH = round(10 * 9/18) = 5
+    // Partial Par = round(72 * 9/18) = 36
+    // Net = 45 - 5 = 40, NOP = round(40 - 36) = 4
+    const result = calculateNetScore(45, 12.0, 120, 70.0, 72, 9, 18, 95);
+    expect(result.courseHandicap).toBe(5);
+    expect(result.netScore).toBe(40);
+    expect(result.netStrokesOverPar).toBe(4);
+    expect(result.isPartial).toBe(true);
+  });
+
+  it('handles even par round', () => {
+    // Scratch golfer on standard course with rating=par
+    // PH = round(0.95 * ((0*113/113) + (72-72))) = 0
+    const result = calculateNetScore(72, 0, 113, 72.0, 72, 18, 18, 95);
+    expect(result.courseHandicap).toBe(0);
+    expect(result.netScore).toBe(72);
+    expect(result.netStrokesOverPar).toBe(0);
+  });
+
+  it('handles 9-hole course (not partial)', () => {
+    // HI=15.0, Slope=120, Rating=35.0, Par=36, Gross=42, 9/9, 95%
+    // UnroundedCH = (15*120/113) + (35-36) = 15.929 + (-1) = 14.929
+    // PH = round(0.95 * 14.929) = round(14.183) = 14
+    // Net = 42 - 14 = 28, NOP = 42 - 14 - 36 = -8
+    const result = calculateNetScore(42, 15.0, 120, 35.0, 36, 9, 9, 95);
     expect(result.isPartial).toBe(false);
-    // Full handicap = round(15 * 120 / 113) = round(15.929) = 16
-    expect(result.courseHandicap).toBe(16);
-    expect(result.netScore).toBe(42 - 16); // 26
-    expect(result.netStrokesOverPar).toBe(Math.round(42 - 16 - 35)); // round(-9) = -9
+    expect(result.courseHandicap).toBe(14);
+    expect(result.netScore).toBe(28);
+    expect(result.netStrokesOverPar).toBe(-8);
   });
 });
 
@@ -615,6 +666,117 @@ describe('calculateProjectedScore', () => {
     const result = calculateProjectedScore(51, 13, 18, 10, 71, 71.0);
     expect(result.projectedGross).toBe(74);
     expect(result.projectedNetOverPar).toBe(-7);
+  });
+});
+
+// ============================================
+// calculateUnroundedCourseHandicap
+// ============================================
+describe('calculateUnroundedCourseHandicap', () => {
+  it('includes (Rating - Par) in the result', () => {
+    // 10.0 * 140 / 113 + (73.0 - 72) = 12.389 + 1.0 = 13.389
+    const result = calculateUnroundedCourseHandicap(10.0, 140, 73.0, 72);
+    expect(result).toBeCloseTo(13.3894, 3);
+  });
+
+  it('returns just slope component when rating equals par', () => {
+    const result = calculateUnroundedCourseHandicap(10.0, 140, 72.0, 72);
+    expect(result).toBeCloseTo(12.3894, 4);
+  });
+
+  it('handles negative (Rating - Par)', () => {
+    // 10.0 * 140 / 113 + (70.0 - 72) = 12.389 + (-2.0) = 10.389
+    const result = calculateUnroundedCourseHandicap(10.0, 140, 70.0, 72);
+    expect(result).toBeCloseTo(10.3894, 3);
+  });
+
+  it('returns 0 for a 0 handicap when rating equals par', () => {
+    expect(calculateUnroundedCourseHandicap(0, 130, 72.0, 72)).toBe(0);
+  });
+
+  it('returns (Rating - Par) for 0 handicap when rating differs', () => {
+    expect(calculateUnroundedCourseHandicap(0, 130, 73.5, 72)).toBeCloseTo(1.5, 10);
+  });
+
+  it('matches Glide: Devin Blankenship', () => {
+    // (8.7 * 132 / 113) + (71.0 - 71) = 10.159
+    const result = calculateUnroundedCourseHandicap(8.7, 132, 71.0, 71);
+    expect(result).toBeCloseTo(10.159, 2);
+  });
+
+  it('matches Glide: George Lane', () => {
+    // (8.6 * 136 / 113) + (69.3 - 71) = 10.348 + (-1.7) = 8.648
+    const result = calculateUnroundedCourseHandicap(8.6, 136, 69.3, 71);
+    expect(result).toBeCloseTo(8.648, 2);
+  });
+});
+
+// ============================================
+// calculateUnroundedPlayingHandicap
+// ============================================
+describe('calculateUnroundedPlayingHandicap', () => {
+  it('applies 95% allowance to unrounded course handicap', () => {
+    // Course hcp unrounded = (10*140/113) + (73-72) = 13.389
+    // Playing hcp = 13.389 * 0.95 = 12.720
+    const result = calculateUnroundedPlayingHandicap(10.0, 140, 73.0, 72, 95);
+    expect(result).toBeCloseTo(12.7199, 3);
+  });
+
+  it('returns full course handicap when allowance is 100', () => {
+    const courseHcp = calculateUnroundedCourseHandicap(10.0, 140, 72.0, 72);
+    const playingHcp = calculateUnroundedPlayingHandicap(10.0, 140, 72.0, 72, 100);
+    expect(playingHcp).toBeCloseTo(courseHcp, 10);
+  });
+
+  it('defaults to 100% allowance', () => {
+    const courseHcp = calculateUnroundedCourseHandicap(12.0, 120, 71.0, 72);
+    const playingHcp = calculateUnroundedPlayingHandicap(12.0, 120, 71.0, 72);
+    expect(playingHcp).toBeCloseTo(courseHcp, 10);
+  });
+
+  it('handles 0 handicap with rating equal to par', () => {
+    expect(calculateUnroundedPlayingHandicap(0, 130, 72.0, 72, 95)).toBe(0);
+  });
+
+  it('matches Glide: Devin Blankenship at 95%', () => {
+    // UnroundedCH = 10.159, * 0.95 = 9.651
+    const result = calculateUnroundedPlayingHandicap(8.7, 132, 71.0, 71, 95);
+    expect(result).toBeCloseTo(9.651, 2);
+  });
+});
+
+// ============================================
+// calculateScoringDifferential
+// ============================================
+describe('calculateScoringDifferential', () => {
+  it('calculates standard differential', () => {
+    // (113 / 130) * (85 - 70.5) = 0.86923 * 14.5 = 12.6038...
+    const result = calculateScoringDifferential(85, 70.5, 130);
+    expect(result).toBeCloseTo(12.6038, 3);
+  });
+
+  it('returns 0 when gross equals rating', () => {
+    const result = calculateScoringDifferential(72, 72.0, 120);
+    expect(result).toBe(0);
+  });
+
+  it('returns negative when gross is below rating', () => {
+    const result = calculateScoringDifferential(68, 71.0, 125);
+    expect(result).toBeLessThan(0);
+    expect(result).toBeCloseTo((113 / 125) * (68 - 71.0), 4);
+  });
+
+  it('normalizes across different slopes', () => {
+    // High slope course: same performance relative to rating yields lower differential
+    const highSlope = calculateScoringDifferential(82, 72, 145);
+    const lowSlope = calculateScoringDifferential(82, 72, 110);
+    expect(highSlope).toBeLessThan(lowSlope);
+  });
+
+  it('is consistent with USGA formula for standard slope', () => {
+    // At slope 113, differential equals (gross - rating) exactly
+    const result = calculateScoringDifferential(80, 72.0, 113);
+    expect(result).toBeCloseTo(8.0, 10);
   });
 });
 

@@ -32,7 +32,7 @@ function AddScoreContent() {
   const teeTimeOnly = searchParams.get('tee_time_only') === 'true';
 
   const { profile, isPlayingGuest } = useUser();
-  const { canSubmitScores, isOffSeason, isRegularSeason, currentEvent, loading: seasonLoading } = useSeason();
+  const { canSubmitScores, isOffSeason, isRegularSeason, currentEvent, season, loading: seasonLoading } = useSeason();
   const { showToast } = useToast();
   const { mutate } = useSWRConfig();
   const supabase = createClient();
@@ -223,6 +223,7 @@ function AddScoreContent() {
     const isComplete = grossScoreNum != null && holesPlayedNum != null && hasScoreEntry && holesPlayedNum >= maxHoles;
 
     if (grossScoreNum != null && holesPlayedNum != null && selectedPlayer.handicap_index != null) {
+      const allowance = season?.handicap_allowance ?? 95;
       const result = calculateNetScore(
         grossScoreNum,
         selectedPlayer.handicap_index,
@@ -230,7 +231,8 @@ function AddScoreContent() {
         selectedCourse.rating,
         selectedCourse.par,
         holesPlayedNum,
-        maxHoles
+        maxHoles,
+        allowance
       );
       courseHandicap = result.courseHandicap;
       netScore = result.netScore;
@@ -774,7 +776,8 @@ function AddScoreContent() {
                       selectedCourse.rating,
                       selectedCourse.par,
                       effectiveHoles,
-                      maxH
+                      maxH,
+                      season?.handicap_allowance ?? 95
                     );
                     return (
                       <div className="flex items-center justify-between">

@@ -16,6 +16,7 @@ export interface QuickScoreState {
 export interface QuickScoreSaveOptions {
   score: Score;
   onSaved?: () => void;
+  allowance?: number;
 }
 
 /**
@@ -26,7 +27,7 @@ export interface QuickScoreSaveOptions {
  * Slack notifications are delayed so rapid taps don't spam the channel.
  * Both flush immediately on unmount to avoid data loss.
  */
-export function useQuickScoreSave({ score, onSaved }: QuickScoreSaveOptions) {
+export function useQuickScoreSave({ score, onSaved, allowance = 95 }: QuickScoreSaveOptions) {
   const dbTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const slackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestStateRef = useRef<QuickScoreState | null>(null);
@@ -64,7 +65,8 @@ export function useQuickScoreSave({ score, onSaved }: QuickScoreSaveOptions) {
           course.rating,
           course.par,
           state.holesPlayed,
-          maxHoles
+          maxHoles,
+          allowance
         );
         courseHandicap = result.courseHandicap;
         netScoreVal = result.netScore;
@@ -117,7 +119,8 @@ export function useQuickScoreSave({ score, onSaved }: QuickScoreSaveOptions) {
         course.rating,
         course.par,
         state.holesPlayed,
-        maxHoles
+        maxHoles,
+        allowance
       );
       netStrokesOverPar = result.netStrokesOverPar;
     }

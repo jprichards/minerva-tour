@@ -135,7 +135,7 @@ describe('Partial round scoring workflow', () => {
     const result = calculateNetScore(45, 15.0, 125, 71.0, 72, 9, 18);
     expect(result.isPartial).toBe(true);
     // Course handicap should be roughly half of full
-    const fullHandicap = calculateCourseHandicap(15.0, 125);
+    const fullHandicap = calculateCourseHandicap(15.0, 125, 71.0, 72);
     expect(result.courseHandicap).toBeLessThanOrEqual(fullHandicap);
     expect(result.courseHandicap).toBeGreaterThan(0);
   });

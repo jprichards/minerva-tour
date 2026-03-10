@@ -8,12 +8,14 @@ import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
 import { calculateNetScore, getMaxHoles } from '@/lib/scoring';
 import { notifySlack } from '@/lib/slack-notify';
+import { useSeason } from '@/lib/hooks/useSeason';
 import { fetchAllCourses } from '@/lib/courses';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import type { User, Event, Course } from '@/types/database';
 
 export default function AdminRetroactiveScoresPage() {
   const { isAdmin, loading: userLoading } = useUser();
+  const { season } = useSeason();
   const router = useRouter();
   const { showToast } = useToast();
   const supabase = createClient();
@@ -90,6 +92,7 @@ export default function AdminRetroactiveScoresPage() {
     let netStrokesOverPar = null;
 
     if (member.handicap_index != null) {
+      const allowance = season?.handicap_allowance ?? 95;
       const result = calculateNetScore(
         grossNum,
         member.handicap_index,
@@ -97,7 +100,8 @@ export default function AdminRetroactiveScoresPage() {
         course.rating,
         course.par,
         holesNum,
-        maxHoles
+        maxHoles,
+        allowance
       );
       courseHandicap = result.courseHandicap;
       netScore = result.netScore;

@@ -9,9 +9,10 @@ import type { Score } from '@/types/database';
 interface QuickScoreProps {
   score: Score;
   onSaved: () => void;
+  allowance?: number;
 }
 
-export default function QuickScore({ score, onSaved }: QuickScoreProps) {
+export default function QuickScore({ score, onSaved, allowance = 95 }: QuickScoreProps) {
   const course = score.course;
   if (!course) return null;
 
@@ -34,7 +35,7 @@ export default function QuickScore({ score, onSaved }: QuickScoreProps) {
   const [grossToPar, setGrossToPar] = useState(initialGrossToPar);
   const [holesPlayed, setHolesPlayed] = useState(initialHoles);
 
-  const { scheduleUpdate } = useQuickScoreSave({ score, onSaved });
+  const { scheduleUpdate } = useQuickScoreSave({ score, onSaved, allowance });
 
   const updateScore = useCallback((nextGrossToPar: number, nextHoles: number) => {
     setGrossToPar(nextGrossToPar);
@@ -76,7 +77,8 @@ export default function QuickScore({ score, onSaved }: QuickScoreProps) {
       course.rating,
       course.par,
       holesPlayed,
-      maxHoles
+      maxHoles,
+      allowance
     );
     netDisplay = formatNetScore(result.netStrokesOverPar);
   }

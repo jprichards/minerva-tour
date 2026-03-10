@@ -169,7 +169,7 @@ These are the critical calculation columns. Variables used throughout:
 - Playing Handicap = round(0.95 * 8.65) = round(8.22) = **8**
 - Net Over Par = round(89 - 8 - 71) = **10**
 
-**App equivalent:** `calculateNetScore()` in `src/lib/scoring.ts` -- currently does NOT include `(Rating - Par)` in the course handicap or apply the 95% allowance. **Needs updating.**
+**App equivalent:** `calculateNetScore()` in `src/lib/scoring.ts` -- uses WHS formula with `(Rating - Par)` and per-season handicap allowance.
 
 ---
 
@@ -271,7 +271,7 @@ Note: The outer ROUND and subtraction of K are split differently here vs col M, 
 - Playing Handicap = 10, Par = 71
 - Score Needed for E = 10 + 71 = **81** (matches his actual gross, hence net E)
 
-**App equivalent:** `calculateNetEvenTarget()` -- currently uses `courseHandicap + rating`. **Needs updating** to use `PlayingHandicap + Par`.
+**App equivalent:** Score detail page computes `PlayingHandicap + Par` for the "Score Needed to shoot Net E" display.
 
 ---
 
@@ -506,12 +506,14 @@ Mirror columns used by the "Combined Scores" sheet to merge live Grint scores wi
 - Scratch score calculation (`calculateScratchScore`) -- equivalent math
 - Gross score formatting (`formatGrossScore`, `formatNetScore`)
 - Course data lookups (rating, slope, par, holes)
+- **Net score calculation** (`calculateNetScore`): Uses WHS formula `(Index*Slope/113) + (Rating-Par)` with per-season handicap allowance. Verified against 2025 Glide data (41/41 scores match, 0 mismatches).
+- **Net even target**: Score detail page shows `PlayingHandicap + Par` for "Score Needed to shoot Net E"
+- **Projected gross/net for in-progress rounds**: `calculateProjectedScore` uses playing handicap passed by callers; leaderboard already uses `calculatePlayingHandicap` (correct WHS formula) for projections.
+- **Course handicap display**: Score detail page shows unrounded course handicap (with Rating-Par), unrounded playing handicap (with allowance), and rounded playing handicap.
 
-### Needs updating in the app
-- **Net score calculation** (`calculateNetScore`): Must use WHS course handicap formula `(Index*Slope/113) + (Rating-Par)`, apply handicap allowance %, and round only once
-- **Net even target** (`calculateNetEvenTarget`): Must use `PlayingHandicap + Par` instead of `CourseHandicap + Rating`
-- **Projected gross/net for in-progress rounds**: Must incorporate handicap allowance into projection logic
-- **Course handicap display**: Should show the playing handicap (with allowance applied), not just the raw course handicap
+### Historical allowance note
+- 2025+ seasons use 95% handicap allowance (stored in `seasons.handicap_allowance`)
+- Older seasons (2018-2022) used 100% allowance. The per-season `handicap_allowance` field must be set correctly for each season to produce matching results.
 
 ### Not applicable to our app
 - Col A (Name resolution) -- handled by auth/user selection

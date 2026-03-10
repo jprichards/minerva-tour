@@ -1,22 +1,27 @@
 /**
- * Minerva Tour Scoring Calculations
+ * Minerva Tour Scoring Calculations (WHS formula)
  *
- * Net Strokes Over Par = Gross Score - Course Handicap (rounded) - Course Rating
- * Course Handicap = (Handicap Index × Slope) / 113, rounded to nearest stroke
+ * Unrounded Course Handicap = (Handicap Index × Slope / 113) + (Rating − Par)
+ * Playing Handicap = round(Allowance/100 × Unrounded Course Handicap)
+ * Net Strokes Over Par = Gross Score − Playing Handicap − Par
  *
  * For partial rounds:
- *   Partial Course Handicap = Full Course Handicap × (Holes Played / Max Holes), rounded
+ *   Partial Playing Handicap = round(Full Playing Handicap × Holes Played / Max Holes)
  *   Partial Par = Full Par × (Holes Played / Max Holes), rounded
- *   Gross = Partial Par + (gross to par)
- *   Net = Gross − Partial Course Handicap
- *   Net to Par = Net − Partial Par
+ *   Net = Gross − Partial Playing Handicap
+ *   Net to Par = round(Net − Partial Par)
  */
 
 /**
- * Calculate course handicap from handicap index and slope
+ * WHS Course Handicap = round((Index × Slope / 113) + (Rating − Par))
  */
-export function calculateCourseHandicap(handicapIndex: number, slope: number): number {
-  return Math.round((handicapIndex * slope) / 113);
+export function calculateCourseHandicap(
+  handicapIndex: number,
+  slope: number,
+  rating: number,
+  par: number
+): number {
+  return Math.round((handicapIndex * slope) / 113 + (rating - par));
 }
 
 /**
@@ -80,7 +85,10 @@ export function getMaxHoles(courseType: string): number {
 }
 
 /**
- * Calculate net score and net strokes over par
+ * Calculate net score using the WHS Playing Handicap with allowance.
+ *
+ * The returned `courseHandicap` is the playing handicap (strokes given),
+ * which is what gets stored in scores.course_handicap.
  */
 export function calculateNetScore(
   grossScore: number,
@@ -89,18 +97,19 @@ export function calculateNetScore(
   rating: number,
   par: number,
   holesPlayed: number,
-  maxHoles: number
+  maxHoles: number,
+  allowance: number = 95
 ): {
   courseHandicap: number;
   netScore: number;
   netStrokesOverPar: number;
   isPartial: boolean;
 } {
-  const fullCourseHandicap = calculateCourseHandicap(handicapIndex, slope);
+  const fullPlayingHandicap = calculatePlayingHandicap(handicapIndex, slope, rating, par, allowance);
   const isPartial = holesPlayed < maxHoles;
 
   if (isPartial) {
-    const partialHandicap = calculatePartialCourseHandicap(fullCourseHandicap, holesPlayed, maxHoles);
+    const partialHandicap = calculatePartialCourseHandicap(fullPlayingHandicap, holesPlayed, maxHoles);
     const partialPar = calculatePartialPar(par, holesPlayed, maxHoles);
     const netScore = grossScore - partialHandicap;
     const netStrokesOverPar = Math.round(netScore - partialPar);
@@ -113,13 +122,11 @@ export function calculateNetScore(
     };
   }
 
-  // Complete round
-  const netScore = grossScore - fullCourseHandicap;
-  // Net Strokes Over Par = Gross Score - Course Handicap - Course Rating (rounded)
-  const netStrokesOverPar = Math.round(grossScore - fullCourseHandicap - rating);
+  const netScore = grossScore - fullPlayingHandicap;
+  const netStrokesOverPar = grossScore - fullPlayingHandicap - par;
 
   return {
-    courseHandicap: fullCourseHandicap,
+    courseHandicap: fullPlayingHandicap,
     netScore,
     netStrokesOverPar,
     isPartial: false,
@@ -333,6 +340,43 @@ export function calculateProjectedPoints(
     netPoints: calcPoints(playerNetOverPar, allBestNetScores),
     scratchPoints: calcPoints(playerScratchOverRating, allBestScratchScores),
   };
+}
+
+/**
+ * Unrounded WHS course handicap: (Index × Slope / 113) + (Rating − Par)
+ */
+export function calculateUnroundedCourseHandicap(
+  handicapIndex: number,
+  slope: number,
+  rating: number,
+  par: number
+): number {
+  return (handicapIndex * slope) / 113 + (rating - par);
+}
+
+/**
+ * Unrounded playing handicap: unrounded course handicap × (allowance / 100)
+ */
+export function calculateUnroundedPlayingHandicap(
+  handicapIndex: number,
+  slope: number,
+  rating: number,
+  par: number,
+  allowance: number = 100
+): number {
+  return calculateUnroundedCourseHandicap(handicapIndex, slope, rating, par) * (allowance / 100);
+}
+
+/**
+ * USGA Scoring Differential: (113 / Slope) × (Gross Score − Course Rating)
+ * Used by GHIN to calculate handicap index updates.
+ */
+export function calculateScoringDifferential(
+  grossScore: number,
+  rating: number,
+  slope: number
+): number {
+  return (113 / slope) * (grossScore - rating);
 }
 
 /**

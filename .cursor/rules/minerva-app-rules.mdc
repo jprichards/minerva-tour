@@ -55,7 +55,7 @@ npm run build           # Must compile without errors
 This is a mobile-first app. The primary target device is **iPhone** (375px–430px viewport width). Every UI change must prioritize iPhone compatibility:
 
 - Always use `overflow-hidden` on card/container elements to prevent content bleed on small screens.
-- Inputs (especially native ones like `datetime-local`, `date`, `select`) must be constrained with `w-full max-w-full` and wrapped in `overflow-hidden` containers — iOS Safari renders these with internal widths that can exceed their parents.
+- **Never use native `datetime-local`, `date`, or `time` inputs directly as visible elements.** iOS Safari renders them wider than their containers. Instead, use the overlay pattern: an invisible native input (`opacity-0 absolute inset-0`) for the tap target/picker, with a styled `<span>` or `<div>` displaying the formatted value. See `src/app/(protected)/scores/[id]/page.tsx` (Tee Time field) for the reference implementation.
 - Use `min-w-0` on flex children that contain text to prevent flex items from overflowing.
 - Avoid fixed widths (`w-64`, `w-[300px]`, etc.) — prefer responsive utilities (`w-full`, `max-w-sm`, etc.).
 - Test layout assumptions at 375px width mentally; anything that works at 375px will work on all larger iPhones.

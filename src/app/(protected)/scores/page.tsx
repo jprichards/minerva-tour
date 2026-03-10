@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
+import { useSeason } from '@/lib/hooks/useSeason';
 import { Plus, Search, Clock, CheckCircle, Target, Link2, User as UserIcon, Calendar } from 'lucide-react';
 import { formatNetScore, getMaxHoles, calculateNetScore } from '@/lib/scoring';
 import type { Score } from '@/types/database';
@@ -24,6 +25,7 @@ export default function ScoresPage() {
 function ScoresContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { season: currentSeason } = useSeason();
   const initialTab = (searchParams.get('tab') as TabType) || 'completed';
   const playerFilter = searchParams.get('player') || '';
   const [tab, setTab] = useState<TabType>(initialTab);
@@ -294,7 +296,7 @@ function ScoresContent() {
                         <span className="text-[var(--text-faint)]"> &middot; {score.gross_score} {(() => {
                           const netOP = score.net_strokes_over_par ?? (
                             score.course && score.user?.handicap_index != null
-                              ? calculateNetScore(score.gross_score!, score.user.handicap_index, score.course.slope, score.course.rating, score.course.par, score.holes_played || 0, getMaxHoles(score.course.type)).netStrokesOverPar
+                              ? calculateNetScore(score.gross_score!, score.user.handicap_index, score.course.slope, score.course.rating, score.course.par, score.holes_played || 0, getMaxHoles(score.course.type), currentSeason?.handicap_allowance ?? 95).netStrokesOverPar
                               : null
                           );
                           return netOP != null ? `(net ${formatNetScore(netOP)}) ` : '';

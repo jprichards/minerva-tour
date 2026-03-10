@@ -182,7 +182,7 @@ export default function LeaderboardPage() {
       if (scoringMode === 'net') {
         const completedScores = scores.filter((s) => s.is_complete && s.net_strokes_over_par != null);
         const inProgressScores = scores.filter((s) => !s.is_complete && s.gross_score != null);
-        const allowanceNet = currentSeason?.handicap_allowance ?? 100;
+        const allowanceNet = currentSeason?.handicap_allowance ?? 95;
 
         if (completedScores.length > 0) {
           bestScore = completedScores.reduce((best, s) => {
@@ -208,7 +208,7 @@ export default function LeaderboardPage() {
       } else {
         // Scratch: use gross score relative to course rating (no handicap)
         // For in-progress rounds, use projected scratch to compare
-        const allowance = currentSeason?.handicap_allowance ?? 100;
+        const allowance = currentSeason?.handicap_allowance ?? 95;
         const withGross = scores.filter((s) => s.gross_score != null);
         if (withGross.length > 0) {
           bestScore = withGross.reduce((best, s) => {
@@ -242,7 +242,7 @@ export default function LeaderboardPage() {
       if (bestScore) {
         const maxH = getMaxHoles(bestScore.course?.type || '18_holes');
         const isPartial = !bestScore.is_complete && (bestScore.holes_played || 0) < maxH;
-        const allowance = currentSeason?.handicap_allowance ?? 100;
+        const allowance = currentSeason?.handicap_allowance ?? 95;
 
         let netOverPar = bestScore.net_strokes_over_par;
         let scratchOver: number | null = null;
@@ -268,7 +268,7 @@ export default function LeaderboardPage() {
           const actualNet = calculateNetScore(
             bestScore.gross_score, hcpIdx, bestScore.course.slope,
             bestScore.course.rating, bestScore.course.par,
-            bestScore.holes_played || 0, maxH
+            bestScore.holes_played || 0, maxH, allowance
           );
           actNetOverPar = actualNet.netStrokesOverPar;
 

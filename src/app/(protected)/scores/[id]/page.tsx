@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
-import { calculateNetScore, getMaxHoles, formatNetScore, formatGrossScore, courseMatchesEventHoles } from '@/lib/scoring';
+import { calculateNetScore, getMaxHoles, formatNetScore, formatGrossScore, courseMatchesEventHoles, calculateUnroundedCourseHandicap, calculateUnroundedPlayingHandicap, calculateScoringDifferential } from '@/lib/scoring';
 import { notifySlack } from '@/lib/slack-notify';
 import { useSeason } from '@/lib/hooks/useSeason';
 import { fetchAllCourses, formatCourseType } from '@/lib/courses';
@@ -20,7 +20,7 @@ export default function ScoreDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const { profile, isAdmin } = useUser();
-  const { currentEvent: seasonCurrentEvent } = useSeason();
+  const { season, currentEvent: seasonCurrentEvent } = useSeason();
   const { showToast } = useToast();
   const { mutate } = useSWRConfig();
   const supabase = createClient();
@@ -143,6 +143,7 @@ export default function ScoreDetailPage() {
     const handicapIndex = (score.user as unknown as { handicap_index: number | null })?.handicap_index;
 
     if (grossScoreNum != null && holesPlayedNum != null && handicapIndex != null) {
+      const allowance = season?.handicap_allowance ?? 95;
       const result = calculateNetScore(
         grossScoreNum,
         handicapIndex,
@@ -150,7 +151,8 @@ export default function ScoreDetailPage() {
         activeCourse.rating,
         activeCourse.par,
         holesPlayedNum,
-        maxHoles
+        maxHoles,
+        allowance
       );
       courseHandicap = result.courseHandicap;
       netScoreVal = result.netScore;
@@ -552,6 +554,7 @@ export default function ScoreDetailPage() {
       {!editing && canEdit && !copying && score && (
         <QuickScore
           score={score}
+          allowance={season?.handicap_allowance ?? 95}
           onSaved={async () => {
             mutate('leaderboard');
             mutate((key: unknown) => Array.isArray(key) && key[0] === 'scores', undefined, { revalidate: true });
@@ -766,12 +769,69 @@ export default function ScoreDetailPage() {
         </div>
       )}
 
-      {/* Score Details Card (view mode only, when score data exists) */}
+      {/* Handicap Breakdown (always visible when player has a handicap, view mode) */}
+      {!editing && !copying && (() => {
+        const handicapIndex = (score.user as unknown as { handicap_index: number | null })?.handicap_index;
+        const course = score.course;
+        if (handicapIndex == null || !course) return null;
+
+        const allowance = season?.handicap_allowance ?? 95;
+
+        const courseHcpUnrounded = calculateUnroundedCourseHandicap(handicapIndex, course.slope, course.rating, course.par);
+        const playingHcpUnrounded = calculateUnroundedPlayingHandicap(handicapIndex, course.slope, course.rating, course.par, allowance);
+        const playingHcpRounded = Math.round(playingHcpUnrounded);
+        const scoreForNetE = course.par + playingHcpRounded;
+
+        return (
+          <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-5 space-y-4">
+            {/* Hero: Score Needed to shoot Net E */}
+            <div className="text-center pb-3 border-b border-[var(--border-light)]">
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Score Needed to shoot Net E</p>
+              <p className="text-3xl font-bold text-minerva-600 mt-1">{scoreForNetE}</p>
+            </div>
+
+            {/* Handicap rows */}
+            <div className="space-y-3">
+              <div className="flex items-baseline justify-between">
+                <p className="text-sm text-[var(--text-muted)]">Handicap Index</p>
+                <p className="text-sm font-semibold text-[var(--text-primary)]">{handicapIndex}</p>
+              </div>
+
+              <div className="flex items-baseline justify-between">
+                <p className="text-sm text-[var(--text-muted)]">Course Handicap (unrounded)</p>
+                <p className="text-sm font-semibold text-[var(--text-primary)]">{courseHcpUnrounded.toFixed(4)}</p>
+              </div>
+
+              <div className="flex items-start justify-between">
+                <div className="min-w-0 mr-3">
+                  <p className="text-sm text-[var(--text-muted)]">Playing Handicap (unrounded)</p>
+                  <p className="text-xs text-[var(--text-faint)]">{allowance}% of unrounded Course Handicap</p>
+                </div>
+                <p className="text-sm font-semibold text-[var(--text-primary)] shrink-0">{playingHcpUnrounded.toFixed(4)}</p>
+              </div>
+
+              <div className="flex items-baseline justify-between">
+                <p className="text-sm text-[var(--text-muted)]">Playing Handicap</p>
+                <p className="text-sm font-semibold text-[var(--text-primary)]">{playingHcpRounded}</p>
+              </div>
+            </div>
+
+            {/* Course details for reference */}
+            <div className="border-t border-[var(--border-light)] pt-3 flex gap-4 text-xs text-[var(--text-faint)]">
+              <span>Rating {course.rating}</span>
+              <span>Slope {course.slope}</span>
+              <span>Par {course.par}</span>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Score Results (view mode only, when score data exists) */}
       {!editing && !copying && score.gross_score != null && (
         <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-5 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Gross</p>
+              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Gross (Scratch) Score</p>
               <p className="text-xl font-bold text-[var(--text-primary)] mt-0.5">
                 {formatGrossScore(score.gross_score, score.course?.par || 72)}
               </p>
@@ -783,7 +843,7 @@ export default function ScoreDetailPage() {
           </div>
 
           {score.net_strokes_over_par != null && (
-            <div className="border-t border-[var(--border-light)] pt-3 grid grid-cols-3 gap-4">
+            <div className="border-t border-[var(--border-light)] pt-3 grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Net</p>
                 <p className={`text-xl font-bold mt-0.5 ${
@@ -791,17 +851,20 @@ export default function ScoreDetailPage() {
                   score.net_strokes_over_par === 0 ? 'text-green-600' :
                   'text-[var(--text-primary)]'
                 }`}>
-                  {formatNetScore(score.net_strokes_over_par)}
+                  {score.net_score != null
+                    ? `${score.net_score} (${formatNetScore(score.net_strokes_over_par)})`
+                    : formatNetScore(score.net_strokes_over_par)
+                  }
                 </p>
               </div>
-              <div>
-                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Course Hcp</p>
-                <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">{score.course_handicap}</p>
-              </div>
-              <div>
-                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Net Score</p>
-                <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">{score.net_score}</p>
-              </div>
+              {score.course && (
+                <div>
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Scoring Differential</p>
+                  <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">
+                    {calculateScoringDifferential(score.gross_score!, score.course.rating, score.course.slope).toFixed(1)}
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
