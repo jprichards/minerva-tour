@@ -32,10 +32,11 @@ vi.mock('@/components/ThemeProvider', () => ({
 vi.mock('@/lib/audit', () => ({ logAuditEvent: vi.fn() }));
 
 const mockScores = [
-  { net_strokes_over_par: -2, gross_score: 70 },
-  { net_strokes_over_par: 3, gross_score: 78 },
-  { net_strokes_over_par: 0, gross_score: 72 },
-  { net_strokes_over_par: 5, gross_score: 80 },
+  { id: 'score-1', net_strokes_over_par: -2, gross_score: 70, tee_time: '2025-06-01T10:00:00Z', created_at: '2025-06-01T10:00:00Z', course: { course_name: 'Pine Valley', tee_name: 'Blue', par: 72, type: '18_holes' } },
+  { id: 'score-2', net_strokes_over_par: 3, gross_score: 78, tee_time: '2025-06-15T10:00:00Z', created_at: '2025-06-15T10:00:00Z', course: { course_name: 'Oak Hills', tee_name: 'White', par: 72, type: '18_holes' } },
+  { id: 'score-3', net_strokes_over_par: 0, gross_score: 72, tee_time: '2025-07-01T10:00:00Z', created_at: '2025-07-01T10:00:00Z', course: { course_name: 'Pine Valley', tee_name: 'Blue', par: 72, type: '18_holes' } },
+  { id: 'score-4', net_strokes_over_par: 5, gross_score: 80, tee_time: '2025-07-15T10:00:00Z', created_at: '2025-07-15T10:00:00Z', course: { course_name: 'Oak Hills', tee_name: 'White', par: 72, type: '18_holes' } },
+  { id: 'score-5', net_strokes_over_par: 1, gross_score: 74, tee_time: '2025-08-01T10:00:00Z', created_at: '2025-08-01T10:00:00Z', course: { course_name: 'Pine Valley', tee_name: 'Blue', par: 72, type: '18_holes' } },
 ];
 
 function createChain(data: unknown[] = []) {
@@ -99,5 +100,49 @@ describe('Profile Page - Stat Tiles', () => {
 
     const grid = screen.getByText('Rounds').closest('.grid');
     expect(grid).toHaveClass('grid-cols-2');
+  });
+
+  it('renders Notable Rounds section with best and worst round', async () => {
+    render(<ProfilePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Notable Rounds')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Best Round')).toBeInTheDocument();
+    expect(screen.getByText('Worst Round')).toBeInTheDocument();
+
+    const bestLink = screen.getByText('Best Round').closest('a');
+    expect(bestLink).toHaveAttribute('href', '/scores/score-1');
+
+    const worstLink = screen.getByText('Worst Round').closest('a');
+    expect(worstLink).toHaveAttribute('href', '/scores/score-4');
+  });
+
+  it('shows course names in Notable Rounds cards', async () => {
+    render(<ProfilePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Notable Rounds')).toBeInTheDocument();
+    });
+
+    const notableSection = screen.getByText('Notable Rounds').parentElement!;
+    const courseNames = notableSection.querySelectorAll('.text-sm.font-medium');
+    const names = Array.from(courseNames).map((el) => el.textContent);
+    expect(names).toContain('Pine Valley');
+    expect(names).toContain('Oak Hills');
+  });
+
+  it('renders Courses Played Most section with top courses', async () => {
+    render(<ProfilePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Courses Played Most/)).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Pine Valley')).toBeInTheDocument();
+    expect(screen.getByText('3 rounds')).toBeInTheDocument();
+    expect(screen.getByText('Oak Hills')).toBeInTheDocument();
+    expect(screen.getByText('2 rounds')).toBeInTheDocument();
   });
 });

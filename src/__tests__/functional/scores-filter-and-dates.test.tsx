@@ -115,12 +115,13 @@ const mockScores = [
 ];
 
 vi.mock('swr', () => ({
-  default: (key: unknown, fetcher: unknown, opts: unknown) => ({
-    data: mockScores,
-    isLoading: false,
-    error: null,
-    mutate: vi.fn(),
-  }),
+  default: (key: string | unknown[]) => {
+    const k = typeof key === 'string' ? key : key?.[0];
+    if (k === 'seasons-years') {
+      return { data: [2026, 2025], isLoading: false, error: null, mutate: vi.fn() };
+    }
+    return { data: mockScores, isLoading: false, error: null, mutate: vi.fn() };
+  },
 }));
 
 // Import pages AFTER mocks are set up

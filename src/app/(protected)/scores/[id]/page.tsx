@@ -110,6 +110,8 @@ export default function ScoreDetailPage() {
 
   const canDelete = canEdit;
 
+  const isHistorical = score?.event != null && new Date(score.event.end_date).getFullYear() < 2026;
+
   const editHasScore = scoreEntryMode === 'toPar' ? grossToPar !== '' : grossScore !== '';
   const editMissingHoles = editHasScore && isPartialRound && !holesPlayed;
   const editMissingScore = !editHasScore && isPartialRound && !!holesPlayed;
@@ -427,7 +429,7 @@ export default function ScoreDetailPage() {
             {score.is_complete ? 'Round Detail' : 'Tee Time Detail'}
           </h1>
         </div>
-        {canEdit && !editing && (
+        {canEdit && !isHistorical && !editing && (
           <button onClick={() => {
             setEditing(true);
             if (score?.course) setEditCourse(score.course as unknown as Course);
@@ -575,7 +577,7 @@ export default function ScoreDetailPage() {
       </div>
 
       {/* Quick Score - tap-to-increment panel for active tee times */}
-      {!editing && canEdit && !copying && score && (
+      {!editing && canEdit && !isHistorical && !copying && score && (
         <QuickScore
           score={score}
           allowance={season?.handicap_allowance ?? 95}
@@ -793,8 +795,8 @@ export default function ScoreDetailPage() {
         </div>
       )}
 
-      {/* Handicap Breakdown (always visible when player has a handicap, view mode) */}
-      {!editing && !copying && (() => {
+      {/* Handicap Breakdown — hidden for historical scores (uses current HI, wrong for past) */}
+      {!editing && !copying && !isHistorical && (() => {
         const handicapIndex = (score.user as unknown as { handicap_index: number | null })?.handicap_index;
         const course = score.course;
         if (handicapIndex == null || !course) return null;
@@ -850,6 +852,19 @@ export default function ScoreDetailPage() {
         );
       })()}
 
+      {/* Historical score banner */}
+      {!editing && isHistorical && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+          <p className="text-sm font-medium text-amber-800">Historical Score</p>
+          <p className="text-xs text-amber-600 mt-0.5">
+            Imported from Glide ({new Date(score.event!.end_date).getFullYear()} season). This score is read-only.
+            {score.handicap_index_used != null && (
+              <> Handicap at time of play: {score.handicap_index_used}</>
+            )}
+          </p>
+        </div>
+      )}
+
       {/* Score Results (view mode only, when score data exists) */}
       {!editing && !copying && score.gross_score != null && (
         <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-5 space-y-4">
@@ -881,28 +896,51 @@ export default function ScoreDetailPage() {
                   }
                 </p>
               </div>
-              {score.course && (
+              {isHistorical && score.scratch_strokes_over_rating != null ? (
+                <div>
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Scratch</p>
+                  <p className={`text-xl font-bold mt-0.5 ${
+                    score.scratch_strokes_over_rating < 0 ? 'text-red-600' :
+                    score.scratch_strokes_over_rating === 0 ? 'text-green-600' :
+                    'text-[var(--text-primary)]'
+                  }`}>
+                    {formatNetScore(score.scratch_strokes_over_rating)}
+                  </p>
+                </div>
+              ) : !isHistorical && score.course ? (
                 <div>
                   <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Scoring Differential</p>
                   <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">
                     {calculateScoringDifferential(score.gross_score!, score.course.rating, score.course.slope).toFixed(1)}
                   </p>
                 </div>
-              )}
+              ) : null}
             </div>
           )}
 
-          {score.points_awarded != null && (
-            <div className="border-t border-[var(--border-light)] pt-3">
-              <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Points</p>
-              <p className="text-lg font-bold text-yellow-600 mt-0.5">{score.points_awarded}</p>
+          {(score.points_awarded != null || score.scratch_points_awarded != null) && (
+            <div className="border-t border-[var(--border-light)] pt-3 grid grid-cols-2 gap-4">
+              {score.points_awarded != null && (
+                <div>
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
+                    {score.scratch_points_awarded != null ? 'Net Points' : 'Points'}
+                  </p>
+                  <p className="text-lg font-bold text-yellow-600 mt-0.5">{score.points_awarded}</p>
+                </div>
+              )}
+              {score.scratch_points_awarded != null && (
+                <div>
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Scratch Points</p>
+                  <p className="text-lg font-bold text-yellow-600 mt-0.5">{score.scratch_points_awarded}</p>
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
 
       {/* Copy to Members */}
-      {!editing && canEdit && copying && (
+      {!editing && canEdit && !isHistorical && copying && (
         <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-4 space-y-3">
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-sm font-semibold text-[var(--text-primary)]">Copy Tee Time to Members</h2>
@@ -925,7 +963,7 @@ export default function ScoreDetailPage() {
         </div>
       )}
 
-      {!editing && canEdit && !copying && (
+      {!editing && canEdit && !isHistorical && !copying && (
         <button
           onClick={handleStartCopy}
           className="flex items-center justify-center gap-2 w-full bg-minerva-50 text-minerva-700 rounded-xl px-4 py-3 text-sm font-medium hover:bg-minerva-100 transition-colors"
@@ -935,7 +973,7 @@ export default function ScoreDetailPage() {
         </button>
       )}
 
-      {!editing && canDelete && !copying && (
+      {!editing && canDelete && !isHistorical && !copying && (
         <button
           onClick={handleDelete}
           className="flex items-center justify-center gap-2 w-full bg-red-50 text-red-600 rounded-xl px-4 py-3 text-sm font-medium hover:bg-red-100 transition-colors"

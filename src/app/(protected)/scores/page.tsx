@@ -47,12 +47,26 @@ function ScoresContent() {
     router.replace(`/scores?${params.toString()}`, { scroll: false });
   }, [router]);
 
+  // Load available years from seasons table (always complete, no row-limit issues)
+  const { data: availableYears = [] } = useSWR('seasons-years', async () => {
+    const { data } = await supabase.from('seasons').select('year').order('year', { ascending: false });
+    return (data || []).map((s) => s.year);
+  });
+
+  // Auto-default to most recent year
+  useEffect(() => {
+    if (!hasSetDefaultYear.current && availableYears.length > 0) {
+      hasSetDefaultYear.current = true;
+      setYearFilter(String(availableYears[0]));
+    }
+  }, [availableYears]);
+
   const { data: scores = [], isLoading: loading } = useSWR(
-    ['scores', tab, profile?.id ?? null],
+    ['scores', tab, profile?.id ?? null, yearFilter],
     async () => {
       let query = supabase
         .from('scores')
-        .select('*, course:courses(*), user:users!user_id(full_name, email, profile_picture_url, handicap_index), event:events(*)')
+        .select('*, course:courses(*), user:users!user_id(full_name, email, profile_picture_url, handicap_index), event:events!inner(*)')
         .order('tee_time', { ascending: false });
 
       if (tab === 'teetimes') {
@@ -61,10 +75,22 @@ function ScoresContent() {
         query = query.eq('is_complete', true);
       }
 
+      // Filter by season year at the DB level to stay under Supabase row limits
+      if (yearFilter !== 'all' && yearFilter !== 'pending') {
+        const selectedYear = parseInt(yearFilter);
+        const { data: seasonData } = await supabase
+          .from('seasons')
+          .select('id')
+          .eq('year', selectedYear)
+          .single();
+        if (seasonData) {
+          query = query.eq('events.season_id', seasonData.id);
+        }
+      }
+
       const { data, error } = await query;
       if (error) console.error('Error fetching scores:', error.message, error.details, error.hint);
 
-      // Sort tee times: current user first, then by tee_time desc
       let results = data || [];
       if (tab === 'teetimes' && profile?.id) {
         results = results.sort((a, b) => {
@@ -79,36 +105,12 @@ function ScoresContent() {
     { revalidateOnFocus: true, dedupingInterval: 5000 }
   );
 
-  // Derive available years from scores
-  const availableYears = Array.from(
-    new Set(
-      scores
-        .map((s) => {
-          const d = s.tee_time || s.event?.start_date;
-          return d ? new Date(d).getFullYear() : null;
-        })
-        .filter((y): y is number => y !== null)
-    )
-  ).sort((a, b) => b - a);
-
-  // Auto-default to most recent year with scores
-  useEffect(() => {
-    if (!hasSetDefaultYear.current && availableYears.length > 0) {
-      hasSetDefaultYear.current = true;
-      setYearFilter(String(availableYears[0]));
-    }
-  }, [availableYears]);
-
-  // Derive available events for the selected year
+  // Derive available events from the (already year-filtered) scores
   const availableEvents = (() => {
     if (yearFilter === 'all' || yearFilter === 'pending') return [];
-    const selectedYear = parseInt(yearFilter);
     const eventsInYear = new Map<string, { id: string; eventNumber: number; eventName: string }>();
     for (const s of scores) {
-      const d = s.tee_time || s.event?.start_date;
-      if (!d || !s.event) continue;
-      const scoreYear = new Date(d).getFullYear();
-      if (scoreYear !== selectedYear) continue;
+      if (!s.event) continue;
       const eid = s.event.id;
       if (!eventsInYear.has(eid)) {
         eventsInYear.set(eid, {
@@ -122,17 +124,7 @@ function ScoresContent() {
   })();
 
   const filtered = scores.filter((s) => {
-    // Apply "My Rounds" filter
     if (filterMyRounds && profile?.id && s.user_id !== profile.id) return false;
-
-    // Apply year filter
-    if (yearFilter !== 'all' && yearFilter !== 'pending') {
-      const d = s.tee_time || s.event?.start_date;
-      if (d) {
-        const scoreYear = new Date(d).getFullYear();
-        if (scoreYear !== parseInt(yearFilter)) return false;
-      }
-    }
 
     // Apply event filter
     if (eventFilter !== 'all' && s.event?.id !== eventFilter) return false;

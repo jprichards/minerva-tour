@@ -48,12 +48,13 @@ vi.mock('@/lib/audit', () => ({
 let mockSwrData: unknown[] = [];
 
 vi.mock('swr', () => ({
-  default: () => ({
-    data: mockSwrData,
-    isLoading: false,
-    error: null,
-    mutate: vi.fn(),
-  }),
+  default: (key: string | unknown[]) => {
+    const k = typeof key === 'string' ? key : key?.[0];
+    if (k === 'seasons-years') {
+      return { data: [2026], isLoading: false, error: null, mutate: vi.fn() };
+    }
+    return { data: mockSwrData, isLoading: false, error: null, mutate: vi.fn() };
+  },
 }));
 
 import ScoresPage from '@/app/(protected)/scores/page';

@@ -14,6 +14,17 @@ import { useThemeContext } from '@/components/ThemeProvider';
 import type { ThemePreference } from '@/lib/hooks/useTheme';
 import type { HandicapHistory, Score, Trophy as TrophyType, SeasonFinish } from '@/types/database';
 
+interface NotableStats {
+  totalRounds: number;
+  avgNet: number;
+  bestNet: number | null;
+  worstNet: number | null;
+  bestRound: Score | null;
+  worstRound: Score | null;
+  topCourses: { name: string; count: number }[];
+  uniqueCourses: number;
+}
+
 export default function ProfilePage() {
   const { profile, authUser, loading: userLoading } = useUser();
   const router = useRouter();
@@ -22,11 +33,15 @@ export default function ProfilePage() {
   const [handicapHistory, setHandicapHistory] = useState<HandicapHistory[]>([]);
   const [trophies, setTrophies] = useState<TrophyType[]>([]);
   const [seasonFinishes, setSeasonFinishes] = useState<SeasonFinish[]>([]);
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<NotableStats>({
     totalRounds: 0,
     avgNet: 0,
-    bestNet: null as number | null,
-    worstNet: null as number | null,
+    bestNet: null,
+    worstNet: null,
+    bestRound: null,
+    worstRound: null,
+    topCourses: [],
+    uniqueCourses: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -42,21 +57,37 @@ export default function ProfilePage() {
         .order('effective_date', { ascending: false });
       setHandicapHistory(history || []);
 
-      // Fetch stats
+      // Fetch scores with course info for notable rounds + courses played
       const { data: scores } = await supabase
         .from('scores')
-        .select('net_strokes_over_par, gross_score')
+        .select('*, course:courses(course_name, tee_name, par, type)')
         .eq('user_id', profile.id)
         .eq('is_complete', true)
-        .not('net_strokes_over_par', 'is', null);
+        .not('net_strokes_over_par', 'is', null)
+        .order('created_at', { ascending: true });
 
       if (scores && scores.length > 0) {
         const nets = scores.map((s) => s.net_strokes_over_par!);
+        const bestIdx = nets.indexOf(Math.min(...nets));
+        const worstIdx = nets.indexOf(Math.max(...nets));
+
+        const courseCount: Record<string, { name: string; count: number }> = {};
+        for (const s of scores) {
+          const name = s.course?.course_name || 'Unknown';
+          if (!courseCount[name]) courseCount[name] = { name, count: 0 };
+          courseCount[name].count++;
+        }
+        const topCourses = Object.values(courseCount).sort((a, b) => b.count - a.count).slice(0, 5);
+
         setStats({
           totalRounds: scores.length,
           avgNet: Math.round((nets.reduce((a, b) => a + b, 0) / nets.length) * 10) / 10,
           bestNet: Math.min(...nets),
           worstNet: Math.max(...nets),
+          bestRound: scores[bestIdx],
+          worstRound: scores[worstIdx],
+          topCourses,
+          uniqueCourses: new Set(scores.map((s) => s.course?.course_name)).size,
         });
       }
 
@@ -229,6 +260,58 @@ export default function ProfilePage() {
           <p className="text-xs text-[var(--text-muted)]">Worst Net</p>
         </div>
       </div>
+
+      {/* Notable Rounds */}
+      {(stats.bestRound || stats.worstRound) && (
+        <div>
+          <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Notable Rounds</h3>
+          <div className="space-y-2">
+            {stats.bestRound && (
+              <Link href={`/scores/${stats.bestRound.id}`} className="flex items-center justify-between bg-green-50 dark:bg-green-900/30 rounded-xl p-3 border border-green-100 dark:border-green-800">
+                <div>
+                  <p className="text-xs text-green-600 dark:text-green-400 font-medium">Best Round</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{stats.bestRound.course?.course_name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(stats.bestRound.tee_time || stats.bestRound.created_at).toLocaleDateString('en-US', { timeZone: 'UTC' })}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-green-700 dark:text-green-400">{formatNetScore(stats.bestRound.net_strokes_over_par!)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Gross: {stats.bestRound.gross_score}</p>
+                </div>
+              </Link>
+            )}
+            {stats.worstRound && stats.worstRound.id !== stats.bestRound?.id && (
+              <Link href={`/scores/${stats.worstRound.id}`} className="flex items-center justify-between bg-red-50 dark:bg-red-900/30 rounded-xl p-3 border border-red-100 dark:border-red-800">
+                <div>
+                  <p className="text-xs text-red-600 dark:text-red-400 font-medium">Worst Round</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{stats.worstRound.course?.course_name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(stats.worstRound.tee_time || stats.worstRound.created_at).toLocaleDateString('en-US', { timeZone: 'UTC' })}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-red-700 dark:text-red-400">{formatNetScore(stats.worstRound.net_strokes_over_par!)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Gross: {stats.worstRound.gross_score}</p>
+                </div>
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Courses Played Most */}
+      {stats.topCourses.length > 0 && (
+        <div>
+          <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">
+            Courses Played Most ({stats.uniqueCourses} total)
+          </h3>
+          <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
+            {stats.topCourses.map((c, idx) => (
+              <div key={c.name} className={`flex items-center justify-between px-4 py-3 ${idx < stats.topCourses.length - 1 ? 'border-b border-[var(--border-light)]' : ''}`}>
+                <p className="text-sm text-[var(--text-primary)]">{c.name}</p>
+                <span className="text-sm font-semibold text-[var(--text-muted)]">{c.count} round{c.count !== 1 ? 's' : ''}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Trophy Case */}
       <TrophyCase trophies={trophies} seasonFinishes={seasonFinishes} />

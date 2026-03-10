@@ -1,7 +1,7 @@
 -- Chirp templates table for member-managed score commentary
 CREATE TABLE IF NOT EXISTS chirp_templates (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  bucket TEXT NOT NULL CHECK (bucket IN ('legendary','excellent','solid','mediocre','rough','bad','terrible')),
+  bucket TEXT NOT NULL CHECK (bucket IN ('legendary','excellent','solid','neutral','mediocre','rough','bad','terrible')),
   template TEXT NOT NULL,
   created_by UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),

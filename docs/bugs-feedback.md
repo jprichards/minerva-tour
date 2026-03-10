@@ -3,11 +3,10 @@
 - Bulk update handicaps in admin mode
 - event history should show both people if they both tied for first place,
 including the medal image
+  - see `docs/tie-breaking-logic.md`
 - Playoff auto-seeding -- currently manual. The PRD says seeds come from  
 season standings (top 6 regular season), but the admin UI requires manual  
 selection. This is a feature gap, not a formula/calculation gap.
-- ~~some audit logs data have null info that should be populated~~ (fixed: enriched score_edit and score_delete audit log payloads with full metadata — player, course, tee, holes, net scores, tee time, event, before/after format)
-- refactor score/tee times detail page
 
 ##Fixed pending verification##
 
@@ -25,6 +24,8 @@ selection. This is a feature gap, not a formula/calculation gap.
 
 ##Done##
 
+- refactor score/tee times detail page
+- some audit logs data have null info that should be populated (fixed: enriched score_edit and score_delete audit log payloads with full metadata — player, course, tee, holes, net scores, tee time, event, before/after format)
 - tile discrepency between my profile and other member profiles
   - other member - # rounds, avg net, best net, worst net
   - my profile - # rounds, avg net, best net

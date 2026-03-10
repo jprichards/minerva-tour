@@ -97,12 +97,19 @@ const mockScores = [
 ];
 
 vi.mock('swr', () => ({
-  default: () => ({
-    data: mockScores,
-    isLoading: false,
-    error: null,
-    mutate: vi.fn(),
-  }),
+  default: (key: string | unknown[]) => {
+    const k = typeof key === 'string' ? key : key?.[0];
+    if (k === 'seasons-years') {
+      return { data: [2025, 2024], isLoading: false, error: null, mutate: vi.fn() };
+    }
+    const yearFilter = Array.isArray(key) ? key[3] : null;
+    let data = mockScores;
+    if (yearFilter && yearFilter !== 'all' && yearFilter !== 'pending') {
+      const yr = parseInt(String(yearFilter));
+      data = mockScores.filter((s) => new Date(s.tee_time).getFullYear() === yr);
+    }
+    return { data, isLoading: false, error: null, mutate: vi.fn() };
+  },
 }));
 
 import ScoresPage from '@/app/(protected)/scores/page';
