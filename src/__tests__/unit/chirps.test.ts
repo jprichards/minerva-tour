@@ -20,9 +20,9 @@ function ctx(firstName: string, overrides: Partial<ChirpContext> = {}): ChirpCon
 // CHIRP_TEMPLATES — structure validation
 // ============================================
 describe('CHIRP_TEMPLATES', () => {
-  it('has all 7 performance buckets defined', () => {
+  it('has all 8 performance buckets defined', () => {
     const expectedBuckets: ChirpBucket[] = [
-      'legendary', 'excellent', 'solid', 'mediocre', 'rough', 'bad', 'terrible',
+      'legendary', 'excellent', 'solid', 'neutral', 'mediocre', 'rough', 'bad', 'terrible',
     ];
     for (const bucket of expectedBuckets) {
       expect(CHIRP_TEMPLATES[bucket]).toBeDefined();
@@ -56,13 +56,13 @@ describe('BUCKET_LABELS', () => {
 // ALL_BUCKETS — ordered list
 // ============================================
 describe('ALL_BUCKETS', () => {
-  it('contains exactly 7 buckets', () => {
-    expect(ALL_BUCKETS.length).toBe(7);
+  it('contains exactly 8 buckets', () => {
+    expect(ALL_BUCKETS.length).toBe(8);
   });
 
   it('is ordered from best to worst', () => {
     expect(ALL_BUCKETS[0]).toBe('legendary');
-    expect(ALL_BUCKETS[6]).toBe('terrible');
+    expect(ALL_BUCKETS[7]).toBe('terrible');
   });
 });
 
@@ -107,11 +107,15 @@ describe('getChirpBucket', () => {
     expect(getChirpBucket(-5)).toBe('excellent');
   });
 
-  it('returns "solid" for -4 to +1', () => {
+  it('returns "solid" for -4 to -1', () => {
     expect(getChirpBucket(-4)).toBe('solid');
     expect(getChirpBucket(-2)).toBe('solid');
-    expect(getChirpBucket(0)).toBe('solid');
-    expect(getChirpBucket(1)).toBe('solid');
+    expect(getChirpBucket(-1)).toBe('solid');
+  });
+
+  it('returns "neutral" for E to +1', () => {
+    expect(getChirpBucket(0)).toBe('neutral');
+    expect(getChirpBucket(1)).toBe('neutral');
   });
 
   it('returns "mediocre" for +2 to +4', () => {
@@ -194,7 +198,7 @@ describe('getChirp', () => {
 describe('getChirpFromTemplates', () => {
   it('uses DB templates when bucket has entries', () => {
     const spy = vi.spyOn(Math, 'random').mockReturnValue(0);
-    const dbTemplates = { solid: ['DB chirp for $first_name'] };
+    const dbTemplates = { neutral: ['DB chirp for $first_name'] };
     const chirp = getChirpFromTemplates(dbTemplates, 0, ctx('Bob'));
     expect(chirp).toBe('DB chirp for Bob');
     spy.mockRestore();
@@ -202,11 +206,11 @@ describe('getChirpFromTemplates', () => {
 
   it('falls back to hardcoded when bucket is empty in DB', () => {
     const spy = vi.spyOn(Math, 'random').mockReturnValue(0);
-    const dbTemplates = { solid: [] };
+    const dbTemplates = { neutral: [] };
     const chirp = getChirpFromTemplates(dbTemplates, 0, ctx('Alice'));
     expect(chirp).not.toContain('$first_name');
     expect(chirp.length).toBeGreaterThan(0);
-    expect(CHIRP_TEMPLATES.solid[0].replace(/\$first_name/g, 'Alice')).toBe(chirp);
+    expect(CHIRP_TEMPLATES.neutral[0].replace(/\$first_name/g, 'Alice')).toBe(chirp);
     spy.mockRestore();
   });
 
@@ -247,7 +251,7 @@ describe('getChirpFromTemplates', () => {
 describe('wildcard substitution', () => {
   it('substitutes $course with the course name', () => {
     const spy = vi.spyOn(Math, 'random').mockReturnValue(0);
-    const dbTemplates = { solid: ['$first_name crushed $course'] };
+    const dbTemplates = { neutral: ['$first_name crushed $course'] };
     const chirp = getChirpFromTemplates(dbTemplates, 0, ctx('John', { course: 'Aiken Golf Club' }));
     expect(chirp).toBe('John crushed Aiken Golf Club');
     spy.mockRestore();
@@ -311,7 +315,7 @@ describe('wildcard substitution', () => {
 
   it('leaves wildcard tokens in place when context value is null', () => {
     const spy = vi.spyOn(Math, 'random').mockReturnValue(0);
-    const dbTemplates = { solid: ['$first_name at $course scored $gross'] };
+    const dbTemplates = { neutral: ['$first_name at $course scored $gross'] };
     const chirp = getChirpFromTemplates(dbTemplates, 0, ctx('Alice'));
     expect(chirp).toBe('Alice at $course scored $gross');
     spy.mockRestore();

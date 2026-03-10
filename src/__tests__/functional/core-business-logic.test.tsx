@@ -142,7 +142,9 @@ describe('Chirps - Score Commentary', () => {
     expect(getChirpBucket(-9)).toBe('excellent');
     expect(getChirpBucket(-5)).toBe('excellent');
     expect(getChirpBucket(-4)).toBe('solid');
-    expect(getChirpBucket(1)).toBe('solid');
+    expect(getChirpBucket(-1)).toBe('solid');
+    expect(getChirpBucket(0)).toBe('neutral');
+    expect(getChirpBucket(1)).toBe('neutral');
     expect(getChirpBucket(2)).toBe('mediocre');
     expect(getChirpBucket(4)).toBe('mediocre');
     expect(getChirpBucket(5)).toBe('rough');

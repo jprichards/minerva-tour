@@ -13,7 +13,8 @@
 export type ChirpBucket =
   | 'legendary'   // -10 or better
   | 'excellent'   // -9 to -5
-  | 'solid'       // -4 to +1
+  | 'solid'       // -4 to -1
+  | 'neutral'     // E to +1
   | 'mediocre'    // +2 to +4
   | 'rough'       // +5 to +9
   | 'bad'         // +10 to +19
@@ -22,7 +23,8 @@ export type ChirpBucket =
 export const BUCKET_LABELS: Record<ChirpBucket, string> = {
   legendary: 'Legendary (-10 or better)',
   excellent: 'Excellent (-9 to -5)',
-  solid: 'Solid (-4 to +1)',
+  solid: 'Solid (-4 to -1)',
+  neutral: 'Neutral (E to +1)',
   mediocre: 'Mediocre (+2 to +4)',
   rough: 'Rough (+5 to +9)',
   bad: 'Bad (+10 to +19)',
@@ -30,7 +32,7 @@ export const BUCKET_LABELS: Record<ChirpBucket, string> = {
 };
 
 export const ALL_BUCKETS: ChirpBucket[] = [
-  'legendary', 'excellent', 'solid', 'mediocre', 'rough', 'bad', 'terrible',
+  'legendary', 'excellent', 'solid', 'neutral', 'mediocre', 'rough', 'bad', 'terrible',
 ];
 
 /**
@@ -40,29 +42,38 @@ export const ALL_BUCKETS: ChirpBucket[] = [
 export const CHIRP_TEMPLATES: Record<ChirpBucket, string[]> = {
   legendary: [
     'Wow, folks. Nuclear Class Submarine. $first_name is DEEP under par.',
-    "Cinderella story, out of nowhere, former greenskeeper... it's $first_name!",
     'Mask up, fellas: $first_name is SICK.',
     'Can $first_name be humble is the real question?',
     '$first_name had their wheaties this morning.',
     'Excuse me, where does one sign up for the PGA tour? Asking for $first_name.',
     'Looks like $first_name may have an extra jacket next winter.',
-    'The cart girl would like your digits, $first_name.',
-    "They're gonna go crazy when $first_name hits this...",
+    "The cart girl would like your digits, $first_name. Or at least your Venmo for the drinks you're buying",
     'There must be a glitch in the Matrix. $first_name is unreal.',
     "Just a comfortable 9-iron for $first_name. They're gonna go crazy when he hits this...",
-    'Move over, $first_name is HERE.',
+    '$first_name just lapped the field so hard the cart path is calling for child support.',
+    '$first_name just posted a number so low the handicap committee is filing a fraud report.',
+    "Cinderella? Nah, $first_name's the whole damn fairy tale today... while the rest of us are stuck in the pumpkin carriage.",
+    'Alert the wives: $first_name remembered how to golf. The divorce rate just dropped 0.1%.',
   ],
   excellent: [
     '$first_name came to play today. Impressive stuff.',
     "Tha's a bonnie score, $first_name. The links gods smile upon ye.",
-    '$first_name is dialed in. Watch out, everyone.',
-    "The flagstick is $first_name's best friend today.",
-    "If $first_name keeps this up, we'll need bigger trophies.",
     "That's the kind of round that gets talked about at the 19th hole.",
-    '$first_name just gave a masterclass in course management.',
     "Someone check $first_name's bag for illegal clubs.",
+    "Dialed in like $first_name's got the course cheat codes.",
+    "$first_name's playing like he actually practiced. Disgusting.",
+    "That's not golf, $first_name — that's a mid-life crisis in reverse.",
   ],
   solid: [
+    "That'll do, $first_name. That'll do.",
+    "Respectable golf from $first_name. We won't tell anyone you tried.",
+    '$first_name snuck under par like he snuck an extra drink past the wife on date night.',
+    "$first_name posted a minus… congrats on not completely wasting a Saturday morning.",
+    "$first_name finished under par. Someone buy this man a beer before the mortgage payment hits.",
+    '$first_name went -something… must\'ve bribed the golf gods with black coffee and ibuprofen.',
+    'Not bad, $first_name — you almost looked like you belong with the big boys today.',
+  ],
+  neutral: [
     'Steady as she goes for $first_name. Nothing fancy, nothing embarrassing.',
     '$first_name put up a respectable number today. The golf gods were... neutral.',
     "A gentleman's round from $first_name. No highlights, no lowlights.",
@@ -70,27 +81,43 @@ export const CHIRP_TEMPLATES: Record<ChirpBucket, string[]> = {
     'The word of the day for $first_name: par-ish.',
     "Not great, not terrible. $first_name is the Goldilocks of golf today.",
     '$first_name survived the round with dignity intact.',
-    "That'll do, $first_name. That'll do.",
+    '$first_name posted a card so neutral it could host peace talks.',
+    "$first_name's round: not a disaster, not a masterpiece — just aggressively average.",
+    '$first_name survived without calling a search party. Progress.',
+    "$first_name is the human equivalent of par — predictable, dependable, and nobody's writing home about it.",
+    'Goldilocks called — $first_name stole his "just right" vibe, then gave it back untouched.',
+    '$first_name played exactly to his handicap. Thrilling as watching the lawn guy mow in straight lines.',
+    "Not great, not terrible — $first_name just turned 18 holes into background noise for the podcast in his head.",
+    "$first_name's scorecard: $net. The most exciting part was debating whether to get the cart or walk off the calories.",
+    "A gentleman's round? More like $first_name's \"I showed up and didn't injure myself\" certificate.",
   ],
   mediocre: [
     "We've seen better from $first_name. We've also seen worse.",
-    '$first_name is building character out there.',
+    '$first_name is building character out there... or just collecting excuses.',
     "It's a game of inches, and $first_name lost a few today.",
     '$first_name should maybe hit the range before next event.',
     "Some days you eat the bear. Today the bear ate $first_name.",
     "The only thing $first_name is breaking today is even. Barely.",
     "Par is just a number. A number $first_name can't quite reach.",
     '$first_name played like someone who read about golf once.',
+    "$first_name's game is in beta testing. Still buggy as hell.",
+    'The range called — they want their bucket back, $first_name.',
+    'Another day, another $first_name scorecard that screams "mid." Congrats on consistency.',
   ],
   rough: [
-    "I've seen flagsticks get more birdies than $first_name today.",
     '$first_name lost more balls than a stag party in Amsterdam.',
     "D'ye know what $first_name's favorite movie is? Just tryin' tae change the subject.",
-    '$first_name played like a dropped meat pie — messy and disappointing.',
-    "$first_name's putting was like a seal with a rake.",
-    'Pure shame for $first_name today, nae denyin\'.',
-    '$first_name took more steps on the green than a tourist lookin\' for the toilets.',
+    "$first_name's putting was like a seal with a rake... on ice.",
+    "Pure shame for $first_name today, nae denyin'.",
+    "$first_name took more steps on the green than a tourist lookin' for the toilets.",
     'Aye, rough day for $first_name. Very rough.',
+    "$first_name's putting stroke looks like he's swatting bees.",
+    'Nice round, $first_name — if the goal was cardio and ball retrieval.',
+    "$first_name's approach shots had more airtime than Spirit Airlines.",
+    "Your handicap's working harder than you today, $first_name — give it a raise.",
+    '$first_name played like every club was sponsored by "chunk and run."',
+    "$first_name's swing path? More like a drunk Uber driver rerouting mid-ride.",
+    "Rough day, $first_name — your scorecard's starting to look like a cry for help.",
   ],
   bad: [
     'An Englishman has more straight teeth than $first_name has good shots.',
@@ -99,16 +126,36 @@ export const CHIRP_TEMPLATES: Record<ChirpBucket, string[]> = {
     'The burden of playing that badly is near as heavy as a range finder.',
     '$first_name could not get up and down if ye gave him a ladder.',
     "$first_name's head was all tied up like a celtic knot.",
-    'Even stink would say $first_name stinks today.',
     "$first_name's round was a burden, heavy as a winter's gale.",
+    "$first_name's game is so cooked even his mom is pretending she doesn't know him on the back nine.",
+    'Congrats $first_name, you just set the course record… for most times a grown man cried in a sand trap.',
+    'Your scorecard looks like a ransom note written by a blind toddler, $first_name.',
+    "$first_name played so bad the cart girl asked if she should call your therapist or just the suicide hotline.",
+    "$first_name's swing is so ugly his clubs are filing a restraining order.",
+    '$first_name hit more hosel rockets than a Fourth of July finale gone wrong.',
+    "Even the squirrels are judging $first_name's chip-ins today.",
+    '$first_name played like he bet the house on every hole... and lost the house.',
+    'Your ball retriever deserves player of the match, $first_name — MVP status.',
+    'Congrats $first_name — your round just qualified for disaster relief funds.',
+    "We're not roasting $first_name today… we're holding a funeral for whatever dignity he had left.",
   ],
   terrible: [
     "$first_name's reanimated corpse has been dropped from coverage.",
-    "We don't cover handicap manipulation on this network. $first_name is being dropped from coverage.",
-    'Out of respect for $first_name\'s family and privacy, we will no longer cover this round.',
-    'The intervention has been scheduled for $first_name.',
     '$first_name ate shit for breakfast apparently.',
-    'Oh, even stink would say THAT stinks. Sorry, $first_name.',
+    "$first_name just posted a $net… we're burning the group chat and starting a new league without him.",
+    "$first_name's round was so bad his handicap just filed for emancipation.",
+    '$first_name played like his balls and his brain both went missing in the same water hazard.',
+    '$first_name just shot so high, the app is asking if we want to switch to bowling stats instead.',
+    "Your swing is so fucked $first_name even the geese on the course flew away in embarrassment.",
+    "$first_name's game is so trash his own shadow left him mid-round.",
+    "Bro dropped a $net… at this point we're just watching a man get hate-fucked by 18 holes in real time.",
+    "We're putting $first_name on suicide watch… for his golf career. And maybe his personality.",
+    "You didn't play golf today $first_name, you just paid $200 to publicly get pegged by the course.",
+    "$first_name couldn't hit a fairway with a GPS, a map, and his dad holding his dick for him.",
+    "$first_name's round was sponsored by \"what the actual fuck\" and \"why me.\"",
+    "$first_name's scorecard needs its own zip code — that's how far over par we are.",
+    '$first_name turned the front nine into a crime scene and the back nine into a cover-up.',
+    "$first_name's swing looked like a mid-life crisis having a mid-life crisis.",
   ],
 };
 
@@ -118,7 +165,8 @@ export const CHIRP_TEMPLATES: Record<ChirpBucket, string[]> = {
 export function getChirpBucket(netStrokesOverPar: number): ChirpBucket {
   if (netStrokesOverPar <= -10) return 'legendary';
   if (netStrokesOverPar <= -5) return 'excellent';
-  if (netStrokesOverPar <= 1) return 'solid';
+  if (netStrokesOverPar <= -1) return 'solid';
+  if (netStrokesOverPar <= 1) return 'neutral';
   if (netStrokesOverPar <= 4) return 'mediocre';
   if (netStrokesOverPar <= 9) return 'rough';
   if (netStrokesOverPar <= 19) return 'bad';

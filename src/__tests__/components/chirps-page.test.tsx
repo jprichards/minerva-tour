@@ -57,6 +57,7 @@ describe('ChirpsPage', () => {
     expect(screen.getByText(/Legendary/)).toBeInTheDocument();
     expect(screen.getByText(/Excellent/)).toBeInTheDocument();
     expect(screen.getByText(/Solid/)).toBeInTheDocument();
+    expect(screen.getByText(/Neutral/)).toBeInTheDocument();
     expect(screen.getByText(/Mediocre/)).toBeInTheDocument();
     expect(screen.getByText(/Rough/)).toBeInTheDocument();
     expect(screen.getByText(/Bad/)).toBeInTheDocument();
