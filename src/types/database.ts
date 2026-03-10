@@ -263,6 +263,7 @@ export interface SlackScorePayload {
   tee_name: string;
   course_type?: CourseType;
   par: number;
+  rating?: number;
   gross_score?: number | null;
   net_score?: number | null;
   net_strokes_over_par?: number | null;

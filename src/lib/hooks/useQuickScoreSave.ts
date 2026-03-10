@@ -145,6 +145,7 @@ export function useQuickScoreSave({ score, onSaved, allowance = 95 }: QuickScore
       tee_name: course.tee_name,
       course_type: course.type,
       par: course.par,
+      rating: course.rating,
       gross_score: grossScore,
       net_strokes_over_par: netStrokesOverPar,
       holes_played: state.holesPlayed,

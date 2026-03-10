@@ -192,8 +192,9 @@ async function enrichWithProjectedPoints(
     if (payload.gross_score != null && payload.par != null) {
       const maxH = payload.max_holes || 18;
       const holesPlayed = payload.holes_played || maxH;
+      const rating = payload.rating ?? payload.par;
       playerScratch = calculateScratchScore(
-        payload.gross_score, payload.par, payload.par, holesPlayed, maxH
+        payload.gross_score, rating, payload.par, holesPlayed, maxH
       ).scratchStrokesOverRating;
     }
 

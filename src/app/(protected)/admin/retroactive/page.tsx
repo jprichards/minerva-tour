@@ -151,6 +151,7 @@ export default function AdminRetroactiveScoresPage() {
       tee_name: course.tee_name,
       course_type: course.type,
       par: course.par,
+      rating: course.rating,
       gross_score: grossNum,
       net_score: netScore,
       net_strokes_over_par: netStrokesOverPar,

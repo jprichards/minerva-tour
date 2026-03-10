@@ -305,6 +305,21 @@ describe('calculateScratchScore', () => {
     expect(result.isPartial).toBe(false);
   });
 
+  it('produces wrong result when par is passed as rating (Slack bug regression)', () => {
+    // This test documents why callers must pass the actual course rating,
+    // not par, as the rating argument. When rating=par, scratchCH=0 and
+    // the result degrades to gross-par instead of the correct WHS formula.
+    const withRating = calculateScratchScore(85, 73.5, 72, 18, 18);
+    const withParAsRating = calculateScratchScore(85, 72, 72, 18, 18);
+
+    // Correct: 85 - ROUND(73.5-72) - 72 = 85 - 2 - 72 = 11
+    expect(withRating.scratchStrokesOverRating).toBe(11);
+    // Wrong (par as rating): 85 - ROUND(72-72) - 72 = 85 - 0 - 72 = 13
+    expect(withParAsRating.scratchStrokesOverRating).toBe(13);
+    // They differ by 2 strokes for this course
+    expect(withRating.scratchStrokesOverRating).not.toBe(withParAsRating.scratchStrokesOverRating);
+  });
+
   it('handles 9-hole course (complete)', () => {
     // Gross 42, Rating 35.0, Par 36, 9/9
     // ScratchCH = ROUND(-1) = -1, Scratch = 42 - (-1) - 36 = 7

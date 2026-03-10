@@ -22,6 +22,7 @@ describe('notifySlack', () => {
       course_name: 'Pine Valley',
       tee_name: 'White',
       par: 72,
+      rating: 73.5,
       gross_score: 85,
       net_strokes_over_par: 1,
       holes_played: 18,
@@ -38,6 +39,30 @@ describe('notifySlack', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+  });
+
+  it('includes course rating in the payload for scratch score accuracy', async () => {
+    const { notifySlack } = await import('@/lib/slack-notify');
+
+    const payload: SlackNotifyPayload = {
+      event_type: 'round_complete',
+      player_name: 'Devin Blankenship',
+      course_name: 'Atlanta National',
+      tee_name: 'Blue',
+      par: 72,
+      rating: 73.5,
+      gross_score: 85,
+      net_strokes_over_par: 0,
+      holes_played: 18,
+      max_holes: 18,
+    };
+
+    notifySlack(payload);
+    await new Promise((r) => setTimeout(r, 0));
+
+    const sentBody = JSON.parse((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+    expect(sentBody.rating).toBe(73.5);
+    expect(sentBody.par).toBe(72);
   });
 
   it('silently catches fetch errors', async () => {
