@@ -140,9 +140,11 @@ describe('Profile Page - Stat Tiles', () => {
       expect(screen.getByText(/Courses Played Most/)).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Pine Valley')).toBeInTheDocument();
-    expect(screen.getByText('3 rounds')).toBeInTheDocument();
-    expect(screen.getByText('Oak Hills')).toBeInTheDocument();
-    expect(screen.getByText('2 rounds')).toBeInTheDocument();
+    const heading = screen.getByText(/Courses Played Most/);
+    const section = heading.parentElement!;
+    expect(section).toHaveTextContent('Pine Valley');
+    expect(section).toHaveTextContent('3 rounds');
+    expect(section).toHaveTextContent('Oak Hills');
+    expect(section).toHaveTextContent('2 rounds');
   });
 });
