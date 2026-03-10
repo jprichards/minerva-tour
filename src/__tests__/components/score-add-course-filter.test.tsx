@@ -122,7 +122,7 @@ describe('AddScorePage - Course Filtering', () => {
 
     const treeNames = courseButtons.filter(btn => btn.textContent?.includes('Tree Farm'));
     expect(treeNames.length).toBe(1);
-    expect(treeNames[0].textContent).toContain('18 holes');
+    expect(treeNames[0].textContent).toContain('18 Holes');
   });
 
   it('shows helpful message when search matches no courses due to filtering', async () => {

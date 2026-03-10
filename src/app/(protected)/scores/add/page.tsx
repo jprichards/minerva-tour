@@ -10,7 +10,7 @@ import { logAuditEvent } from '@/lib/audit';
 import { calculateNetScore, getMaxHoles, courseMatchesEventHoles, formatNetScore } from '@/lib/scoring';
 import { notifySlack } from '@/lib/slack-notify';
 import { useSeason } from '@/lib/hooks/useSeason';
-import { fetchAllCourses } from '@/lib/courses';
+import { fetchAllCourses, formatCourseType } from '@/lib/courses';
 import { ArrowLeft, Search, ChevronRight, User as UserIcon, AlertCircle, CheckCircle, X } from 'lucide-react';
 import MemberPicker from '@/components/MemberPicker';
 import type { Course, User } from '@/types/database';
@@ -462,7 +462,7 @@ function AddScoreContent() {
                       {ineligible && <span className="text-amber-600 text-xs ml-1">(ineligible)</span>}
                     </p>
                     <p className="text-xs text-[var(--text-muted)]">
-                      {course.tee_name} &middot; {course.type.replace(/_/g, ' ')} &middot;
+                      {course.tee_name} &middot; {formatCourseType(course.type)} &middot;
                       Par {course.par} &middot; {course.rating}/{course.slope}
                     </p>
                   </div>

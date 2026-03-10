@@ -10,8 +10,11 @@ vi.mock('@/lib/hooks/useUser', () => ({
   }),
 }));
 
-vi.mock('@/lib/courses', () => ({
-  fetchAllCourses: vi.fn().mockResolvedValue([
+vi.mock('@/lib/courses', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/courses')>('@/lib/courses');
+  return {
+    ...actual,
+    fetchAllCourses: vi.fn().mockResolvedValue([
     { id: '1', course_name: 'Augusta Municipal Golf Course', tee_name: 'White', type: 'front_9', par: 37, rating: 34.7, slope: 123 },
     { id: '2', course_name: 'Augusta Municipal Golf Course', tee_name: 'Blue (Back 9)', type: 'back_9', par: 34, rating: 32.6, slope: 113 },
     { id: '3', course_name: 'Augusta Municipal Golf Course ', tee_name: 'Blue (Front 9)', type: 'front_9', par: 37, rating: 35.1, slope: 125 },
@@ -19,7 +22,8 @@ vi.mock('@/lib/courses', () => ({
     { id: '5', course_name: 'Augusta Municipal Golf Course ', tee_name: 'Blue', type: 'front_9', par: 37, rating: 35.1, slope: 125 },
     { id: '6', course_name: 'Augusta Municipal Golf Course ', tee_name: 'Blue', type: 'back_9', par: 34, rating: 32.6, slope: 113 },
   ]),
-}));
+  };
+});
 
 import '../setup';
 import CoursesPage from '@/app/(protected)/courses/page';

@@ -1,5 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Course } from '@/types/database';
+import type { Course, CourseType } from '@/types/database';
+
+/** Format a course type enum for display: "front_9" → "Front 9", "18_holes" → "18 Holes" */
+export function formatCourseType(type: CourseType | string): string {
+  return type.replace(/_/g, ' ').replace(/\b[a-z]/g, (c) => c.toUpperCase());
+}
 
 const PAGE_SIZE = 1000;
 
