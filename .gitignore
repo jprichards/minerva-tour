@@ -26,6 +26,7 @@ playwright-report/
 .DS_Store
 *.pem
 docs/bugs-feedback
+docs/bugs/
 docs/handicap-dump/
 docs/glide-app/
 docs/95percent_calc.png
