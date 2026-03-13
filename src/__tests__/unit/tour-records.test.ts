@@ -8,18 +8,19 @@ const makeScore = (
   eventId: string,
   id: string,
   grossScore?: number,
-  courseName?: string
+  courseName?: string,
+  courseType: '18_holes' | '9_holes' = '18_holes'
 ): Score => ({
   id,
   user_id: userId,
   event_id: eventId,
   course_id: 'c1',
   tee_time: null,
-  gross_score: grossScore ?? 72 + nop,
-  holes_played: 18,
+  gross_score: grossScore ?? (courseType === '9_holes' ? 36 : 72) + nop,
+  holes_played: courseType === '9_holes' ? 9 : 18,
   is_complete: true,
   course_handicap: 0,
-  net_score: 72 + nop,
+  net_score: (courseType === '9_holes' ? 36 : 72) + nop,
   net_strokes_over_par: nop,
   scratch_strokes_over_rating: null,
   points_awarded: null,
@@ -34,9 +35,9 @@ const makeScore = (
     id: 'c1',
     course_name: courseName ?? 'Test Course',
     tee_name: 'Blue',
-    par: 72,
-    type: '18_holes',
-    rating: 72,
+    par: courseType === '9_holes' ? 36 : 72,
+    type: courseType,
+    rating: courseType === '9_holes' ? 36 : 72,
     slope: 113,
     created_by: null,
     created_at: '',
@@ -105,6 +106,32 @@ describe('computeTourRecords', () => {
     expect(wins!.value).toBe('2');
     expect(wins!.detail).toBe('Alice');
     expect(wins!.icon).toBe('medal');
+  });
+
+  it('best gross round excludes 9-hole courses', () => {
+    const scores = [
+      // 9-hole score with lower gross (39) — should be excluded
+      makeScore('u1', 3, 'e1', 's1', 39, 'Short Nine', '9_holes'),
+      // 18-hole score with higher gross (75) — should be picked
+      makeScore('u2', 3, 'e1', 's2', 75, 'Full Course', '18_holes'),
+    ];
+    const events = [makeEvent('e1', 1)];
+    const records = computeTourRecords(scores, events, members);
+    const bestGross = records.find((r) => r.label === 'Best Gross Round');
+    expect(bestGross).toBeDefined();
+    expect(bestGross!.value).toBe('75');
+    expect(bestGross!.detail).toContain('Bob');
+    expect(bestGross!.detail).toContain('Full Course');
+  });
+
+  it('omits best gross round when only 9-hole scores exist', () => {
+    const scores = [
+      makeScore('u1', 3, 'e1', 's1', 39, 'Short Nine', '9_holes'),
+    ];
+    const events = [makeEvent('e1', 1)];
+    const records = computeTourRecords(scores, events, members);
+    const bestGross = records.find((r) => r.label === 'Best Gross Round');
+    expect(bestGross).toBeUndefined();
   });
 
   it('respects minimum round threshold for lowest avg net', () => {

@@ -142,11 +142,11 @@ export function computeTourRecords(
     });
   }
 
-  // Best Gross Round
-  const withGross = completed.filter((s) => s.gross_score != null);
-  if (withGross.length > 0) {
-    let bestGross = withGross[0];
-    for (const s of withGross) {
+  // Best Gross Round (18-hole only so 9-hole scores don't dominate)
+  const withGross18 = completed.filter((s) => s.gross_score != null && s.course?.type === '18_holes');
+  if (withGross18.length > 0) {
+    let bestGross = withGross18[0];
+    for (const s of withGross18) {
       if (s.gross_score! < bestGross.gross_score!) bestGross = s;
     }
     records.push({
