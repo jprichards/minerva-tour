@@ -1,5 +1,9 @@
-##Open##
+- ##Open##
 
+- Tour Stats
+  - Turn current page into User tab
+  - Add "aggregate" tab
+    - Sub-tab for season vs all time?
 - Bulk update handicaps in admin mode
 - event history should show both people if they both tied for first place,
 including the medal image
@@ -7,6 +11,19 @@ including the medal image
 - Playoff auto-seeding -- currently manual. The PRD says seeds come from  
 season standings (top 6 regular season), but the admin UI requires manual  
 selection. This is a feature gap, not a formula/calculation gap.
+- On playoff bracket page, remove consolation and unicorn bracket filter for previous years where it was not filled out. Only show brackets that have data. If retroactively filled out later then show the filter. 
+- Handicap history on user profiles should show first 5 with show more/all button 
+- When looking at another member, there is a button at very button “show full stats” that takes you to h2h page against them. Should relabel that button
+- Bridge Score needs work, currently shows old rounds with the same 2/16/2026 date for everything
+  - should only show rounds in current event
+  - talk to Robby on how that works if 18hole event but restricts 9hole selection
+  - maybe remove?
+- Touch target for scores tab at bottom still sometimes hard to tap. Maybe expand touch target and add a few more pixels buffer from bottom
+- Use historical score distribution data to consider changes to chirp bucket ranges
+  - admin mode feature to modify score bucket ranges?
+- Hide tournament more tab, not using this app for tourney for time being bc golf genius preferred
+- Schedule page have export calendar link? Make admin configurable
+- Schedule page on dark mode - current even highlighting looks off and hard to read inside box
 
 ##Fixed pending verification##
 

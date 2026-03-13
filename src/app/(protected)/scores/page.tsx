@@ -286,7 +286,7 @@ function ScoresContent() {
                       {score.user?.full_name || score.user?.email || 'Unknown'}
                       {!score.is_complete && score.gross_score != null ? (
                         <span className="text-[var(--text-faint)]"> &middot; {score.gross_score} {(() => {
-                          const scoreIsHistorical = score.event && new Date(score.event.end_date).getFullYear() < 2026;
+                          const scoreIsHistorical = score.event && new Date(score.event.end_date).getFullYear() < (currentSeason?.year ?? new Date().getFullYear());
                           const netOP = score.net_strokes_over_par ?? (
                             !scoreIsHistorical && score.course && score.user?.handicap_index != null
                               ? calculateNetScore(score.gross_score!, score.user.handicap_index, score.course.slope, score.course.rating, score.course.par, score.holes_played || 0, getMaxHoles(score.course.type), currentSeason?.handicap_allowance ?? 95).netStrokesOverPar

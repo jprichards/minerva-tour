@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
-import { calculateNetScore, getMaxHoles, formatNetScore, formatGrossScore, courseMatchesEventHoles, calculateUnroundedCourseHandicap, calculateUnroundedPlayingHandicap, calculateScoringDifferential } from '@/lib/scoring';
+import { calculateNetScore, calculateScratchScore, getMaxHoles, formatNetScore, formatGrossScore, courseMatchesEventHoles, calculateUnroundedCourseHandicap, calculateUnroundedPlayingHandicap, calculateScoringDifferential } from '@/lib/scoring';
 import { notifySlack } from '@/lib/slack-notify';
 import { useSeason } from '@/lib/hooks/useSeason';
 import { fetchAllCourses, formatCourseType } from '@/lib/courses';
@@ -39,6 +39,11 @@ export default function ScoreDetailPage() {
   const [isPartialRound, setIsPartialRound] = useState(false);
   const [roundDate, setRoundDate] = useState('');
   const [teeTimeOfDay, setTeeTimeOfDay] = useState('');
+  const [editHandicapIndex, setEditHandicapIndex] = useState('');
+
+  // Event change fields (historical only)
+  const [editEventId, setEditEventId] = useState('');
+  const [seasonEvents, setSeasonEvents] = useState<Event[]>([]);
 
   // Course change fields
   const [changingCourse, setChangingCourse] = useState(false);
@@ -110,7 +115,8 @@ export default function ScoreDetailPage() {
 
   const canDelete = canEdit;
 
-  const isHistorical = score?.event != null && new Date(score.event.end_date).getFullYear() < 2026;
+  const currentSeasonYear = season?.year ?? new Date().getFullYear();
+  const isHistorical = score?.event != null && new Date(score.event.end_date).getFullYear() < currentSeasonYear;
 
   const editHasScore = scoreEntryMode === 'toPar' ? grossToPar !== '' : grossScore !== '';
   const editMissingHoles = editHasScore && isPartialRound && !holesPlayed;
@@ -141,8 +147,11 @@ export default function ScoreDetailPage() {
     let courseHandicap = null;
     let netScoreVal = null;
     let netStrokesOverPar = null;
+    let scratchStrokesOverRating: number | null = null;
 
-    const handicapIndex = (score.user as unknown as { handicap_index: number | null })?.handicap_index;
+    const handicapIndex = isHistorical && editHandicapIndex !== ''
+      ? parseFloat(editHandicapIndex)
+      : (score.user as unknown as { handicap_index: number | null })?.handicap_index;
 
     if (grossScoreNum != null && holesPlayedNum != null && handicapIndex != null) {
       const allowance = season?.handicap_allowance ?? 95;
@@ -161,20 +170,42 @@ export default function ScoreDetailPage() {
       netStrokesOverPar = result.netStrokesOverPar;
     }
 
+    if (grossScoreNum != null && holesPlayedNum != null) {
+      const scratch = calculateScratchScore(
+        grossScoreNum,
+        activeCourse.rating,
+        activeCourse.par,
+        holesPlayedNum,
+        maxHoles,
+      );
+      scratchStrokesOverRating = scratch.scratchStrokesOverRating;
+    }
+
     const courseChanged = activeCourse.id !== score.course_id;
+
+    const updatePayload: Record<string, unknown> = {
+      course_id: activeCourse.id,
+      gross_score: grossScoreNum,
+      holes_played: holesPlayedNum,
+      tee_time: combinedTeeTime,
+      is_complete: isComplete,
+      course_handicap: courseHandicap,
+      net_score: netScoreVal,
+      net_strokes_over_par: netStrokesOverPar,
+      scratch_strokes_over_rating: scratchStrokesOverRating,
+    };
+
+    if (isHistorical && editHandicapIndex !== '') {
+      updatePayload.handicap_index_used = parseFloat(editHandicapIndex);
+    }
+
+    if (isHistorical && editEventId && editEventId !== score.event_id) {
+      updatePayload.event_id = editEventId;
+    }
 
     const { error } = await supabase
       .from('scores')
-      .update({
-        course_id: activeCourse.id,
-        gross_score: grossScoreNum,
-        holes_played: holesPlayedNum,
-        tee_time: combinedTeeTime,
-        is_complete: isComplete,
-        course_handicap: courseHandicap,
-        net_score: netScoreVal,
-        net_strokes_over_par: netStrokesOverPar,
-      })
+      .update(updatePayload)
       .eq('id', score.id);
 
     if (error) {
@@ -186,70 +217,71 @@ export default function ScoreDetailPage() {
     await logAuditEvent('score_edit', 'score', score.id, {
       player: (score.user as unknown as { full_name: string | null })?.full_name,
       before: {
+        event: score.event?.name || `Event ${score.event?.event_number}`,
         course: score.course?.course_name,
         tee: score.course?.tee_name,
         gross_score: score.gross_score,
         holes_played: score.holes_played,
         net_strokes_over_par: score.net_strokes_over_par,
+        scratch_strokes_over_rating: score.scratch_strokes_over_rating,
         course_handicap: score.course_handicap,
         net_score: score.net_score,
+        handicap_index_used: score.handicap_index_used,
         tee_time: score.tee_time,
         is_complete: score.is_complete,
       },
       after: {
+        event: (() => { const e = seasonEvents.find(ev => ev.id === editEventId); return e ? (e.name || `Event ${e.event_number}`) : score.event?.name || `Event ${score.event?.event_number}`; })(),
         course: activeCourse.course_name,
         tee: activeCourse.tee_name,
         gross_score: grossScoreNum,
         holes_played: holesPlayedNum,
         net_strokes_over_par: netStrokesOverPar,
+        scratch_strokes_over_rating: scratchStrokesOverRating,
         course_handicap: courseHandicap,
         net_score: netScoreVal,
+        handicap_index_used: isHistorical && editHandicapIndex !== '' ? parseFloat(editHandicapIndex) : score.handicap_index_used,
         tee_time: combinedTeeTime,
         is_complete: isComplete,
       },
     });
 
-    // Determine the right Slack event type based on round state:
-    // - Still mid-round (holes < max) → score_in_progress
-    // - Just finished all holes for the first time → round_complete
-    // - Updating a score on a finished round → score_edit
-    const hadScoreBefore = score.gross_score != null;
-    const isFullRound = holesPlayedNum != null && holesPlayedNum >= maxHoles;
-    const playerUser = score.user as unknown as { full_name: string | null; email: string | null; handicap_index: number | null };
+    if (!isHistorical) {
+      const hadScoreBefore = score.gross_score != null;
+      const isFullRound = holesPlayedNum != null && holesPlayedNum >= maxHoles;
+      const playerUser = score.user as unknown as { full_name: string | null; email: string | null; handicap_index: number | null };
 
-    let slackEventType: 'score_in_progress' | 'round_complete' | 'score_edit';
-    if (!isFullRound) {
-      // Mid-round: still on the course, updating score as they play
-      slackEventType = 'score_in_progress';
-    } else if (isFullRound && !hadScoreBefore) {
-      // Just finished: had no score before, now all holes are in
-      slackEventType = 'round_complete';
-    } else if (isFullRound && hadScoreBefore) {
-      // Revising a completed round's score
-      slackEventType = 'score_edit';
-    } else {
-      slackEventType = 'score_edit';
+      let slackEventType: 'score_in_progress' | 'round_complete' | 'score_edit';
+      if (!isFullRound) {
+        slackEventType = 'score_in_progress';
+      } else if (isFullRound && !hadScoreBefore) {
+        slackEventType = 'round_complete';
+      } else if (isFullRound && hadScoreBefore) {
+        slackEventType = 'score_edit';
+      } else {
+        slackEventType = 'score_edit';
+      }
+
+      notifySlack({
+        event_type: slackEventType,
+        player_name: playerUser?.full_name || playerUser?.email || 'Unknown',
+        handicap_index: playerUser?.handicap_index,
+        course_name: activeCourse.course_name,
+        tee_name: activeCourse.tee_name,
+        course_type: activeCourse.type,
+        par: activeCourse.par,
+        rating: activeCourse.rating,
+        gross_score: grossScoreNum,
+        net_score: netScoreVal,
+        net_strokes_over_par: netStrokesOverPar,
+        holes_played: holesPlayedNum,
+        max_holes: maxHoles,
+        tee_time: combinedTeeTime,
+        event_name: score.event?.name || (score.event ? `Event ${score.event.event_number}` : null),
+        old_gross_score: score.gross_score,
+        old_net_score: score.net_strokes_over_par,
+      });
     }
-
-    notifySlack({
-      event_type: slackEventType,
-      player_name: playerUser?.full_name || playerUser?.email || 'Unknown',
-      handicap_index: playerUser?.handicap_index,
-      course_name: activeCourse.course_name,
-      tee_name: activeCourse.tee_name,
-      course_type: activeCourse.type,
-      par: activeCourse.par,
-      rating: activeCourse.rating,
-      gross_score: grossScoreNum,
-      net_score: netScoreVal,
-      net_strokes_over_par: netStrokesOverPar,
-      holes_played: holesPlayedNum,
-      max_holes: maxHoles,
-      tee_time: combinedTeeTime,
-      event_name: score.event?.name || (score.event ? `Event ${score.event.event_number}` : null),
-      old_gross_score: score.gross_score,
-      old_net_score: score.net_strokes_over_par,
-    });
 
     mutate('leaderboard');
     mutate((key: unknown) => Array.isArray(key) && key[0] === 'scores', undefined, { revalidate: true });
@@ -429,12 +461,22 @@ export default function ScoreDetailPage() {
             {score.is_complete ? 'Round Detail' : 'Tee Time Detail'}
           </h1>
         </div>
-        {canEdit && !isHistorical && !editing && (
-          <button onClick={() => {
+        {canEdit && !editing && (!isHistorical || isAdmin) && (
+          <button onClick={async () => {
             setEditing(true);
             if (score?.course) setEditCourse(score.course as unknown as Course);
             setGrossScore(score?.gross_score?.toString() || '');
             setHolesPlayed(score?.holes_played?.toString() || '');
+            setEditHandicapIndex(score?.handicap_index_used?.toString() ?? '');
+            setEditEventId(score?.event_id || '');
+            if (isHistorical && score?.event?.season_id) {
+              const { data: evts } = await supabase
+                .from('events')
+                .select('*')
+                .eq('season_id', score.event.season_id)
+                .order('event_number', { ascending: true });
+              if (evts) setSeasonEvents(evts as Event[]);
+            }
             const maxH = getMaxHoles(score?.course?.type || '18_holes');
             setIsPartialRound(score?.holes_played != null && score.holes_played < maxH);
             setScoreEntryMode('gross');
@@ -488,7 +530,7 @@ export default function ScoreDetailPage() {
             />
           </div>
 
-          {seasonCurrentEvent?.holes && (
+          {!isHistorical && seasonCurrentEvent?.holes && (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-2 text-xs text-blue-700">
               Showing {seasonCurrentEvent.holes === 9 ? '9-hole' : '18-hole'} courses for the current event.
             </div>
@@ -497,7 +539,7 @@ export default function ScoreDetailPage() {
           <div className="space-y-1.5 max-h-64 overflow-y-auto">
             {courses
               .filter((c) =>
-                courseMatchesEventHoles(c.type, seasonCurrentEvent?.holes) &&
+                (isHistorical || courseMatchesEventHoles(c.type, seasonCurrentEvent?.holes)) &&
                 (c.course_name.toLowerCase().includes(courseSearch.toLowerCase()) ||
                 c.tee_name.toLowerCase().includes(courseSearch.toLowerCase()))
               )
@@ -642,6 +684,39 @@ export default function ScoreDetailPage() {
               </div>
             </div>
           </div>
+          {editing && isHistorical && (
+            <>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Handicap Index Used</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={editHandicapIndex}
+                    onChange={(e) => setEditHandicapIndex(e.target.value)}
+                    placeholder="e.g. 12.3"
+                    className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
+                  />
+                </div>
+                {seasonEvents.length > 0 && (
+                  <div className="flex-1">
+                    <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Event</label>
+                    <select
+                      value={editEventId}
+                      onChange={(e) => setEditEventId(e.target.value)}
+                      className="w-full rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
+                    >
+                      {seasonEvents.map((evt) => (
+                        <option key={evt.id} value={evt.id}>
+                          Event {evt.event_number}{evt.is_major ? ' (Major)' : ''} — {evt.holes}h
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
           <div>
             <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
               Score {editMissingScore && <span className="text-red-500">*</span>}
@@ -857,7 +932,7 @@ export default function ScoreDetailPage() {
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
           <p className="text-sm font-medium text-amber-800">Historical Score</p>
           <p className="text-xs text-amber-600 mt-0.5">
-            Imported from Glide ({new Date(score.event!.end_date).getFullYear()} season). This score is read-only.
+            Imported from Glide ({new Date(score.event!.end_date).getFullYear()} season).{isAdmin ? '' : ' This score is read-only.'}
             {score.handicap_index_used != null && (
               <> Handicap at time of play: {score.handicap_index_used}</>
             )}
@@ -973,7 +1048,7 @@ export default function ScoreDetailPage() {
         </button>
       )}
 
-      {!editing && canDelete && !isHistorical && !copying && (
+      {!editing && canDelete && (!isHistorical || isAdmin) && !copying && (
         <button
           onClick={handleDelete}
           className="flex items-center justify-center gap-2 w-full bg-red-50 text-red-600 rounded-xl px-4 py-3 text-sm font-medium hover:bg-red-100 transition-colors"

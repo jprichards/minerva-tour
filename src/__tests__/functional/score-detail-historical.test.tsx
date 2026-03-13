@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 
 const mockRouter = { push: vi.fn(), back: vi.fn(), replace: vi.fn(), refresh: vi.fn(), prefetch: vi.fn() };
 
@@ -10,12 +10,14 @@ vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'score-1' }),
 }));
 
+let mockIsAdmin = true;
+
 vi.mock('@/lib/hooks/useUser', () => ({
   useUser: () => ({
     profile: { id: 'user-1', full_name: 'Test User', email: 'test@test.com', handicap_index: 10.0 },
     authUser: { id: 'user-1' },
     loading: false,
-    isAdmin: true,
+    isAdmin: mockIsAdmin,
     isMember: true,
     isPlayingGuest: false,
     isAuthenticated: true,
@@ -113,6 +115,7 @@ import ScoreDetailPage from '@/app/(protected)/scores/[id]/page';
 describe('Score Detail — Historical Scores', () => {
   beforeEach(() => {
     mockScoreData = historicalScore;
+    mockIsAdmin = true;
     vi.clearAllMocks();
   });
 
@@ -132,17 +135,39 @@ describe('Score Detail — Historical Scores', () => {
     });
   });
 
-  it('does not show edit button for historical scores (even as admin)', async () => {
+  it('shows edit button for admin on historical scores', async () => {
+    mockIsAdmin = true;
     render(<ScoreDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('Historical Score')).toBeInTheDocument();
     });
     const editButtons = screen.queryAllByRole('button');
-    const editButton = editButtons.find(b => b.querySelector('.lucide-edit, [data-testid="edit"]'));
+    const editButton = editButtons.find(b => b.querySelector('.lucide-square-pen'));
+    expect(editButton).toBeDefined();
+  });
+
+  it('does not show edit button for non-admin on historical scores', async () => {
+    mockIsAdmin = false;
+    render(<ScoreDetailPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Historical Score')).toBeInTheDocument();
+    });
+    const editButtons = screen.queryAllByRole('button');
+    const editButton = editButtons.find(b => b.querySelector('.lucide-square-pen'));
     expect(editButton).toBeUndefined();
   });
 
-  it('does not show delete button for historical scores', async () => {
+  it('shows delete button for admin on historical scores', async () => {
+    mockIsAdmin = true;
+    render(<ScoreDetailPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Historical Score')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Delete Score')).toBeInTheDocument();
+  });
+
+  it('does not show delete button for non-admin on historical scores', async () => {
+    mockIsAdmin = false;
     render(<ScoreDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('Historical Score')).toBeInTheDocument();
@@ -182,6 +207,32 @@ describe('Score Detail — Historical Scores', () => {
     expect(screen.getByText('8')).toBeInTheDocument();
     expect(screen.getByText('Scratch Points')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();
+  });
+
+  it('shows Handicap Index Used field when admin edits historical score', async () => {
+    mockIsAdmin = true;
+    render(<ScoreDetailPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Historical Score')).toBeInTheDocument();
+    });
+    const editButtons = screen.queryAllByRole('button');
+    const editButton = editButtons.find(b => b.querySelector('.lucide-square-pen'));
+    expect(editButton).toBeDefined();
+    fireEvent.click(editButton!);
+    await waitFor(() => {
+      expect(screen.getByText('Handicap Index Used')).toBeInTheDocument();
+    });
+    const hiInput = screen.getByPlaceholderText('e.g. 12.3');
+    expect(hiInput).toBeInTheDocument();
+    expect((hiInput as HTMLInputElement).value).toBe('12.5');
+  });
+
+  it('banner says read-only for non-admin', async () => {
+    mockIsAdmin = false;
+    render(<ScoreDetailPage />);
+    await waitFor(() => {
+      expect(screen.getByText(/This score is read-only/)).toBeInTheDocument();
+    });
   });
 
   it('does not show historical banner for 2026 scores', async () => {
