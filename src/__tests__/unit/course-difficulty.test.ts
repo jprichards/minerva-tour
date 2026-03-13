@@ -116,4 +116,33 @@ describe('computeCourseDifficulty', () => {
     // Only 2 valid scores for Pine Hills, below the 3-round minimum
     expect(result).toHaveLength(0);
   });
+
+  it('separates 9-hole and 18-hole scores at the same course', () => {
+    const make9H = (userId: string, courseName: string, nop: number, id: string): Score => ({
+      ...makeScore(userId, courseName, nop, id),
+      gross_score: 36 + nop,
+      course: { course_name: courseName, tee_name: 'Blue', par: 36, type: '9_holes', rating: 36, slope: 113 },
+    });
+
+    const scores = [
+      makeScore('a', 'Cherokee CC', 5, 's1'),
+      makeScore('b', 'Cherokee CC', 7, 's2'),
+      makeScore('c', 'Cherokee CC', 3, 's3'),
+      make9H('a', 'Cherokee CC', 2, 's4'),
+      make9H('b', 'Cherokee CC', 4, 's5'),
+      make9H('c', 'Cherokee CC', 6, 's6'),
+    ];
+
+    const result = computeCourseDifficulty(scores);
+
+    expect(result).toHaveLength(2);
+    const names = result.map((r) => r.courseName);
+    expect(names).toContain('Cherokee CC');
+    expect(names).toContain('Cherokee CC (9H)');
+
+    const full18 = result.find((r) => r.courseName === 'Cherokee CC')!;
+    const nine = result.find((r) => r.courseName === 'Cherokee CC (9H)')!;
+    expect(full18.avgGross).toBe(77);
+    expect(nine.avgGross).toBe(40);
+  });
 });

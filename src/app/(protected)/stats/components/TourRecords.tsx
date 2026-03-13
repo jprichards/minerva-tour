@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Trophy, Target, TrendingDown, Medal, Flame, Calendar } from 'lucide-react';
 import type { Score, Event } from '@/types/database';
 import { formatNetScore } from '@/lib/scoring';
@@ -185,6 +185,8 @@ export function computeTourRecords(
 }
 
 export default function TourRecords({ scores, events, members }: TourRecordsProps) {
+  const [expandedLabel, setExpandedLabel] = useState<string | null>(null);
+
   const records = useMemo(
     () => computeTourRecords(scores, events, members),
     [scores, events, members]
@@ -198,15 +200,17 @@ export default function TourRecords({ scores, events, members }: TourRecordsProp
       <div className="grid grid-cols-2 gap-3">
         {records.map((rec) => {
           const Icon = iconMap[rec.icon];
+          const isExpanded = expandedLabel === rec.label;
           return (
             <div
               key={rec.label}
-              className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden"
+              className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] cursor-pointer"
+              onClick={() => setExpandedLabel(isExpanded ? null : rec.label)}
             >
               <Icon className="w-5 h-5 text-minerva-600 mb-1" />
               <div className="text-lg font-bold text-[var(--text-primary)]">{rec.value}</div>
               <div className="text-xs text-[var(--text-muted)]">{rec.label}</div>
-              <div className="text-[10px] text-[var(--text-faint)] truncate">{rec.detail}</div>
+              <div className={`text-[10px] text-[var(--text-faint)] ${isExpanded ? 'whitespace-normal break-words' : 'truncate'}`}>{rec.detail}</div>
             </div>
           );
         })}

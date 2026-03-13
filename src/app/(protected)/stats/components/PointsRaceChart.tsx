@@ -214,14 +214,30 @@ function CustomTooltip({ active, payload, label, memberNameMap }: CustomTooltipP
   );
 }
 
+const TOP_N = 6;
+
 export default function PointsRaceChart({ scores, events, members }: PointsRaceChartProps) {
   const [mode, setMode] = useState<ScoringMode>('net');
-  const [hiddenMembers, setHiddenMembers] = useState<Set<string>>(new Set());
+  const [hiddenMembers, setHiddenMembers] = useState<Set<string> | null>(null);
 
   const { data, activeMemberIds } = useMemo(
     () => computePointsRace(scores, events, members, mode),
     [scores, events, members, mode]
   );
+
+  const top6Ids = useMemo(() => {
+    if (data.length === 0 || activeMemberIds.length <= TOP_N) return new Set<string>();
+    const lastPoint = data[data.length - 1];
+    const sorted = [...activeMemberIds].sort((a, b) => {
+      const aVal = typeof lastPoint[a] === 'number' ? (lastPoint[a] as number) : 0;
+      const bVal = typeof lastPoint[b] === 'number' ? (lastPoint[b] as number) : 0;
+      return bVal - aVal;
+    });
+    return new Set(sorted.slice(TOP_N));
+  }, [data, activeMemberIds]);
+
+  const effectiveHidden = hiddenMembers ?? top6Ids;
+  const showingAll = effectiveHidden.size === 0 || (hiddenMembers !== null && hiddenMembers.size === 0);
 
   const memberNameMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -231,11 +247,20 @@ export default function PointsRaceChart({ scores, events, members }: PointsRaceC
 
   const toggleMember = (id: string) => {
     setHiddenMembers((prev) => {
-      const next = new Set(prev);
+      const base = prev ?? new Set(top6Ids);
+      const next = new Set(base);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+  };
+
+  const toggleShowAll = () => {
+    if (showingAll) {
+      setHiddenMembers(null);
+    } else {
+      setHiddenMembers(new Set());
+    }
   };
 
   if (data.length === 0) {
@@ -270,7 +295,7 @@ export default function PointsRaceChart({ scores, events, members }: PointsRaceC
         </div>
       </div>
 
-      <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-3 overflow-hidden">
+      <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-3 overflow-hidden" style={{ WebkitTapHighlightColor: 'transparent' }}>
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={data} margin={{ top: 5, right: 5, bottom: 5, left: -10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)" />
@@ -296,7 +321,7 @@ export default function PointsRaceChart({ scores, events, members }: PointsRaceC
                 strokeWidth={2}
                 dot={{ r: 3, strokeWidth: 0, fill: getMemberColor(idx) }}
                 activeDot={{ r: 5, strokeWidth: 0 }}
-                hide={hiddenMembers.has(memberId)}
+                hide={effectiveHidden.has(memberId)}
                 connectNulls={false}
               />
             ))}
@@ -304,9 +329,21 @@ export default function PointsRaceChart({ scores, events, members }: PointsRaceC
         </ResponsiveContainer>
 
         {/* Member filter chips */}
-        <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-[var(--border-light)]">
+        <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-3 border-t border-[var(--border-light)]">
+          {activeMemberIds.length > TOP_N && (
+            <button
+              onClick={toggleShowAll}
+              className={`px-2 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                showingAll
+                  ? 'bg-minerva-600 text-white'
+                  : 'bg-[var(--bg-subtle)] text-[var(--text-muted)]'
+              }`}
+            >
+              {showingAll ? 'Top 6' : 'All'}
+            </button>
+          )}
           {activeMemberIds.map((memberId, idx) => {
-            const isHidden = hiddenMembers.has(memberId);
+            const isHidden = effectiveHidden.has(memberId);
             const name = memberNameMap[memberId] || 'Unknown';
             const firstName = name.split(' ')[0];
             return (

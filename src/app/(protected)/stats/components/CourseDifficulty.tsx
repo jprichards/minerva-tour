@@ -16,16 +16,24 @@ interface CourseDifficultyEntry {
 
 const MIN_ROUNDS = 3;
 
+function courseKey(s: Score): string | null {
+  const name = s.course?.course_name;
+  if (!name) return null;
+  const type = s.course?.type;
+  if (type && type !== '18_holes') return `${name} (9H)`;
+  return name;
+}
+
 export function computeCourseDifficulty(scores: Score[]): CourseDifficultyEntry[] {
   const grouped: Record<string, { nets: number[]; grosses: number[] }> = {};
 
   for (const s of scores) {
-    const name = s.course?.course_name;
+    const key = courseKey(s);
     const nop = s.net_strokes_over_par;
-    if (!name || nop == null) continue;
-    if (!grouped[name]) grouped[name] = { nets: [], grosses: [] };
-    grouped[name].nets.push(nop);
-    if (s.gross_score != null) grouped[name].grosses.push(s.gross_score);
+    if (!key || nop == null) continue;
+    if (!grouped[key]) grouped[key] = { nets: [], grosses: [] };
+    grouped[key].nets.push(nop);
+    if (s.gross_score != null) grouped[key].grosses.push(s.gross_score);
   }
 
   return Object.entries(grouped)
@@ -58,6 +66,7 @@ const INITIAL_SHOW = 10;
 export default function CourseDifficulty({ scores }: CourseDifficultyProps) {
   const [sortHardest, setSortHardest] = useState(true);
   const [showAll, setShowAll] = useState(false);
+  const [expandedName, setExpandedName] = useState<string | null>(null);
 
   const computed = useMemo(() => computeCourseDifficulty(scores), [scores]);
 
@@ -108,7 +117,10 @@ export default function CourseDifficulty({ scores }: CourseDifficultyProps) {
         <div className="divide-y divide-[var(--border-light)]">
           {visible.map((entry) => (
             <div key={entry.courseName} className="flex items-center px-3 py-2.5 gap-2.5">
-              <span className="flex-1 min-w-0 text-xs text-[var(--text-primary)] truncate">
+              <span
+                className={`flex-1 min-w-0 text-xs text-[var(--text-primary)] cursor-pointer ${expandedName === entry.courseName ? 'whitespace-normal' : 'truncate'}`}
+                onClick={() => setExpandedName(expandedName === entry.courseName ? null : entry.courseName)}
+              >
                 {entry.courseName}
               </span>
               <span className={`w-12 text-right text-xs font-semibold ${getNetColor(entry.avgNet)}`}>

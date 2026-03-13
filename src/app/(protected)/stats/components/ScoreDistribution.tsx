@@ -89,15 +89,46 @@ function CustomTooltip({ active, payload, showMine }: CustomTooltipProps) {
   );
 }
 
+function computeCoreRange(bins: BinEntry[]): { coreStart: number; coreEnd: number } {
+  const totalScores = bins.reduce((sum, b) => sum + b.total, 0);
+  if (totalScores === 0 || bins.length <= 20) {
+    return { coreStart: bins[0]?.netValue ?? 0, coreEnd: bins[bins.length - 1]?.netValue ?? 0 };
+  }
+  const trimTarget = Math.ceil(totalScores * 0.02);
+  let leftTrim = 0;
+  let coreStart = bins[0].netValue;
+  for (const b of bins) {
+    if (leftTrim + b.total > trimTarget) { coreStart = b.netValue; break; }
+    leftTrim += b.total;
+    coreStart = b.netValue;
+  }
+  let rightTrim = 0;
+  let coreEnd = bins[bins.length - 1].netValue;
+  for (let i = bins.length - 1; i >= 0; i--) {
+    if (rightTrim + bins[i].total > trimTarget) { coreEnd = bins[i].netValue; break; }
+    rightTrim += bins[i].total;
+    coreEnd = bins[i].netValue;
+  }
+  return { coreStart, coreEnd };
+}
+
 export default function ScoreDistribution({ scores, currentUserId }: ScoreDistributionProps) {
   const [highlightMine, setHighlightMine] = useState(false);
+  const [showAllScores, setShowAllScores] = useState(false);
 
-  const data = useMemo(
+  const allData = useMemo(
     () => computeDistribution(scores, currentUserId),
     [scores, currentUserId]
   );
 
-  if (data.length === 0) return null;
+  const { coreStart, coreEnd } = useMemo(() => computeCoreRange(allData), [allData]);
+  const hasTrimmedEdges = allData.length > 0 && (allData[0].netValue < coreStart || allData[allData.length - 1].netValue > coreEnd);
+
+  const data = showAllScores ? allData : allData.filter((b) => b.netValue >= coreStart && b.netValue <= coreEnd);
+
+  if (allData.length === 0) return null;
+
+  const xInterval = data.length > 30 ? 4 : data.length > 20 ? 3 : data.length > 12 ? 2 : 0;
 
   return (
     <div>
@@ -116,47 +147,55 @@ export default function ScoreDistribution({ scores, currentUserId }: ScoreDistri
           </button>
         )}
       </div>
-      <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-3 overflow-hidden">
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={data} margin={{ top: 5, right: 5, bottom: 5, left: -15 }}>
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
-              axisLine={{ stroke: 'var(--border-light)' }}
-              tickLine={false}
-              interval={0}
-              angle={data.length > 12 ? -45 : 0}
-              textAnchor={data.length > 12 ? 'end' : 'middle'}
-              height={data.length > 12 ? 35 : 20}
-            />
-            <YAxis
-              tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
-              axisLine={false}
-              tickLine={false}
-              allowDecimals={false}
-              width={30}
-            />
-            <Tooltip content={<CustomTooltip showMine={highlightMine} />} cursor={{ fill: 'var(--bg-subtle)', opacity: 0.5 }} />
-            <Bar dataKey="total" radius={[3, 3, 0, 0]} barSize={data.length > 15 ? undefined : 20}>
-              {data.map((entry, idx) => (
-                <Cell
-                  key={idx}
-                  fill={
-                    highlightMine && entry.mine > 0
-                      ? 'var(--color-minerva-600, #7c3aed)'
-                      : entry.netValue <= 0
-                        ? '#22c55e'
-                        : '#9ca3af'
-                  }
-                  opacity={highlightMine && entry.mine === 0 ? 0.3 : 1}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-        <p className="text-[10px] text-[var(--text-faint)] text-center mt-1">
-          Net strokes over par
-        </p>
+      <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden" style={{ WebkitTapHighlightColor: 'transparent' }}>
+        <div className="p-3">
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={data} margin={{ top: 5, right: 5, bottom: 5, left: -15 }}>
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
+                axisLine={{ stroke: 'var(--border-light)' }}
+                tickLine={false}
+                interval={xInterval}
+                height={25}
+              />
+              <YAxis
+                tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
+                axisLine={false}
+                tickLine={false}
+                allowDecimals={false}
+                width={30}
+              />
+              <Tooltip content={<CustomTooltip showMine={highlightMine} />} cursor={{ fill: 'var(--bg-subtle)', opacity: 0.5 }} />
+              <Bar dataKey="total" radius={[3, 3, 0, 0]} barSize={data.length > 15 ? undefined : 20}>
+                {data.map((entry, idx) => (
+                  <Cell
+                    key={idx}
+                    fill={
+                      highlightMine && entry.mine > 0
+                        ? 'var(--color-minerva-600, #7c3aed)'
+                        : entry.netValue <= 0
+                          ? '#22c55e'
+                          : '#9ca3af'
+                    }
+                    opacity={highlightMine && entry.mine === 0 ? 0.3 : 1}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <p className="text-[10px] text-[var(--text-faint)] text-center mt-1">
+            Net strokes over par
+          </p>
+        </div>
+        {hasTrimmedEdges && (
+          <button
+            onClick={() => setShowAllScores(!showAllScores)}
+            className="w-full py-2.5 text-center text-xs font-medium text-minerva-600 hover:text-minerva-700 border-t border-[var(--border-light)] transition-colors"
+          >
+            {showAllScores ? 'Show core range' : `Show all scores (${allData[0].label} to ${allData[allData.length - 1].label})`}
+          </button>
+        )}
       </div>
     </div>
   );

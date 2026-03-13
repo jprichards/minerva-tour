@@ -87,7 +87,7 @@ export default function ActivityChart({ scores, members }: ActivityChartProps) {
   return (
     <div>
       <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Rounds Played</h3>
-      <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
+      <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden" style={{ WebkitTapHighlightColor: 'transparent' }}>
         <div className="p-3">
           <ResponsiveContainer width="100%" height={chartHeight}>
             <BarChart

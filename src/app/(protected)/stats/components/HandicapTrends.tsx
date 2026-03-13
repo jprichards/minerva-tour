@@ -154,7 +154,7 @@ export default function HandicapTrends({ handicapHistory, members }: HandicapTre
     <div>
       <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Handicap Trends</h3>
 
-      <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-3 overflow-hidden">
+      <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-3" style={{ WebkitTapHighlightColor: 'transparent' }}>
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={data} margin={{ top: 5, right: 5, bottom: 5, left: -10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)" />
@@ -171,8 +171,9 @@ export default function HandicapTrends({ handicapHistory, members }: HandicapTre
               tickLine={false}
               width={35}
               allowDecimals={false}
+              reversed
             />
-            <Tooltip content={<CustomTooltip memberNameMap={memberNameMap} />} />
+            <Tooltip content={<CustomTooltip memberNameMap={memberNameMap} />} wrapperStyle={{ zIndex: 50 }} />
             {activeMemberIds.map((memberId, idx) => (
               <Line
                 key={memberId}

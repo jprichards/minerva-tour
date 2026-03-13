@@ -137,9 +137,9 @@ const LEADERBOARD_INITIAL = 10;
 function cellBg(rec: H2HRecord | undefined): string {
   if (!rec || (rec.wins === 0 && rec.losses === 0 && rec.ties === 0))
     return '';
-  if (rec.wins > rec.losses) return 'bg-green-50 dark:bg-green-900/20';
-  if (rec.losses > rec.wins) return 'bg-red-50 dark:bg-red-900/20';
-  return 'bg-[var(--bg-subtle)]';
+  if (rec.wins > rec.losses) return 'bg-green-200 dark:bg-green-800/40';
+  if (rec.losses > rec.wins) return 'bg-red-200 dark:bg-red-800/40';
+  return 'bg-yellow-100 dark:bg-yellow-800/25';
 }
 
 function cellText(rec: H2HRecord | undefined): string {
