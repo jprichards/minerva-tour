@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, TrendingUp, TrendingDown, Minus, Trophy, Target, Calendar, BarChart3 } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Minus, Trophy, Target, Calendar, BarChart3, ChevronDown } from 'lucide-react';
 import { formatNetScore, getMaxHoles } from '@/lib/scoring';
 import { getHandicapTrend } from '@/lib/handicap-trend';
 import TrophyCase from '@/components/TrophyCase';
@@ -18,6 +18,7 @@ export default function MemberProfilePage() {
   const [member, setMember] = useState<User | null>(null);
   const [scores, setScores] = useState<Score[]>([]);
   const [handicapHistory, setHandicapHistory] = useState<HandicapHistory[]>([]);
+  const [showAllHistory, setShowAllHistory] = useState(false);
   const [trophies, setTrophies] = useState<TrophyType[]>([]);
   const [seasonFinishes, setSeasonFinishes] = useState<SeasonFinish[]>([]);
   const [stats, setStats] = useState({
@@ -281,31 +282,44 @@ export default function MemberProfilePage() {
       )}
 
       {/* Handicap History */}
-      {handicapHistory.length > 0 && (
-        <div>
-          <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Handicap History</h3>
-          <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
-            {handicapHistory.map((h, idx) => (
-              <div key={h.id} className={`flex items-center justify-between px-4 py-3 ${idx < handicapHistory.length - 1 ? 'border-b border-[var(--border-light)]' : ''}`}>
-                <div className="flex items-center gap-3">
-                  <Calendar className="w-4 h-4 text-[var(--text-faint)]" />
-                  <p className="text-sm text-[var(--text-secondary)]">{new Date(h.effective_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+      {handicapHistory.length > 0 && (() => {
+        const visible = showAllHistory ? handicapHistory : handicapHistory.slice(0, 5);
+        const hasMore = handicapHistory.length > 5;
+        return (
+          <div>
+            <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Handicap History</h3>
+            <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
+              {visible.map((h, idx) => (
+                <div key={h.id} className={`flex items-center justify-between px-4 py-3 ${idx < visible.length - 1 || (hasMore && !showAllHistory) ? 'border-b border-[var(--border-light)]' : ''}`}>
+                  <div className="flex items-center gap-3">
+                    <Calendar className="w-4 h-4 text-[var(--text-faint)]" />
+                    <p className="text-sm text-[var(--text-secondary)]">{new Date(h.effective_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {(() => {
+                      const prev = idx < handicapHistory.length - 1 ? Number(handicapHistory[idx + 1].handicap_index) : null;
+                      const trend = getHandicapTrend(Number(h.handicap_index), prev);
+                      if (trend === 'improved') return <TrendingDown className="w-3.5 h-3.5 text-green-500" />;
+                      if (trend === 'worsened') return <TrendingUp className="w-3.5 h-3.5 text-red-500" />;
+                      return <Minus className="w-3.5 h-3.5 text-[var(--text-faint)]" />;
+                    })()}
+                    <p className="text-sm font-semibold text-[var(--text-primary)]">{h.handicap_index}</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  {(() => {
-                    const prev = idx < handicapHistory.length - 1 ? Number(handicapHistory[idx + 1].handicap_index) : null;
-                    const trend = getHandicapTrend(Number(h.handicap_index), prev);
-                    if (trend === 'improved') return <TrendingDown className="w-3.5 h-3.5 text-green-500" />;
-                    if (trend === 'worsened') return <TrendingUp className="w-3.5 h-3.5 text-red-500" />;
-                    return <Minus className="w-3.5 h-3.5 text-[var(--text-faint)]" />;
-                  })()}
-                  <p className="text-sm font-semibold text-[var(--text-primary)]">{h.handicap_index}</p>
-                </div>
-              </div>
-            ))}
+              ))}
+              {hasMore && (
+                <button
+                  onClick={() => setShowAllHistory(!showAllHistory)}
+                  className="w-full flex items-center justify-center gap-1 px-4 py-2.5 text-xs font-medium text-minerva-600 hover:bg-[var(--bg-subtle)] transition-colors"
+                >
+                  {showAllHistory ? 'Show Less' : `Show All (${handicapHistory.length})`}
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAllHistory ? 'rotate-180' : ''}`} />
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <Link
         href={`/stats/${id}`}
