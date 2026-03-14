@@ -7,8 +7,11 @@ import {
   BUCKET_LABELS,
   ALL_BUCKETS,
   CHIRP_WILDCARDS,
+  DEFAULT_BUCKET_RANGES,
+  buildBucketLabels,
   type ChirpBucket,
   type ChirpContext,
+  type BucketRange,
 } from '@/lib/chirps';
 
 // Helper to build a minimal context
@@ -95,20 +98,19 @@ describe('CHIRP_WILDCARDS', () => {
 // getChirpBucket — maps net score to bucket
 // ============================================
 describe('getChirpBucket', () => {
-  it('returns "legendary" for -10 or better', () => {
+  it('returns "legendary" for -6 or better', () => {
+    expect(getChirpBucket(-6)).toBe('legendary');
     expect(getChirpBucket(-10)).toBe('legendary');
-    expect(getChirpBucket(-15)).toBe('legendary');
     expect(getChirpBucket(-20)).toBe('legendary');
   });
 
-  it('returns "excellent" for -9 to -5', () => {
-    expect(getChirpBucket(-9)).toBe('excellent');
-    expect(getChirpBucket(-7)).toBe('excellent');
+  it('returns "excellent" for -5 to -3', () => {
     expect(getChirpBucket(-5)).toBe('excellent');
+    expect(getChirpBucket(-4)).toBe('excellent');
+    expect(getChirpBucket(-3)).toBe('excellent');
   });
 
-  it('returns "solid" for -4 to -1', () => {
-    expect(getChirpBucket(-4)).toBe('solid');
+  it('returns "solid" for -2 to -1', () => {
     expect(getChirpBucket(-2)).toBe('solid');
     expect(getChirpBucket(-1)).toBe('solid');
   });
@@ -124,22 +126,43 @@ describe('getChirpBucket', () => {
     expect(getChirpBucket(4)).toBe('mediocre');
   });
 
-  it('returns "rough" for +5 to +9', () => {
+  it('returns "rough" for +5 to +8', () => {
     expect(getChirpBucket(5)).toBe('rough');
     expect(getChirpBucket(7)).toBe('rough');
-    expect(getChirpBucket(9)).toBe('rough');
+    expect(getChirpBucket(8)).toBe('rough');
   });
 
-  it('returns "bad" for +10 to +19', () => {
-    expect(getChirpBucket(10)).toBe('bad');
+  it('returns "bad" for +9 to +14', () => {
+    expect(getChirpBucket(9)).toBe('bad');
+    expect(getChirpBucket(12)).toBe('bad');
     expect(getChirpBucket(14)).toBe('bad');
-    expect(getChirpBucket(19)).toBe('bad');
   });
 
-  it('returns "terrible" for +20 or worse', () => {
+  it('returns "terrible" for +15 or worse', () => {
+    expect(getChirpBucket(15)).toBe('terrible');
     expect(getChirpBucket(20)).toBe('terrible');
-    expect(getChirpBucket(30)).toBe('terrible');
     expect(getChirpBucket(50)).toBe('terrible');
+  });
+
+  it('respects custom ranges when provided', () => {
+    const customRanges: BucketRange[] = [
+      { bucket: 'legendary', maxNet: -20 },
+      { bucket: 'excellent', maxNet: -10 },
+      { bucket: 'solid', maxNet: -5 },
+      { bucket: 'neutral', maxNet: 0 },
+      { bucket: 'mediocre', maxNet: 5 },
+      { bucket: 'rough', maxNet: 10 },
+      { bucket: 'bad', maxNet: 20 },
+      { bucket: 'terrible', maxNet: null },
+    ];
+    expect(getChirpBucket(-25, customRanges)).toBe('legendary');
+    expect(getChirpBucket(-15, customRanges)).toBe('excellent');
+    expect(getChirpBucket(-7, customRanges)).toBe('solid');
+    expect(getChirpBucket(0, customRanges)).toBe('neutral');
+    expect(getChirpBucket(3, customRanges)).toBe('mediocre');
+    expect(getChirpBucket(8, customRanges)).toBe('rough');
+    expect(getChirpBucket(15, customRanges)).toBe('bad');
+    expect(getChirpBucket(25, customRanges)).toBe('terrible');
   });
 });
 
@@ -155,7 +178,7 @@ describe('getChirp', () => {
 
   it('substitutes $first_name with the player name', () => {
     const spy = vi.spyOn(Math, 'random').mockReturnValue(0);
-    const chirp = getChirp(-10, ctx('Ashby'));
+    const chirp = getChirp(-6, ctx('Ashby'));
     expect(chirp).not.toContain('$first_name');
     spy.mockRestore();
   });
@@ -170,10 +193,10 @@ describe('getChirp', () => {
 
   it('handles edge case at bucket boundaries', () => {
     const spy = vi.spyOn(Math, 'random').mockReturnValue(0);
-    const at10 = getChirp(-10, ctx('Test'));
-    const at9 = getChirp(-9, ctx('Test'));
-    expect(typeof at10).toBe('string');
-    expect(typeof at9).toBe('string');
+    const at6 = getChirp(-6, ctx('Test'));
+    const at5 = getChirp(-5, ctx('Test'));
+    expect(typeof at6).toBe('string');
+    expect(typeof at5).toBe('string');
     spy.mockRestore();
   });
 
@@ -284,7 +307,7 @@ describe('wildcard substitution', () => {
   it('substitutes $holes with holes played', () => {
     const spy = vi.spyOn(Math, 'random').mockReturnValue(0);
     const dbTemplates = { bad: ['$first_name only through $holes holes'] };
-    const chirp = getChirpFromTemplates(dbTemplates, 12, ctx('Tim', { holes: 14 }));
+    const chirp = getChirpFromTemplates(dbTemplates, 10, ctx('Tim', { holes: 14 }));
     expect(chirp).toBe('Tim only through 14 holes');
     spy.mockRestore();
   });
@@ -323,9 +346,69 @@ describe('wildcard substitution', () => {
 
   it('works with getChirp (hardcoded fallback) using full context', () => {
     const spy = vi.spyOn(Math, 'random').mockReturnValue(0);
-    const chirp = getChirp(-10, ctx('Ashby', { course: 'Augusta', gross: 62, net: -10, holes: 18, handicap: 2.1 }));
+    const chirp = getChirp(-6, ctx('Ashby', { course: 'Augusta', gross: 62, net: -6, holes: 18, handicap: 2.1 }));
     expect(chirp).toContain('Ashby');
     expect(chirp).not.toContain('$first_name');
     spy.mockRestore();
+  });
+});
+
+// ============================================
+// DEFAULT_BUCKET_RANGES — structure validation
+// ============================================
+describe('DEFAULT_BUCKET_RANGES', () => {
+  it('has 8 ranges in order', () => {
+    expect(DEFAULT_BUCKET_RANGES.length).toBe(8);
+    expect(DEFAULT_BUCKET_RANGES[0].bucket).toBe('legendary');
+    expect(DEFAULT_BUCKET_RANGES[7].bucket).toBe('terrible');
+  });
+
+  it('has strictly increasing maxNet values (except last which is null)', () => {
+    for (let i = 0; i < DEFAULT_BUCKET_RANGES.length - 1; i++) {
+      expect(DEFAULT_BUCKET_RANGES[i].maxNet).not.toBeNull();
+      if (i > 0) {
+        expect(DEFAULT_BUCKET_RANGES[i].maxNet!).toBeGreaterThan(DEFAULT_BUCKET_RANGES[i - 1].maxNet!);
+      }
+    }
+    expect(DEFAULT_BUCKET_RANGES[7].maxNet).toBeNull();
+  });
+});
+
+// ============================================
+// buildBucketLabels — dynamic label generation
+// ============================================
+describe('buildBucketLabels', () => {
+  it('generates labels for all 8 buckets from default ranges', () => {
+    const labels = buildBucketLabels(DEFAULT_BUCKET_RANGES);
+    expect(Object.keys(labels).length).toBe(8);
+    for (const bucket of ALL_BUCKETS) {
+      expect(labels[bucket]).toBeDefined();
+      expect(typeof labels[bucket]).toBe('string');
+    }
+  });
+
+  it('generates correct range text for default ranges', () => {
+    const labels = buildBucketLabels(DEFAULT_BUCKET_RANGES);
+    expect(labels.legendary).toBe('Legendary (-6 or better)');
+    expect(labels.terrible).toBe('Terrible (+15 or worse)');
+    expect(labels.neutral).toBe('Neutral (E to +1)');
+  });
+
+  it('generates correct labels for custom ranges', () => {
+    const custom: BucketRange[] = [
+      { bucket: 'legendary', maxNet: -10 },
+      { bucket: 'excellent', maxNet: -5 },
+      { bucket: 'solid', maxNet: -1 },
+      { bucket: 'neutral', maxNet: 1 },
+      { bucket: 'mediocre', maxNet: 4 },
+      { bucket: 'rough', maxNet: 9 },
+      { bucket: 'bad', maxNet: 19 },
+      { bucket: 'terrible', maxNet: null },
+    ];
+    const labels = buildBucketLabels(custom);
+    expect(labels.legendary).toBe('Legendary (-10 or better)');
+    expect(labels.excellent).toBe('Excellent (-9 to -5)');
+    expect(labels.bad).toBe('Bad (+10 to +19)');
+    expect(labels.terrible).toBe('Terrible (+20 or worse)');
   });
 });

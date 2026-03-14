@@ -368,7 +368,7 @@ The app is mobile-first (used on phones, often outdoors). Layout and visual desi
 ### **Chirps (Automated Score Commentary):**
 
 - When a score is submitted, the app generates an automated "chirp" — a humorous, personalized commentary based on the player's performance.
-- **Chirp buckets** are based on net strokes over par: -10 or better, -9 to -5, -4 to +1, +2 to +4, +5 to +9, +10 to +19, +20 or worse.
+- **Chirp buckets** are based on net strokes over par: -6 or better (legendary), -5 to -3 (excellent), -2 to -1 (solid), E to +1 (neutral), +2 to +4 (mediocre), +5 to +8 (rough), +9 to +14 (bad), +15 or worse (terrible). Ranges were calibrated from historical score distribution analysis (2,082 scores, median +3) to ensure each bucket fires with meaningful frequency.
 - Each bucket has multiple chirp templates. A random template is selected from the matching bucket when a score is finalized.
 - Templates use `$first_name` as a placeholder which is substituted with the player's first name.
 - Chirps are displayed:
@@ -381,8 +381,9 @@ The app is mobile-first (used on phones, often outdoors). Layout and visual desi
   - All members can edit existing chirp templates (inline editing).
   - All members can delete chirp templates (with confirmation).
   - Management page accessible from the More menu and Admin dashboard.
-  - 7 bucket accordions show chirp counts and templates with add/edit/delete controls.
+  - 8 bucket accordions show chirp counts and templates with add/edit/delete controls.
   - `$first_name` placeholder hint shown on the page.
+  - **Admin bucket range editor**: Admins see a collapsible "Score Range Configuration" section at the top of the chirps page to adjust the net score thresholds for each bucket. Ranges are validated (must be strictly increasing) and stored in `app_settings` under key `chirp_bucket_ranges`. A reset-to-defaults button is available. Labels throughout the page update dynamically to reflect configured ranges.
   - Changes take effect immediately for future score submissions and Slack notifications.
   - Stored in the `chirp_templates` database table with RLS policies for authenticated members.
   - Hardcoded templates in `src/lib/chirps.ts` serve as fallback when DB is unavailable and as seed data source.
@@ -837,7 +838,7 @@ The following features have been built and should be considered part of the app'
 
 **Chirps:**
 
-- **Automated score commentary** (`src/lib/chirps.ts`): Score-based trash talk templates with performance buckets and `$first_name` substitution.
+- **Automated score commentary** (`src/lib/chirps.ts`): Score-based trash talk templates with performance buckets and `$first_name` substitution. Bucket ranges are admin-configurable via `app_settings` and default to distribution-calibrated thresholds. `getChirpBucket` accepts optional custom ranges; `buildBucketLabels` generates display labels from any range configuration.
 
 **Data Migration:**
 

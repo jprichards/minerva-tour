@@ -137,21 +137,20 @@ describe('Chirps - Score Commentary', () => {
   });
 
   it('maps all boundary values correctly', () => {
-    // Test each boundary between buckets
-    expect(getChirpBucket(-10)).toBe('legendary');
-    expect(getChirpBucket(-9)).toBe('excellent');
+    expect(getChirpBucket(-6)).toBe('legendary');
     expect(getChirpBucket(-5)).toBe('excellent');
-    expect(getChirpBucket(-4)).toBe('solid');
+    expect(getChirpBucket(-3)).toBe('excellent');
+    expect(getChirpBucket(-2)).toBe('solid');
     expect(getChirpBucket(-1)).toBe('solid');
     expect(getChirpBucket(0)).toBe('neutral');
     expect(getChirpBucket(1)).toBe('neutral');
     expect(getChirpBucket(2)).toBe('mediocre');
     expect(getChirpBucket(4)).toBe('mediocre');
     expect(getChirpBucket(5)).toBe('rough');
-    expect(getChirpBucket(9)).toBe('rough');
-    expect(getChirpBucket(10)).toBe('bad');
-    expect(getChirpBucket(19)).toBe('bad');
-    expect(getChirpBucket(20)).toBe('terrible');
+    expect(getChirpBucket(8)).toBe('rough');
+    expect(getChirpBucket(9)).toBe('bad');
+    expect(getChirpBucket(14)).toBe('bad');
+    expect(getChirpBucket(15)).toBe('terrible');
   });
 });
 

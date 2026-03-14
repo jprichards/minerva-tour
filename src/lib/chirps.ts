@@ -11,29 +11,75 @@
  */
 
 export type ChirpBucket =
-  | 'legendary'   // -10 or better
-  | 'excellent'   // -9 to -5
-  | 'solid'       // -4 to -1
+  | 'legendary'   // -6 or better
+  | 'excellent'   // -5 to -3
+  | 'solid'       // -2 to -1
   | 'neutral'     // E to +1
   | 'mediocre'    // +2 to +4
-  | 'rough'       // +5 to +9
-  | 'bad'         // +10 to +19
-  | 'terrible';   // +20 or worse
+  | 'rough'       // +5 to +8
+  | 'bad'         // +9 to +14
+  | 'terrible';   // +15 or worse
+
+export interface BucketRange {
+  bucket: ChirpBucket;
+  maxNet: number | null;
+}
+
+export const DEFAULT_BUCKET_RANGES: BucketRange[] = [
+  { bucket: 'legendary', maxNet: -6 },
+  { bucket: 'excellent', maxNet: -3 },
+  { bucket: 'solid', maxNet: -1 },
+  { bucket: 'neutral', maxNet: 1 },
+  { bucket: 'mediocre', maxNet: 4 },
+  { bucket: 'rough', maxNet: 8 },
+  { bucket: 'bad', maxNet: 14 },
+  { bucket: 'terrible', maxNet: null },
+];
 
 export const BUCKET_LABELS: Record<ChirpBucket, string> = {
-  legendary: 'Legendary (-10 or better)',
-  excellent: 'Excellent (-9 to -5)',
-  solid: 'Solid (-4 to -1)',
+  legendary: 'Legendary (-6 or better)',
+  excellent: 'Excellent (-5 to -3)',
+  solid: 'Solid (-2 to -1)',
   neutral: 'Neutral (E to +1)',
   mediocre: 'Mediocre (+2 to +4)',
-  rough: 'Rough (+5 to +9)',
-  bad: 'Bad (+10 to +19)',
-  terrible: 'Terrible (+20 or worse)',
+  rough: 'Rough (+5 to +8)',
+  bad: 'Bad (+9 to +14)',
+  terrible: 'Terrible (+15 or worse)',
 };
 
 export const ALL_BUCKETS: ChirpBucket[] = [
   'legendary', 'excellent', 'solid', 'neutral', 'mediocre', 'rough', 'bad', 'terrible',
 ];
+
+function formatRangeLabel(bucket: ChirpBucket, ranges: BucketRange[]): string {
+  const names: Record<ChirpBucket, string> = {
+    legendary: 'Legendary', excellent: 'Excellent', solid: 'Solid', neutral: 'Neutral',
+    mediocre: 'Mediocre', rough: 'Rough', bad: 'Bad', terrible: 'Terrible',
+  };
+  const idx = ranges.findIndex((r) => r.bucket === bucket);
+  if (idx === -1) return names[bucket];
+  const range = ranges[idx];
+  const prevMax = idx > 0 ? ranges[idx - 1].maxNet! : null;
+  const min = prevMax !== null ? prevMax + 1 : null;
+  const max = range.maxNet;
+
+  if (min === null && max !== null) return `${names[bucket]} (${max} or better)`;
+  if (min !== null && max === null) return `${names[bucket]} (+${min} or worse)`;
+  if (min !== null && max !== null) {
+    const fmtMin = min === 0 ? 'E' : min > 0 ? `+${min}` : `${min}`;
+    const fmtMax = max === 0 ? 'E' : max > 0 ? `+${max}` : `${max}`;
+    return `${names[bucket]} (${fmtMin} to ${fmtMax})`;
+  }
+  return names[bucket];
+}
+
+export function buildBucketLabels(ranges: BucketRange[]): Record<ChirpBucket, string> {
+  const labels = {} as Record<ChirpBucket, string>;
+  for (const { bucket } of ranges) {
+    labels[bucket] = formatRangeLabel(bucket, ranges);
+  }
+  return labels;
+}
 
 /**
  * Hardcoded chirp templates — used as fallback when DB is unavailable
@@ -160,16 +206,16 @@ export const CHIRP_TEMPLATES: Record<ChirpBucket, string[]> = {
 };
 
 /**
- * Determine the chirp bucket based on net strokes over par
+ * Determine the chirp bucket based on net strokes over par.
+ * Accepts optional custom ranges (loaded from app_settings).
  */
-export function getChirpBucket(netStrokesOverPar: number): ChirpBucket {
-  if (netStrokesOverPar <= -10) return 'legendary';
-  if (netStrokesOverPar <= -5) return 'excellent';
-  if (netStrokesOverPar <= -1) return 'solid';
-  if (netStrokesOverPar <= 1) return 'neutral';
-  if (netStrokesOverPar <= 4) return 'mediocre';
-  if (netStrokesOverPar <= 9) return 'rough';
-  if (netStrokesOverPar <= 19) return 'bad';
+export function getChirpBucket(
+  netStrokesOverPar: number,
+  ranges: BucketRange[] = DEFAULT_BUCKET_RANGES
+): ChirpBucket {
+  for (const { bucket, maxNet } of ranges) {
+    if (maxNet === null || netStrokesOverPar <= maxNet) return bucket;
+  }
   return 'terrible';
 }
 
@@ -221,8 +267,12 @@ function applyTemplate(templates: string[], ctx: ChirpContext): string {
  * Get a personalized chirp using hardcoded fallback templates.
  * Used when DB templates are not available.
  */
-export function getChirp(netStrokesOverPar: number, ctx: ChirpContext): string {
-  const bucket = getChirpBucket(netStrokesOverPar);
+export function getChirp(
+  netStrokesOverPar: number,
+  ctx: ChirpContext,
+  ranges?: BucketRange[]
+): string {
+  const bucket = getChirpBucket(netStrokesOverPar, ranges);
   return applyTemplate(CHIRP_TEMPLATES[bucket], ctx);
 }
 
@@ -233,9 +283,10 @@ export function getChirp(netStrokesOverPar: number, ctx: ChirpContext): string {
 export function getChirpFromTemplates(
   dbTemplates: Record<string, string[]>,
   netStrokesOverPar: number,
-  ctx: ChirpContext
+  ctx: ChirpContext,
+  ranges?: BucketRange[]
 ): string {
-  const bucket = getChirpBucket(netStrokesOverPar);
+  const bucket = getChirpBucket(netStrokesOverPar, ranges);
   const templates = dbTemplates[bucket]?.length
     ? dbTemplates[bucket]
     : CHIRP_TEMPLATES[bucket];

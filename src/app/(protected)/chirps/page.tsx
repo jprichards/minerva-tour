@@ -6,8 +6,9 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
-import { ArrowLeft, ChevronDown, ChevronRight, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
-import { ALL_BUCKETS, BUCKET_LABELS, CHIRP_WILDCARDS, type ChirpBucket } from '@/lib/chirps';
+import { ArrowLeft, ChevronDown, ChevronRight, Plus, Pencil, Trash2, Check, X, Settings, RotateCcw } from 'lucide-react';
+import { ALL_BUCKETS, CHIRP_WILDCARDS, DEFAULT_BUCKET_RANGES, buildBucketLabels, type ChirpBucket, type BucketRange } from '@/lib/chirps';
+import { useChirpBucketConfig } from '@/lib/hooks/useChirpBucketConfig';
 
 interface ChirpTemplate {
   id: string;
@@ -18,7 +19,7 @@ interface ChirpTemplate {
 }
 
 export default function ChirpsPage() {
-  const { isAuthenticated, loading: userLoading, profile } = useUser();
+  const { isAuthenticated, isAdmin, loading: userLoading, profile } = useUser();
   const router = useRouter();
   const supabase = createClient();
   const { showToast } = useToast();
@@ -32,6 +33,13 @@ export default function ChirpsPage() {
   const [addText, setAddText] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const { ranges, isLoading: rangesLoading, save: saveRanges } = useChirpBucketConfig();
+  const [showRangeEditor, setShowRangeEditor] = useState(false);
+  const [editRanges, setEditRanges] = useState<BucketRange[]>([]);
+  const [savingRanges, setSavingRanges] = useState(false);
+
+  const bucketLabels = buildBucketLabels(ranges);
 
   useEffect(() => {
     if (!userLoading && !isAuthenticated) {
@@ -175,6 +183,114 @@ export default function ChirpsPage() {
         ))}
       </div>
 
+      {/* Admin: Bucket Range Editor */}
+      {isAdmin && (
+        <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
+          <button
+            onClick={() => {
+              if (!showRangeEditor) setEditRanges(ranges.map((r) => ({ ...r })));
+              setShowRangeEditor(!showRangeEditor);
+            }}
+            className="w-full flex items-center justify-between p-3 hover:bg-[var(--bg-subtle)] transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Settings className="w-4 h-4 text-[var(--text-muted)]" />
+              <span className="font-medium text-sm text-[var(--text-primary)]">Score Range Configuration</span>
+            </div>
+            {showRangeEditor
+              ? <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
+              : <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />
+            }
+          </button>
+          {showRangeEditor && (
+            <div className="border-t border-[var(--border-light)] p-3 space-y-3">
+              <p className="text-xs text-[var(--text-muted)]">
+                Set the upper bound (max net score) for each bucket. Scores above the last threshold fall into Terrible.
+              </p>
+              <div className="space-y-2">
+                {editRanges.map((range, idx) => {
+                  const isLast = range.maxNet === null;
+                  const prevMax = idx > 0 ? editRanges[idx - 1].maxNet : null;
+                  const minLabel = prevMax !== null
+                    ? (prevMax + 1 === 0 ? 'E' : prevMax + 1 > 0 ? `+${prevMax + 1}` : `${prevMax + 1}`)
+                    : '...';
+                  return (
+                    <div key={range.bucket} className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-[var(--text-primary)] w-20 capitalize">{range.bucket}</span>
+                      {isLast ? (
+                        <span className="flex-1 text-xs text-[var(--text-muted)]">
+                          {minLabel} or worse
+                        </span>
+                      ) : (
+                        <div className="flex-1 flex items-center gap-2">
+                          <span className="text-xs text-[var(--text-muted)] min-w-[32px] text-right">{minLabel}</span>
+                          <span className="text-xs text-[var(--text-faint)]">to</span>
+                          <input
+                            type="number"
+                            value={range.maxNet ?? ''}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              if (isNaN(val)) return;
+                              setEditRanges((prev) => prev.map((r, i) => i === idx ? { ...r, maxNet: val } : r));
+                            }}
+                            className="w-16 px-2 py-1 bg-[var(--bg-page)] border border-[var(--border-default)] rounded text-sm text-center focus:outline-none focus:ring-2 focus:ring-minerva-500"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {(() => {
+                const nonNull = editRanges.filter((r) => r.maxNet !== null);
+                const isValid = nonNull.every((r, i) => i === 0 || r.maxNet! > nonNull[i - 1].maxNet!);
+                return (
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={async () => {
+                        setSavingRanges(true);
+                        try {
+                          await saveRanges(editRanges);
+                          await logAuditEvent('update_settings', 'app_settings', undefined, {
+                            key: 'chirp_bucket_ranges',
+                            ranges: editRanges,
+                          });
+                          showToast('Bucket ranges saved!');
+                          setShowRangeEditor(false);
+                        } catch {
+                          showToast('Failed to save ranges.', 'error');
+                        } finally {
+                          setSavingRanges(false);
+                        }
+                      }}
+                      disabled={savingRanges || !isValid}
+                      className="flex-1 py-2 bg-minerva-600 text-white text-sm font-semibold rounded-lg disabled:opacity-50 hover:bg-minerva-700 transition-colors"
+                    >
+                      {savingRanges ? 'Saving...' : 'Save Ranges'}
+                    </button>
+                    <button
+                      onClick={() => setEditRanges(DEFAULT_BUCKET_RANGES.map((r) => ({ ...r })))}
+                      className="p-2 rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-muted)]"
+                      title="Reset to defaults"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })()}
+              {(() => {
+                const nonNull = editRanges.filter((r) => r.maxNet !== null);
+                const isValid = nonNull.every((r, i) => i === 0 || r.maxNet! > nonNull[i - 1].maxNet!);
+                if (!isValid) {
+                  return <p className="text-xs text-red-500">Thresholds must be strictly increasing.</p>;
+                }
+                return null;
+              })()}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Bucket Accordions */}
       <div className="space-y-2">
         {ALL_BUCKETS.map((bucket) => {
@@ -194,7 +310,7 @@ export default function ChirpsPage() {
                     : <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />
                   }
                   <span className="font-medium text-sm text-[var(--text-primary)]">
-                    {BUCKET_LABELS[bucket]}
+                    {bucketLabels[bucket]}
                   </span>
                 </div>
                 <span className="text-xs text-[var(--text-muted)]">

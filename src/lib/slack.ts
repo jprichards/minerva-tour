@@ -5,7 +5,7 @@
  * Integrates with the chirps system for completed rounds.
  */
 
-import { getChirp, getChirpFromTemplates, type ChirpContext } from '@/lib/chirps';
+import { getChirp, getChirpFromTemplates, type ChirpContext, type BucketRange } from '@/lib/chirps';
 import { formatNetScore, formatGrossScore, calculatePartialPar } from '@/lib/scoring';
 import type { SlackNotifyPayload, SlackScorePayload, SlackFeedbackPayload, CourseType } from '@/types/database';
 
@@ -152,10 +152,12 @@ function scoreLineMarkdown(payload: SlackScorePayload): string {
  * Format a Slack message for the given payload.
  * @param dbTemplates - Optional DB-loaded chirp templates grouped by bucket.
  *   When provided, chirps are selected from these instead of the hardcoded fallback.
+ * @param bucketRanges - Optional custom bucket ranges loaded from app_settings.
  */
 export function formatSlackMessage(
   payload: SlackNotifyPayload,
-  dbTemplates?: Record<string, string[]>
+  dbTemplates?: Record<string, string[]>,
+  bucketRanges?: BucketRange[]
 ): SlackMessage {
   const { event_type } = payload;
 
@@ -163,9 +165,9 @@ export function formatSlackMessage(
     case 'tee_time':
       return formatTeeTime(payload as SlackScorePayload);
     case 'score_in_progress':
-      return formatScoreInProgress(payload as SlackScorePayload, dbTemplates);
+      return formatScoreInProgress(payload as SlackScorePayload, dbTemplates, bucketRanges);
     case 'round_complete':
-      return formatRoundComplete(payload as SlackScorePayload, dbTemplates);
+      return formatRoundComplete(payload as SlackScorePayload, dbTemplates, bucketRanges);
     case 'score_edit':
       return formatScoreEdit(payload as SlackScorePayload);
     case 'retroactive':
@@ -200,7 +202,7 @@ function formatTeeTime(p: SlackScorePayload): SlackMessage {
   return { text: fallbackText, blocks };
 }
 
-function formatScoreInProgress(p: SlackScorePayload, dbTemplates?: Record<string, string[]>): SlackMessage {
+function formatScoreInProgress(p: SlackScorePayload, dbTemplates?: Record<string, string[]>, bucketRanges?: BucketRange[]): SlackMessage {
   const fallbackText = `Score Update — ${p.player_name} at ${p.course_name}`;
 
   const lines: string[] = [
@@ -227,15 +229,15 @@ function formatScoreInProgress(p: SlackScorePayload, dbTemplates?: Record<string
   if (p.net_strokes_over_par != null) {
     const ctx = buildChirpContext(p);
     const chirp = dbTemplates
-      ? getChirpFromTemplates(dbTemplates, p.net_strokes_over_par, ctx)
-      : getChirp(p.net_strokes_over_par, ctx);
+      ? getChirpFromTemplates(dbTemplates, p.net_strokes_over_par, ctx, bucketRanges)
+      : getChirp(p.net_strokes_over_par, ctx, bucketRanges);
     blocks.push(sectionBlock(`:studio_microphone: _"${chirp}"_`));
   }
 
   return { text: fallbackText, blocks };
 }
 
-function formatRoundComplete(p: SlackScorePayload, dbTemplates?: Record<string, string[]>): SlackMessage {
+function formatRoundComplete(p: SlackScorePayload, dbTemplates?: Record<string, string[]>, bucketRanges?: BucketRange[]): SlackMessage {
   const fallbackText = `Round Complete — ${p.player_name} at ${p.course_name}`;
 
   const lines: string[] = [
@@ -262,8 +264,8 @@ function formatRoundComplete(p: SlackScorePayload, dbTemplates?: Record<string, 
   if (p.net_strokes_over_par != null) {
     const ctx = buildChirpContext(p);
     const chirp = dbTemplates
-      ? getChirpFromTemplates(dbTemplates, p.net_strokes_over_par, ctx)
-      : getChirp(p.net_strokes_over_par, ctx);
+      ? getChirpFromTemplates(dbTemplates, p.net_strokes_over_par, ctx, bucketRanges)
+      : getChirp(p.net_strokes_over_par, ctx, bucketRanges);
     blocks.push(sectionBlock(`:studio_microphone: _"${chirp}"_`));
   }
 

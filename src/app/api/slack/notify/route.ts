@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { formatSlackMessage } from '@/lib/slack';
 import { calculateProjectedPoints, calculateScratchScore, getMaxHoles } from '@/lib/scoring';
+import { DEFAULT_BUCKET_RANGES, type BucketRange } from '@/lib/chirps';
 import type { SlackConfig, SlackNotifyPayload, SlackScorePayload } from '@/types/database';
 
 /**
@@ -64,11 +65,12 @@ export async function POST(request: NextRequest) {
       await enrichWithProjectedPoints(supabase, payload as SlackScorePayload);
     }
 
-    // Load chirp templates from DB (best-effort, falls back to hardcoded)
+    // Load chirp templates and bucket ranges from DB (best-effort, falls back to hardcoded)
     const dbTemplates = isFeedback ? undefined : await loadChirpTemplates(supabase);
+    const bucketRanges = isFeedback ? undefined : await loadBucketRanges(supabase);
 
     // Format the message
-    const message = formatSlackMessage(payload, dbTemplates);
+    const message = formatSlackMessage(payload, dbTemplates, bucketRanges);
 
     // Post to Slack
     const slackResponse = await fetch('https://slack.com/api/chat.postMessage', {
@@ -251,6 +253,30 @@ async function loadChirpTemplates(
       grouped[row.bucket].push(row.template);
     }
     return grouped;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Load custom chirp bucket ranges from app_settings.
+ * Returns undefined if not configured, causing fallback to DEFAULT_BUCKET_RANGES.
+ */
+async function loadBucketRanges(
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<BucketRange[] | undefined> {
+  try {
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'chirp_bucket_ranges')
+      .single();
+
+    if (error || !data?.value) return undefined;
+
+    const stored = (data.value as unknown as { ranges: BucketRange[] })?.ranges;
+    if (!Array.isArray(stored) || stored.length !== 8) return undefined;
+    return stored;
   } catch {
     return undefined;
   }
