@@ -7,7 +7,7 @@ import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
 import { ArrowLeft, ChevronDown, ChevronRight, Plus, Pencil, Trash2, Check, X, Settings, RotateCcw } from 'lucide-react';
-import { ALL_BUCKETS, CHIRP_WILDCARDS, DEFAULT_BUCKET_RANGES, buildBucketLabels, type ChirpBucket, type BucketRange } from '@/lib/chirps';
+import { ALL_BUCKETS, BUCKET_LABELS, CHIRP_WILDCARDS, DEFAULT_BUCKET_RANGES, buildBucketLabels, type ChirpBucket, type BucketRange } from '@/lib/chirps';
 import { useChirpBucketConfig } from '@/lib/hooks/useChirpBucketConfig';
 
 interface ChirpTemplate {
@@ -34,12 +34,12 @@ export default function ChirpsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const { ranges, isLoading: rangesLoading, save: saveRanges } = useChirpBucketConfig();
+  const { ranges, save: saveRanges } = useChirpBucketConfig();
   const [showRangeEditor, setShowRangeEditor] = useState(false);
   const [editRanges, setEditRanges] = useState<BucketRange[]>([]);
   const [savingRanges, setSavingRanges] = useState(false);
 
-  const bucketLabels = buildBucketLabels(ranges);
+  const bucketLabels = isAdmin ? buildBucketLabels(ranges) : BUCKET_LABELS;
 
   useEffect(() => {
     if (!userLoading && !isAuthenticated) {
@@ -185,7 +185,7 @@ export default function ChirpsPage() {
 
       {/* Admin: Bucket Range Editor */}
       {isAdmin && (
-        <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
+        <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden mb-4">
           <button
             onClick={() => {
               if (!showRangeEditor) setEditRanges(ranges.map((r) => ({ ...r })));
@@ -196,6 +196,7 @@ export default function ChirpsPage() {
             <div className="flex items-center gap-2">
               <Settings className="w-4 h-4 text-[var(--text-muted)]" />
               <span className="font-medium text-sm text-[var(--text-primary)]">Score Range Configuration</span>
+              <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-minerva-100 text-minerva-700 rounded-full">Admin</span>
             </div>
             {showRangeEditor
               ? <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
