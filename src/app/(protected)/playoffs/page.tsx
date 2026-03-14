@@ -69,7 +69,13 @@ export default function PlayoffsPage() {
         .eq('season_id', selectedSeason.id)
         .order('round')
         .order('matchup_number');
-      setBrackets((bracketData as PlayoffBracket[]) || []);
+      const fetchedBrackets = (bracketData as PlayoffBracket[]) || [];
+      setBrackets(fetchedBrackets);
+
+      const availableFlights = FLIGHTS.filter((f) => fetchedBrackets.some((b) => b.flight === f));
+      if (availableFlights.length > 0 && !availableFlights.includes(selectedFlight as typeof FLIGHTS[number])) {
+        setSelectedFlight(availableFlights[0]);
+      }
 
       const { data: seedData } = await supabase
         .from('playoff_seeds')
@@ -117,9 +123,9 @@ export default function PlayoffsPage() {
         ))}
       </div>
 
-      {/* Flight Tabs */}
+      {/* Flight Tabs — only show flights that have bracket data */}
       <div className="flex gap-2">
-        {FLIGHTS.map((f) => {
+        {FLIGHTS.filter((f) => brackets.some((b) => b.flight === f)).map((f) => {
           const count = brackets.filter((b) => b.flight === f).length;
           return (
             <button
@@ -130,7 +136,7 @@ export default function PlayoffsPage() {
               }`}
             >
               {flightLabels[f]}
-              {count > 0 && <span className="text-[10px] opacity-60">({count})</span>}
+              <span className="text-[10px] opacity-60">({count})</span>
             </button>
           );
         })}
