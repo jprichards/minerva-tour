@@ -67,7 +67,6 @@ describe('BottomNav', () => {
     expect(screen.getByText('Tour Stats')).toBeInTheDocument();
     expect(screen.getByText('Members')).toBeInTheDocument();
     expect(screen.getByText('Playoffs')).toBeInTheDocument();
-    expect(screen.getByText('Tournament')).toBeInTheDocument();
   });
 
   it('shows Admin in More menu for admin users', () => {

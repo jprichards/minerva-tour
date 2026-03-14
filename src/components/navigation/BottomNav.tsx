@@ -21,7 +21,6 @@ const menuItems = [
   { href: '/members', label: 'Members', icon: Users },
   { href: '/hall-of-fame', label: 'Hall of Fame', icon: Award },
   { href: '/playoffs', label: 'Playoffs', icon: Swords },
-  { href: '/tournament', label: 'Tournament', icon: Trophy },
   { href: '/chirps', label: 'Chirps', icon: Mic },
   { href: '/feedback', label: 'Feedback', icon: MessageSquare },
 ];
