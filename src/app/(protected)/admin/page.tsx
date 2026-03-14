@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useUser } from '@/lib/hooks/useUser';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { Users, UserPlus, FileText, Calendar, Settings, Shield, Database, Swords, Trophy, Cog, RotateCcw, Award, MessageSquare, Mic } from 'lucide-react';
+import { Users, UserPlus, FileText, Calendar, Settings, Shield, Database, Swords, Trophy, Cog, RotateCcw, Award, MessageSquare, Mic, Sparkles } from 'lucide-react';
 
 const adminLinks = [
   {
@@ -62,6 +62,13 @@ const adminLinks = [
     description: 'Manage automated score commentary templates',
     icon: Mic,
     color: 'bg-pink-100 text-pink-600',
+  },
+  {
+    href: '/admin/seasons#recaps',
+    label: 'Event Recaps',
+    description: 'Generate AI recaps and post standings to Slack',
+    icon: Sparkles,
+    color: 'bg-orange-100 text-orange-600',
   },
   {
     href: '/admin/feedback',

@@ -38,7 +38,7 @@ export async function updateSession(request: NextRequest) {
   const publicPaths = ['/login', '/auth/callback', '/', '/view'];
   const isPublicPath = publicPaths.some(
     (path) => request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith('/auth/') || request.nextUrl.pathname.startsWith('/view')
-  );
+  ) || request.nextUrl.pathname.startsWith('/api/og/');
 
   // Dev-only auth bypass for testing (never active in production)
   const isDevBypass =

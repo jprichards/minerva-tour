@@ -264,6 +264,32 @@ export interface SlackConfig {
   events: Record<SlackEventType, boolean>;
   feedback_channel_id?: string;
   feedback_channel_name?: string;
+  recap_channel_id?: string;
+  recap_channel_name?: string;
+}
+
+export interface AIConfig {
+  api_endpoint: string;
+  api_key: string;
+  model: string;
+  system_prompt: string;
+  max_tokens: number;
+}
+
+export interface EventRecap {
+  id: string;
+  event_id: string;
+  recap_text: string;
+  commissioner_notes: string | null;
+  event_net_image_url: string | null;
+  event_scratch_image_url: string | null;
+  season_net_image_url: string | null;
+  season_scratch_image_url: string | null;
+  posted_to_slack: boolean;
+  slack_message_ts: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface SlackScorePayload {

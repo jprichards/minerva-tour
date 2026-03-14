@@ -6,8 +6,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
-import { ArrowLeft, Save, Image, ExternalLink, Hash, Eye, EyeOff, CheckCircle, XCircle, Loader2, MessageSquare } from 'lucide-react';
-import type { SlackConfig, SlackEventType } from '@/types/database';
+import { ArrowLeft, Save, Image, ExternalLink, Hash, Eye, EyeOff, CheckCircle, XCircle, Loader2, MessageSquare, Bot } from 'lucide-react';
+import type { SlackConfig, SlackEventType, AIConfig } from '@/types/database';
 
 const SLACK_EVENT_LABELS: Record<SlackEventType, string> = {
   tee_time: 'New Tee Times',
@@ -48,10 +48,20 @@ export default function AdminSettingsPage() {
   const [slackChannels, setSlackChannels] = useState<Array<{ id: string; name: string }>>([]);
   const [feedbackChannelId, setFeedbackChannelId] = useState('');
   const [feedbackChannelName, setFeedbackChannelName] = useState('');
+  const [recapChannelId, setRecapChannelId] = useState('');
+  const [recapChannelName, setRecapChannelName] = useState('');
   const [showToken, setShowToken] = useState(false);
   const [slackStatus, setSlackStatus] = useState<'disconnected' | 'connected' | 'error'>('disconnected');
   const [loadingChannels, setLoadingChannels] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
+
+  // AI config state
+  const [aiEndpoint, setAiEndpoint] = useState('');
+  const [aiApiKey, setAiApiKey] = useState('');
+  const [aiModel, setAiModel] = useState('');
+  const [aiSystemPrompt, setAiSystemPrompt] = useState('');
+  const [aiMaxTokens, setAiMaxTokens] = useState(700);
+  const [showAiKey, setShowAiKey] = useState(false);
 
   useEffect(() => {
     if (!userLoading && !isAdmin) router.push('/home');
@@ -86,8 +96,25 @@ export default function AdminSettingsPage() {
         if (config.channel_name) setSlackChannelName(config.channel_name);
         if (config.feedback_channel_id) setFeedbackChannelId(config.feedback_channel_id);
         if (config.feedback_channel_name) setFeedbackChannelName(config.feedback_channel_name);
+        if (config.recap_channel_id) setRecapChannelId(config.recap_channel_id);
+        if (config.recap_channel_name) setRecapChannelName(config.recap_channel_name);
         if (config.events) setSlackEvents({ ...DEFAULT_SLACK_EVENTS, ...config.events });
         if (config.bot_token && config.channel_id) setSlackStatus('connected');
+      }
+
+      // Fetch AI config (may not exist yet)
+      const { data: aiData } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'ai_config')
+        .maybeSingle();
+      if (aiData?.value) {
+        const config = aiData.value as unknown as AIConfig;
+        if (config.api_endpoint) setAiEndpoint(config.api_endpoint);
+        if (config.api_key) setAiApiKey(config.api_key);
+        if (config.model) setAiModel(config.model);
+        if (config.system_prompt) setAiSystemPrompt(config.system_prompt);
+        if (config.max_tokens) setAiMaxTokens(config.max_tokens);
       }
 
       setLoading(false);
@@ -167,6 +194,12 @@ export default function AdminSettingsPage() {
     if (ch) setFeedbackChannelName('#' + ch.name);
   };
 
+  const handleRecapChannelChange = (channelId: string) => {
+    setRecapChannelId(channelId);
+    const ch = slackChannels.find((c) => c.id === channelId);
+    if (ch) setRecapChannelName('#' + ch.name);
+  };
+
   const toggleSlackEvent = (eventType: SlackEventType) => {
     setSlackEvents((prev) => ({ ...prev, [eventType]: !prev[eventType] }));
   };
@@ -193,6 +226,8 @@ export default function AdminSettingsPage() {
         events: slackEvents,
         feedback_channel_id: feedbackChannelId || undefined,
         feedback_channel_name: feedbackChannelName || undefined,
+        recap_channel_id: recapChannelId || undefined,
+        recap_channel_name: recapChannelName || undefined,
       };
       await supabase.from('app_settings').upsert({
         key: 'slack_config',
@@ -200,11 +235,28 @@ export default function AdminSettingsPage() {
         updated_at: new Date().toISOString(),
       });
 
+      // Save AI config
+      if (aiEndpoint || aiApiKey || aiModel) {
+        const aiConfig: AIConfig = {
+          api_endpoint: aiEndpoint,
+          api_key: aiApiKey,
+          model: aiModel,
+          system_prompt: aiSystemPrompt,
+          max_tokens: aiMaxTokens,
+        };
+        await supabase.from('app_settings').upsert({
+          key: 'ai_config',
+          value: aiConfig as unknown as Record<string, unknown>,
+          updated_at: new Date().toISOString(),
+        });
+      }
+
       logAuditEvent('update_settings', 'app_settings', undefined, {
         google_photos_url: googlePhotosUrl,
         rules_url: rulesUrl,
         slack_channel: slackChannelName,
         slack_events: slackEvents,
+        ai_model: aiModel,
       });
 
       showToast('Settings saved!', 'success');
@@ -445,6 +497,124 @@ export default function AdminSettingsPage() {
                   Feedback channel: <span className="font-medium">{feedbackChannelName}</span>
                 </div>
               )}
+            </div>
+
+            {/* Recap Channel */}
+            <div className="border-t border-[var(--border-light)] pt-5 space-y-3">
+              <p className="text-sm font-semibold text-[var(--text-primary)]">Event Recap Channel</p>
+              <p className="text-xs text-[var(--text-faint)]">
+                Where AI-generated event recaps with standings images are posted. Defaults to the main score channel if not set.
+              </p>
+
+              {slackChannels.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Recap Channel</label>
+                  <select
+                    value={recapChannelId}
+                    onChange={(e) => handleRecapChannelChange(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
+                  >
+                    <option value="">Same as score channel</option>
+                    {slackChannels.map((ch) => (
+                      <option key={ch.id} value={ch.id}>#{ch.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {slackChannels.length === 0 && recapChannelName && (
+                <div className="text-xs text-[var(--text-muted)]">
+                  Recap channel: <span className="font-medium">{recapChannelName}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* AI Configuration */}
+          <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <Bot className="w-4 h-4 text-orange-600" />
+              <label className="text-sm font-medium text-[var(--text-primary)]">AI Recap Configuration</label>
+            </div>
+
+            <p className="text-xs text-[var(--text-faint)]">
+              Configure an OpenAI-compatible API for generating event recaps. Grok models are recommended for this prompt&apos;s tone &mdash; try grok-3 first.
+            </p>
+
+            {/* API Endpoint */}
+            <div>
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">API Endpoint</label>
+              <input
+                type="url"
+                value={aiEndpoint}
+                onChange={(e) => setAiEndpoint(e.target.value)}
+                placeholder="https://api.x.ai/v1/chat/completions"
+                className="w-full px-3 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-minerva-500"
+              />
+            </div>
+
+            {/* API Key */}
+            <div>
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">API Key</label>
+              <div className="relative">
+                <input
+                  type={showAiKey ? 'text' : 'password'}
+                  value={aiApiKey}
+                  onChange={(e) => setAiApiKey(e.target.value)}
+                  placeholder="xai-... or sk-..."
+                  className="w-full px-3 py-2.5 pr-10 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-minerva-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAiKey(!showAiKey)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                >
+                  {showAiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Model */}
+            <div>
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Model</label>
+              <input
+                type="text"
+                value={aiModel}
+                onChange={(e) => setAiModel(e.target.value)}
+                placeholder="grok-3"
+                className="w-full px-3 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
+              />
+            </div>
+
+            {/* Max Tokens */}
+            <div>
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Max Tokens</label>
+              <input
+                type="number"
+                value={aiMaxTokens}
+                onChange={(e) => setAiMaxTokens(parseInt(e.target.value) || 700)}
+                min={100}
+                max={4000}
+                className="w-full px-3 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
+              />
+              <p className="text-xs text-[var(--text-faint)] mt-1">
+                Controls max recap length. 700 = ~300-450 words.
+              </p>
+            </div>
+
+            {/* System Prompt */}
+            <div>
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">System Prompt</label>
+              <textarea
+                value={aiSystemPrompt}
+                onChange={(e) => setAiSystemPrompt(e.target.value)}
+                rows={8}
+                placeholder="Paste your system prompt here..."
+                className="w-full px-3 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500 resize-y"
+              />
+              <p className="text-xs text-[var(--text-faint)] mt-1">
+                The AI personality and instructions. This is sent as the system message with every recap generation.
+              </p>
             </div>
           </div>
 

@@ -956,3 +956,53 @@ Users can submit bug reports, feature requests, or general feedback directly wit
 - `feedback-attachments` Supabase Storage bucket (private, authenticated access)
 - File path convention: `{user_id}/{feedback_id}/{filename}`
 
+---
+
+## 12. Event Recaps
+
+### **Overview:**
+
+Automates the end-of-event recap process. After an event wraps, the commissioner generates an AI-drafted recap from the standings data, reviews/edits it, and publishes it to Slack along with standings images — replacing the previous manual screenshot/ChatGPT/copy-paste workflow.
+
+### **Commissioner Workflow:**
+
+1. Go to **Admin > Season & Events** and tap the **Recap** (sparkle) icon on any event
+2. Recap page loads with a preview of event standings (net) and season standings through that event
+3. Optionally enter **Commissioner Notes** to add context the standings don't show (e.g., "Matt played a career round at St. Andrews")
+4. Tap **Generate Recap** — the app sends standings data + notes to the configured AI endpoint
+5. Review and edit the AI-generated recap text in a textarea
+6. Tap **Post to Slack** — the app generates 4 standings images, uploads them, and posts a Block Kit message with the recap text + images to the configured Slack channel
+7. Success state shown; recap saved to database. Can re-generate or re-post at any time
+
+### **Timing:**
+
+- Works for any past event by event ID — the commissioner can generate recaps Sunday evening, Monday morning, or weeks later
+- Season standings are computed "as of" the recapped event using a `throughEventNumber` parameter, ensuring they don't include scores from later events
+
+### **AI Configuration (Admin Settings):**
+
+- **API Endpoint**: Any OpenAI-compatible chat completions URL (Grok, OpenAI, Anthropic proxy, self-hosted)
+- **API Key**: Stored server-side, never sent to client
+- **Model**: e.g., `grok-3`, `gpt-4o`
+- **System Prompt**: Fully customizable, ships with a default tuned for casual "group chat" energy
+- **Max Tokens**: Configurable (default 700, ~300-450 words)
+- Grok models are recommended for the default prompt's tone
+
+### **Slack Integration:**
+
+- Recap channel is configurable separately from score notification channel
+- Recaps post as Block Kit messages: header, recap text section, 4 standings image blocks (event net, event scratch, season net, season scratch)
+- Images are generated server-side via `@vercel/og` and uploaded to a `recaps` Supabase Storage bucket
+
+### **Standings Images:**
+
+- 4 PNG images generated server-side: Event Net, Event Scratch, Season Net, Season Scratch
+- Clean table design with rank, player name, score, points
+- Hosted publicly in Supabase Storage for Slack to render
+
+### **Database:**
+
+- `event_recaps` table: stores recap text, commissioner notes, 4 image URLs, Slack message timestamp, and posted status per event (unique on event_id)
+- `app_settings` key `ai_config`: stores AI endpoint, key, model, prompt, max_tokens
+- `slack_config` extended with `recap_channel_id` and `recap_channel_name`
+

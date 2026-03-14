@@ -7,7 +7,8 @@ import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
 import { captureHandicapsForEvent } from '@/lib/handicap-capture';
-import { ArrowLeft, Plus, Calendar, Edit, Save, X, Lock } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft, Plus, Calendar, Edit, Save, X, Lock, Sparkles } from 'lucide-react';
 import type { Season, Event, SeasonMode } from '@/types/database';
 
 const modes: { value: SeasonMode; label: string; color: string }[] = [
@@ -370,6 +371,13 @@ export default function AdminSeasonsPage() {
                               Set Active
                             </button>
                           )}
+                          <Link
+                            href={`/admin/recaps/${event.id}`}
+                            className="p-1 hover:bg-orange-50 rounded"
+                            title="Generate recap"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-orange-500" />
+                          </Link>
                           <button
                             onClick={() => handleCaptureHandicaps(season, event)}
                             className="p-1 hover:bg-yellow-50 rounded"
