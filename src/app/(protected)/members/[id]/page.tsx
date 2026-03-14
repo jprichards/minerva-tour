@@ -325,7 +325,7 @@ export default function MemberProfilePage() {
         href={`/stats/${id}`}
         className="block text-center text-sm text-minerva-600 font-medium py-2"
       >
-        View Full Stats &rarr;
+        View Head to Head &rarr;
       </Link>
     </div>
   );
