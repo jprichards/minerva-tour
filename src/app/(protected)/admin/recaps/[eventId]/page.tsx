@@ -67,12 +67,21 @@ export default function RecapPage() {
         .eq('event_id', eventId)
         .maybeSingle();
 
+      const { data: aiSetting } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'ai_config')
+        .maybeSingle();
+
+      const aiModel = (aiSetting?.value as Record<string, unknown>)?.model as string | undefined;
+
       return {
         event: event as Event,
         season,
         seasonEvents: (seasonEvents || []) as Event[],
         allScores: (allScores || []) as Score[],
         existingRecap: existingRecap as EventRecap | null,
+        aiModel: aiModel || null,
       };
     }
   );
@@ -83,7 +92,10 @@ export default function RecapPage() {
       setCommissionerNotes(data.existingRecap.commissioner_notes || '');
       if (data.existingRecap.posted_to_slack) setPublished(true);
     }
-  }, [data?.existingRecap]);
+    if (data?.aiModel && !modelUsed) {
+      setModelUsed(data.aiModel);
+    }
+  }, [data?.existingRecap, data?.aiModel, modelUsed]);
 
   const event = data?.event;
   const season = data?.season;

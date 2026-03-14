@@ -266,6 +266,7 @@ export interface SlackConfig {
   feedback_channel_name?: string;
   recap_channel_id?: string;
   recap_channel_name?: string;
+  recap_images_in_thread?: boolean;
 }
 
 export interface AIConfig {

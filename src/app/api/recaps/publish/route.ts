@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ImageResponse } from 'next/og';
 import { createClient } from '@/lib/supabase/server';
-import { StandingsImage, computeImageWidth, computeImageHeight } from '@/lib/og-standings';
+import {
+  StandingsImage,
+  SideBySideStandings,
+  computeImageWidth,
+  computeImageHeight,
+  computeSideBySideWidth,
+  computeSideBySideHeight,
+} from '@/lib/og-standings';
 import type { StandingsRow } from '@/lib/og-standings';
 import type { SlackConfig } from '@/types/database';
 
@@ -38,12 +45,46 @@ async function generateStandingsImage(data: ImagePayload, showCourse: boolean): 
   return response.arrayBuffer();
 }
 
+async function generateSideBySideImage(left: ImagePayload, right: ImagePayload): Promise<ArrayBuffer> {
+  const width = computeSideBySideWidth();
+  const height = computeSideBySideHeight(left.rows.length, right.rows.length);
+  const response = new ImageResponse(
+    SideBySideStandings({ left, right }),
+    { width, height }
+  );
+  return response.arrayBuffer();
+}
+
+async function uploadImage(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  eventId: string,
+  imageType: string,
+  buffer: ArrayBuffer
+): Promise<string | null> {
+  const fileName = `${eventId}/${imageType}-${Date.now()}.png`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('recaps')
+    .upload(fileName, buffer, { contentType: 'image/png', upsert: true });
+
+  if (uploadError) {
+    console.error(`Failed to upload ${imageType}:`, uploadError);
+    return null;
+  }
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('recaps')
+    .getPublicUrl(fileName);
+
+  return publicUrl;
+}
+
 /**
  * POST /api/recaps/publish
  *
- * 1. Generates 4 standings images directly via ImageResponse
+ * 1. Generates 3 standings images (event net, event scratch, season combined)
  * 2. Uploads them to Supabase Storage
- * 3. Posts the recap + images to Slack
+ * 3. Posts the recap to Slack (images inline or threaded based on config)
  * 4. Saves the recap to event_recaps table
  */
 export async function POST(request: NextRequest) {
@@ -85,50 +126,51 @@ export async function POST(request: NextRequest) {
 
     const slackConfig = slackSetting.value as unknown as SlackConfig;
     const channelId = slackConfig.recap_channel_id || slackConfig.channel_id;
+    const imagesInThread = slackConfig.recap_images_in_thread === true;
 
     if (!slackConfig.bot_token || !channelId) {
       return NextResponse.json({ error: 'Slack bot token and channel required' }, { status: 400 });
     }
 
-    // Generate images directly and upload to storage
-    const imageConfigs = [
-      { key: 'event_net', type: 'event-net', data: standings_images.event_net, showCourse: true },
-      { key: 'event_scratch', type: 'event-scratch', data: standings_images.event_scratch, showCourse: true },
-      { key: 'season_net', type: 'season-net', data: standings_images.season_net, showCourse: false },
-      { key: 'season_scratch', type: 'season-scratch', data: standings_images.season_scratch, showCourse: false },
-    ] as const;
-
+    // Generate and upload images
     const imageUrls: Record<string, string> = {};
 
-    for (const config of imageConfigs) {
-      try {
-        const imageBuffer = await generateStandingsImage(config.data, config.showCourse);
-        const fileName = `${event_id}/${config.type}-${Date.now()}.png`;
+    // Event net
+    try {
+      const buf = await generateStandingsImage(standings_images.event_net, true);
+      const url = await uploadImage(supabase, event_id, 'event-net', buf);
+      if (url) imageUrls.event_net = url;
+    } catch (err) { console.error('Failed to generate event-net image:', err); }
 
-        const { error: uploadError } = await supabase.storage
-          .from('recaps')
-          .upload(fileName, imageBuffer, {
-            contentType: 'image/png',
-            upsert: true,
-          });
+    // Event scratch
+    try {
+      const buf = await generateStandingsImage(standings_images.event_scratch, true);
+      const url = await uploadImage(supabase, event_id, 'event-scratch', buf);
+      if (url) imageUrls.event_scratch = url;
+    } catch (err) { console.error('Failed to generate event-scratch image:', err); }
 
-        if (uploadError) {
-          console.error(`Failed to upload ${config.type}:`, uploadError);
-          continue;
-        }
+    // Season combined (net + scratch side by side)
+    try {
+      const buf = await generateSideBySideImage(standings_images.season_net, standings_images.season_scratch);
+      const url = await uploadImage(supabase, event_id, 'season-combined', buf);
+      if (url) imageUrls.season_combined = url;
+    } catch (err) { console.error('Failed to generate season-combined image:', err); }
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('recaps')
-          .getPublicUrl(fileName);
-
-        imageUrls[config.key] = publicUrl;
-      } catch (imgErr) {
-        console.error(`Failed to generate ${config.type} image:`, imgErr);
+    // Build image blocks (3 images)
+    const imageBlocks: unknown[] = [];
+    const imageOrder = [
+      { key: 'event_net', alt: 'Event Standings - Net' },
+      { key: 'event_scratch', alt: 'Event Standings - Scratch' },
+      { key: 'season_combined', alt: 'Season Standings - Net & Scratch' },
+    ];
+    for (const { key, alt } of imageOrder) {
+      if (imageUrls[key]) {
+        imageBlocks.push({ type: 'image', image_url: imageUrls[key], alt_text: alt });
       }
     }
 
-    // Build Slack Block Kit message
-    const blocks: unknown[] = [
+    // Build main message blocks (recap text)
+    const mainBlocks: unknown[] = [
       {
         type: 'header',
         text: { type: 'plain_text', text: `${event_name} Recap`, emoji: true },
@@ -139,51 +181,36 @@ export async function POST(request: NextRequest) {
       },
     ];
 
-    // Section text blocks have a 3000 char limit; split if needed
     if (recap_text.length <= 3000) {
-      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: recap_text } });
+      mainBlocks.push({ type: 'section', text: { type: 'mrkdwn', text: recap_text } });
     } else {
       let remaining = recap_text;
       while (remaining.length > 0) {
         if (remaining.length <= 3000) {
-          blocks.push({ type: 'section', text: { type: 'mrkdwn', text: remaining } });
+          mainBlocks.push({ type: 'section', text: { type: 'mrkdwn', text: remaining } });
           break;
         }
         const splitAt = remaining.lastIndexOf('\n', 3000);
         const cutPoint = splitAt > 0 ? splitAt : 3000;
-        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: remaining.slice(0, cutPoint) } });
+        mainBlocks.push({ type: 'section', text: { type: 'mrkdwn', text: remaining.slice(0, cutPoint) } });
         remaining = remaining.slice(cutPoint).trimStart();
       }
     }
 
     if (body.model) {
-      blocks.push({
+      mainBlocks.push({
         type: 'context',
-        elements: [{ type: 'mrkdwn', text: `_Generated by ${body.model}_` }],
+        elements: [{ type: 'mrkdwn', text: `*_Generated by ${body.model}_*` }],
       });
     }
 
-    blocks.push({ type: 'divider' });
-
-    const imageLabels: Record<string, string> = {
-      event_net: 'Event Standings - Net',
-      event_scratch: 'Event Standings - Scratch',
-      season_net: 'Season Standings - Net',
-      season_scratch: 'Season Standings - Scratch',
-    };
-
-    const imageKeys = ['event_net', 'event_scratch', 'season_net', 'season_scratch'] as const;
-    for (const key of imageKeys) {
-      if (imageUrls[key]) {
-        blocks.push({
-          type: 'image',
-          image_url: imageUrls[key],
-          alt_text: imageLabels[key],
-        });
-      }
+    // If images are inline, append them to the main message
+    if (!imagesInThread && imageBlocks.length > 0) {
+      mainBlocks.push({ type: 'divider' });
+      mainBlocks.push(...imageBlocks);
     }
 
-    // Post to Slack
+    // Post main message to Slack
     const slackResponse = await fetch('https://slack.com/api/chat.postMessage', {
       method: 'POST',
       headers: {
@@ -193,7 +220,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         channel: channelId,
         text: `${event_name} Recap`,
-        blocks,
+        blocks: mainBlocks,
       }),
     });
 
@@ -202,6 +229,28 @@ export async function POST(request: NextRequest) {
     if (!slackData.ok) {
       console.error('Slack post failed:', slackData.error, slackData.response_metadata);
       return NextResponse.json({ error: `Slack error: ${slackData.error}` }, { status: 502 });
+    }
+
+    // If images go in a thread, post them as a reply
+    if (imagesInThread && imageBlocks.length > 0 && slackData.ts) {
+      const threadResponse = await fetch('https://slack.com/api/chat.postMessage', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${slackConfig.bot_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          channel: channelId,
+          thread_ts: slackData.ts,
+          text: 'Standings',
+          blocks: imageBlocks,
+        }),
+      });
+
+      const threadData = await threadResponse.json();
+      if (!threadData.ok) {
+        console.error('Slack thread post failed:', threadData.error, threadData.response_metadata);
+      }
     }
 
     // Save/update the recap in the database
@@ -213,8 +262,8 @@ export async function POST(request: NextRequest) {
         commissioner_notes: commissioner_notes || null,
         event_net_image_url: imageUrls.event_net || null,
         event_scratch_image_url: imageUrls.event_scratch || null,
-        season_net_image_url: imageUrls.season_net || null,
-        season_scratch_image_url: imageUrls.season_scratch || null,
+        season_net_image_url: imageUrls.season_combined || null,
+        season_scratch_image_url: null,
         posted_to_slack: true,
         slack_message_ts: slackData.ts || null,
         created_by: user.id,

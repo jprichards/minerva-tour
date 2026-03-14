@@ -82,7 +82,12 @@ export async function POST(request: NextRequest) {
     }
 
     const aiData = await aiResponse.json();
-    const recapText = aiData.choices?.[0]?.message?.content?.trim();
+    const rawText = aiData.choices?.[0]?.message?.content?.trim();
+    // Collapse hard line wraps within paragraphs while preserving paragraph breaks (double newlines)
+    const recapText = rawText
+      ?.replace(/\r\n/g, '\n')
+      .replace(/([^\n])\n(?!\n)/g, '$1 ')
+      .replace(/\n{2,}/g, '\n\n');
 
     if (!recapText) {
       return NextResponse.json({ error: 'AI returned empty response' }, { status: 502 });

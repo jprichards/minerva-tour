@@ -50,6 +50,7 @@ export default function AdminSettingsPage() {
   const [feedbackChannelName, setFeedbackChannelName] = useState('');
   const [recapChannelId, setRecapChannelId] = useState('');
   const [recapChannelName, setRecapChannelName] = useState('');
+  const [recapImagesInThread, setRecapImagesInThread] = useState(false);
   const [showToken, setShowToken] = useState(false);
   const [slackStatus, setSlackStatus] = useState<'disconnected' | 'connected' | 'error'>('disconnected');
   const [loadingChannels, setLoadingChannels] = useState(false);
@@ -98,6 +99,7 @@ export default function AdminSettingsPage() {
         if (config.feedback_channel_name) setFeedbackChannelName(config.feedback_channel_name);
         if (config.recap_channel_id) setRecapChannelId(config.recap_channel_id);
         if (config.recap_channel_name) setRecapChannelName(config.recap_channel_name);
+        if (config.recap_images_in_thread) setRecapImagesInThread(config.recap_images_in_thread);
         if (config.events) setSlackEvents({ ...DEFAULT_SLACK_EVENTS, ...config.events });
         if (config.bot_token && config.channel_id) setSlackStatus('connected');
       }
@@ -228,6 +230,7 @@ export default function AdminSettingsPage() {
         feedback_channel_name: feedbackChannelName || undefined,
         recap_channel_id: recapChannelId || undefined,
         recap_channel_name: recapChannelName || undefined,
+        recap_images_in_thread: recapImagesInThread,
       };
       await supabase.from('app_settings').upsert({
         key: 'slack_config',
@@ -527,6 +530,26 @@ export default function AdminSettingsPage() {
                   Recap channel: <span className="font-medium">{recapChannelName}</span>
                 </div>
               )}
+
+              <label className="flex items-center justify-between cursor-pointer pt-2">
+                <div>
+                  <span className="text-sm font-medium text-[var(--text-primary)]">Post images in thread</span>
+                  <p className="text-xs text-[var(--text-faint)]">Standings images go in a thread reply instead of inline, keeping the channel cleaner.</p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={recapImagesInThread}
+                  onClick={() => setRecapImagesInThread(!recapImagesInThread)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                    recapImagesInThread ? 'bg-minerva-600' : 'bg-gray-200'
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    recapImagesInThread ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+                </button>
+              </label>
             </div>
           </div>
 

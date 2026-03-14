@@ -102,6 +102,72 @@ export function computeImageHeight(rowCount: number): number {
   return Math.max(300, 140 + rowCount * 44 + 48);
 }
 
+const SIDE_BY_SIDE_GAP = 40;
+const SIDE_BY_SIDE_PADDING = 32;
+const SIDE_BY_SIDE_TOTAL_WIDTH = 700;
+
+export function computeSideBySideWidth(): number {
+  return SIDE_BY_SIDE_TOTAL_WIDTH;
+}
+
+export function computeSideBySideHeight(leftRows: number, rightRows: number): number {
+  const maxRows = Math.max(leftRows, rightRows);
+  return Math.max(300, 140 + maxRows * 44 + 48);
+}
+
+export interface SideBySideProps {
+  left: StandingsImageProps;
+  right: StandingsImageProps;
+}
+
+function StandingsPanel({ title, subtitle, rows, columns }: StandingsImageProps) {
+  const cols = columns || { value: 'Score', secondary: 'Points' };
+  const hasSecondary = !!cols.secondary;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', fontSize: '17px', fontWeight: 700, color: '#1a1a2e', lineHeight: 1.2 }}>
+          {title}
+        </div>
+        <div style={{ display: 'flex', fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+          {subtitle}
+        </div>
+      </div>
+
+      <HeaderRow showCourse={false} columns={cols} />
+
+      {rows.map((row, idx) => (
+        <DataRow key={`${row.rank}-${row.player}`} row={row} idx={idx} showCourse={false} hasSecondary={hasSecondary} />
+      ))}
+    </div>
+  );
+}
+
+export function SideBySideStandings({ left, right }: SideBySideProps) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        width: `${computeSideBySideWidth()}px`,
+        backgroundColor: '#ffffff',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        padding: `${SIDE_BY_SIDE_PADDING}px`,
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'row', gap: `${SIDE_BY_SIDE_GAP}px` }}>
+        <StandingsPanel {...left} />
+        <StandingsPanel {...right} />
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px', fontSize: '11px', color: '#d1d5db' }}>
+        Minerva Tour
+      </div>
+    </div>
+  );
+}
+
 export function StandingsImage({ title, subtitle, rows, showCourse = false, columns }: StandingsImageProps) {
   const cols = columns || { value: 'Score', secondary: 'Points' };
   const hasSecondary = !!cols.secondary;
