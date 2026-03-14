@@ -21,6 +21,7 @@ export type AuditActionType =
   | 'user_provision'
   | 'event_create'
   | 'event_edit'
+  | 'event_delete'
   | 'season_create'
   | 'season_mode_change'
   | 'handicap_update'

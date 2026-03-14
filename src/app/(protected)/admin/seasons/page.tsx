@@ -6,10 +6,10 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
-import { captureHandicapsForEvent } from '@/lib/handicap-capture';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Calendar, Edit, Save, X, Lock, Sparkles } from 'lucide-react';
+import { ArrowLeft, Plus, Calendar, Edit, Save, X, Sparkles, Trash2 } from 'lucide-react';
 import type { Season, Event, SeasonMode } from '@/types/database';
+import { formatLocalDate } from '@/lib/date-utils';
 
 const modes: { value: SeasonMode; label: string; color: string }[] = [
   { value: 'off_season', label: 'Off Season', color: 'bg-[var(--bg-subtle)] text-[var(--text-muted)]' },
@@ -31,6 +31,7 @@ export default function AdminSeasonsPage() {
   const [newSeasonYear, setNewSeasonYear] = useState(new Date().getFullYear());
   const [showAddEvent, setShowAddEvent] = useState<string | null>(null);
   const [editingEvent, setEditingEvent] = useState<string | null>(null);
+  const [deleteConfirmEvent, setDeleteConfirmEvent] = useState<string | null>(null);
 
   // New event fields
   const [eventNumber, setEventNumber] = useState('');
@@ -218,15 +219,38 @@ export default function AdminSeasonsPage() {
     fetchData();
   };
 
-  const handleCaptureHandicaps = async (season: Season, event: Event) => {
-    if (!confirm(`Capture handicaps for all members for "${event.name || 'Event ' + event.event_number}"?`)) return;
-    const result = await captureHandicapsForEvent(supabase, event.id, season.id);
-    if (result.errors.length > 0) {
-      showToast(`Captured ${result.captured} handicaps (${result.errors.length} errors)`, 'error');
-    } else {
-      showToast(`Captured ${result.captured} handicaps!`, 'success');
+  const handleDeleteEvent = async (event: Event) => {
+    const { count } = await supabase
+      .from('scores')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', event.id);
+
+    if (count && count > 0) {
+      showToast(`Cannot delete — ${count} score${count !== 1 ? 's' : ''} linked to this event.`, 'error');
+      setDeleteConfirmEvent(null);
+      return;
     }
-    logAuditEvent('handicap_capture', 'event', event.id, { captured: result.captured, errors: result.errors });
+
+    const { error } = await supabase
+      .from('events')
+      .delete()
+      .eq('id', event.id);
+
+    if (error) {
+      showToast(error.message, 'error');
+      return;
+    }
+
+    await logAuditEvent('event_delete', 'event', event.id, {
+      event_number: event.event_number,
+      name: event.name,
+    });
+
+    showToast('Event deleted.');
+    setDeleteConfirmEvent(null);
+    setEditingEvent(null);
+    resetEventFields();
+    fetchData();
   };
 
   if (!isAdmin) return null;
@@ -338,9 +362,19 @@ export default function AdminSeasonsPage() {
                           <button onClick={() => handleSaveEvent(event)} className="flex items-center gap-1 bg-minerva-600 text-white rounded-lg px-3 py-1.5 text-xs font-medium">
                             <Save className="w-3 h-3" /> Save
                           </button>
-                          <button onClick={() => { setEditingEvent(null); resetEventFields(); }} className="flex items-center gap-1 bg-[var(--bg-subtle)] text-[var(--text-muted)] rounded-lg px-3 py-1.5 text-xs font-medium">
+                          <button onClick={() => { setEditingEvent(null); setDeleteConfirmEvent(null); resetEventFields(); }} className="flex items-center gap-1 bg-[var(--bg-subtle)] text-[var(--text-muted)] rounded-lg px-3 py-1.5 text-xs font-medium">
                             <X className="w-3 h-3" /> Cancel
                           </button>
+                          <div className="flex-1" />
+                          {deleteConfirmEvent === event.id ? (
+                            <button onClick={() => handleDeleteEvent(event)} className="flex items-center gap-1 bg-red-600 text-white rounded-lg px-3 py-1.5 text-xs font-medium">
+                              <Trash2 className="w-3 h-3" /> Confirm Delete
+                            </button>
+                          ) : (
+                            <button onClick={() => setDeleteConfirmEvent(event.id)} className="flex items-center gap-1 text-red-500 hover:bg-red-50 rounded-lg px-3 py-1.5 text-xs font-medium">
+                              <Trash2 className="w-3 h-3" /> Delete
+                            </button>
+                          )}
                         </div>
                       </div>
                     ) : (
@@ -356,7 +390,7 @@ export default function AdminSeasonsPage() {
                               {event.is_playoff && <span className="ml-1 text-xs text-purple-600 font-semibold">Playoff</span>}
                             </p>
                             <p className="text-xs text-[var(--text-muted)]">
-                              {event.holes}h &middot; {new Date(event.start_date).toLocaleDateString()} — {new Date(event.end_date).toLocaleDateString()}
+                              {event.holes}h &middot; {formatLocalDate(event.start_date)} — {formatLocalDate(event.end_date)}
                             </p>
                           </div>
                         </div>
@@ -378,13 +412,6 @@ export default function AdminSeasonsPage() {
                           >
                             <Sparkles className="w-3.5 h-3.5 text-orange-500" />
                           </Link>
-                          <button
-                            onClick={() => handleCaptureHandicaps(season, event)}
-                            className="p-1 hover:bg-yellow-50 rounded"
-                            title="Capture handicaps for this event"
-                          >
-                            <Lock className="w-3.5 h-3.5 text-yellow-600" />
-                          </button>
                           <button onClick={() => handleEditEvent(event)} className="p-1 hover:bg-[var(--bg-subtle)] rounded">
                             <Edit className="w-3.5 h-3.5 text-[var(--text-faint)]" />
                           </button>
