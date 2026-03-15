@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import type { Trophy, SeasonFinish } from '@/types/database';
 import { AWARD_DISPLAY_NAMES, type AwardType } from '@/lib/trophy-utils';
 
@@ -9,7 +11,11 @@ interface TrophyCaseProps {
   compact?: boolean;
 }
 
+const TROPHY_COLLAPSE_LIMIT = 5;
+
 export default function TrophyCase({ trophies, seasonFinishes = [], compact = false }: TrophyCaseProps) {
+  const [showAllTrophies, setShowAllTrophies] = useState(false);
+
   if (trophies.length === 0 && seasonFinishes.length === 0) return null;
 
   // Sort trophies by year descending
@@ -37,6 +43,9 @@ export default function TrophyCase({ trophies, seasonFinishes = [], compact = fa
     );
   }
 
+  const hasMoreTrophies = sorted.length > TROPHY_COLLAPSE_LIMIT;
+  const visibleTrophies = showAllTrophies ? sorted : sorted.slice(0, TROPHY_COLLAPSE_LIMIT);
+
   return (
     <div className="space-y-4">
       {/* Trophy Case Header */}
@@ -45,11 +54,11 @@ export default function TrophyCase({ trophies, seasonFinishes = [], compact = fa
       {/* Awards list */}
       {sorted.length > 0 && (
         <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
-          {sorted.map((trophy, idx) => (
+          {visibleTrophies.map((trophy, idx) => (
             <div
               key={trophy.id}
               className={`flex items-center gap-3 px-4 py-3 ${
-                idx < sorted.length - 1 ? 'border-b border-[var(--border-light)]' : ''
+                idx < visibleTrophies.length - 1 || (hasMoreTrophies && !showAllTrophies) ? 'border-b border-[var(--border-light)]' : ''
               }`}
             >
               <span className="text-xl flex-shrink-0" role="img" aria-label={trophy.award_name}>
@@ -66,6 +75,15 @@ export default function TrophyCase({ trophies, seasonFinishes = [], compact = fa
               </div>
             </div>
           ))}
+          {hasMoreTrophies && (
+            <button
+              onClick={() => setShowAllTrophies(!showAllTrophies)}
+              className="w-full flex items-center justify-center gap-1 px-4 py-2.5 text-xs font-medium text-minerva-600 hover:bg-[var(--bg-subtle)] transition-colors"
+            >
+              {showAllTrophies ? 'Show Less' : `Show All (${sorted.length})`}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAllTrophies ? 'rotate-180' : ''}`} />
+            </button>
+          )}
         </div>
       )}
 
@@ -97,7 +115,7 @@ export default function TrophyCase({ trophies, seasonFinishes = [], compact = fa
 
         return (
           <div>
-            <h4 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Season Finishes</h4>
+            <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Season Finishes</h3>
             <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
               {/* Header row */}
               <div className={`grid ${gridCols} px-4 py-2 bg-[var(--bg-subtle)] border-b border-[var(--border-light)]`}>

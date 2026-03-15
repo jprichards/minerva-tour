@@ -156,7 +156,47 @@ export default function MemberProfilePage() {
         )}
       </div>
 
-      {/* Stats Grid */}
+      {/* Recent Rounds */}
+      {scores.length > 0 && (
+        <div>
+          <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Recent Rounds</h3>
+          <div className="space-y-2">
+            {scores.slice(0, 5).map((score) => (
+              <Link
+                key={score.id}
+                href={`/scores/${score.id}`}
+                className="flex items-center justify-between bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)]"
+              >
+                <div>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">{score.course?.course_name}</p>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    {score.course?.tee_name} &middot; {score.holes_played ?? getMaxHoles(score.course?.type || '18_holes')}h
+                    {(score.tee_time || score.event?.start_date) && (
+                      <> &middot; {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</>
+                    )}
+                    {score.event?.name && (
+                      <> &middot; {score.event.name}</>
+                    )}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-[var(--text-primary)]">{score.gross_score}</p>
+                  <p className={`text-xs font-medium ${
+                    (score.net_strokes_over_par ?? 0) < 0 ? 'text-red-600' :
+                    (score.net_strokes_over_par ?? 0) === 0 ? 'text-green-600' : 'text-[var(--text-muted)]'
+                  }`}>
+                    Net {score.net_strokes_over_par != null ? formatNetScore(score.net_strokes_over_par) : '-'}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* All Time Stats */}
+      <div>
+      <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">All Time Stats</h3>
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
           <Target className="w-5 h-5 text-minerva-600 mx-auto mb-1" />
@@ -184,6 +224,7 @@ export default function MemberProfilePage() {
           </p>
           <p className="text-xs text-[var(--text-muted)]">Worst Net</p>
         </div>
+      </div>
       </div>
 
       {/* Notable Rounds */}
@@ -240,44 +281,6 @@ export default function MemberProfilePage() {
 
       {/* Trophy Case */}
       <TrophyCase trophies={trophies} seasonFinishes={seasonFinishes} />
-
-      {/* Recent Scores */}
-      {scores.length > 0 && (
-        <div>
-          <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Recent Rounds</h3>
-          <div className="space-y-2">
-            {scores.slice(0, 10).map((score) => (
-              <Link
-                key={score.id}
-                href={`/scores/${score.id}`}
-                className="flex items-center justify-between bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)]"
-              >
-                <div>
-                  <p className="text-sm font-medium text-[var(--text-primary)]">{score.course?.course_name}</p>
-                  <p className="text-xs text-[var(--text-muted)]">
-                    {score.course?.tee_name} &middot; {score.holes_played ?? getMaxHoles(score.course?.type || '18_holes')}h
-                    {(score.tee_time || score.event?.start_date) && (
-                      <> &middot; {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</>
-                    )}
-                    {score.event?.name && (
-                      <> &middot; {score.event.name}</>
-                    )}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-[var(--text-primary)]">{score.gross_score}</p>
-                  <p className={`text-xs font-medium ${
-                    (score.net_strokes_over_par ?? 0) < 0 ? 'text-red-600' :
-                    (score.net_strokes_over_par ?? 0) === 0 ? 'text-green-600' : 'text-[var(--text-muted)]'
-                  }`}>
-                    Net {score.net_strokes_over_par != null ? formatNetScore(score.net_strokes_over_par) : '-'}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Handicap History */}
       {handicapHistory.length > 0 && (() => {

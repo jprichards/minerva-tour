@@ -147,4 +147,47 @@ describe('Profile Page - Stat Tiles', () => {
     expect(section).toHaveTextContent('Oak Hills');
     expect(section).toHaveTextContent('2 rounds');
   });
+
+  it('renders Recent Rounds section above Quick Stats', async () => {
+    render(<ProfilePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Recent Rounds')).toBeInTheDocument();
+    });
+
+    const recentHeading = screen.getByText('Recent Rounds');
+    const roundsLabel = screen.getByText('Rounds');
+    const container = recentHeading.closest('.space-y-5')!;
+    const allElements = Array.from(container.children);
+    const recentIdx = allElements.findIndex((el) => el.contains(recentHeading));
+    const statsIdx = allElements.findIndex((el) => el.contains(roundsLabel));
+    expect(recentIdx).toBeLessThan(statsIdx);
+  });
+
+  it('limits Recent Rounds to 5 entries', async () => {
+    render(<ProfilePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Recent Rounds')).toBeInTheDocument();
+    });
+
+    const recentSection = screen.getByText('Recent Rounds').parentElement!;
+    const links = recentSection.querySelectorAll('a[href^="/scores/"]');
+    expect(links.length).toBeLessThanOrEqual(5);
+  });
+
+  it('renders All Time Stats header above the stats grid', async () => {
+    render(<ProfilePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('All Time Stats')).toBeInTheDocument();
+    });
+
+    const header = screen.getByText('All Time Stats');
+    const section = header.parentElement!;
+    expect(section).toHaveTextContent('Rounds');
+    expect(section).toHaveTextContent('Avg Net');
+    expect(section).toHaveTextContent('Best Net');
+    expect(section).toHaveTextContent('Worst Net');
+  });
 });

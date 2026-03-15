@@ -9,7 +9,7 @@ import { Edit, LogOut, Camera, TrendingUp, TrendingDown, Minus, Trophy, Target, 
 import TrophyCase from '@/components/TrophyCase';
 import Avatar from '@/components/Avatar';
 import { logAuditEvent } from '@/lib/audit';
-import { formatNetScore } from '@/lib/scoring';
+import { formatNetScore, getMaxHoles } from '@/lib/scoring';
 import { getHandicapTrend } from '@/lib/handicap-trend';
 import { useThemeContext } from '@/components/ThemeProvider';
 import type { ThemePreference } from '@/lib/hooks/useTheme';
@@ -31,6 +31,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const supabase = createClient();
   const { preference, setTheme } = useThemeContext();
+  const [scores, setScores] = useState<Score[]>([]);
   const [handicapHistory, setHandicapHistory] = useState<HandicapHistory[]>([]);
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [trophies, setTrophies] = useState<TrophyType[]>([]);
@@ -60,15 +61,17 @@ export default function ProfilePage() {
       setHandicapHistory(history || []);
 
       // Fetch scores with course info for notable rounds + courses played
-      const { data: scores } = await supabase
+      const { data: scoresData } = await supabase
         .from('scores')
-        .select('*, course:courses(course_name, tee_name, par, type)')
+        .select('*, course:courses(course_name, tee_name, par, type), event:events(name, event_number, start_date)')
         .eq('user_id', profile.id)
         .eq('is_complete', true)
         .not('net_strokes_over_par', 'is', null)
-        .order('created_at', { ascending: true });
+        .order('tee_time', { ascending: false });
 
-      if (scores && scores.length > 0) {
+      if (scoresData && scoresData.length > 0) {
+        setScores(scoresData);
+        const scores = scoresData;
         const nets = scores.map((s) => s.net_strokes_over_par!);
         const bestIdx = nets.indexOf(Math.min(...nets));
         const worstIdx = nets.indexOf(Math.max(...nets));
@@ -226,7 +229,47 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Quick Stats */}
+      {/* Recent Rounds */}
+      {scores.length > 0 && (
+        <div>
+          <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Recent Rounds</h3>
+          <div className="space-y-2">
+            {scores.slice(0, 5).map((score) => (
+              <Link
+                key={score.id}
+                href={`/scores/${score.id}`}
+                className="flex items-center justify-between bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)]"
+              >
+                <div>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">{score.course?.course_name}</p>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    {score.course?.tee_name} &middot; {score.holes_played ?? getMaxHoles(score.course?.type || '18_holes')}h
+                    {(score.tee_time || score.event?.start_date) && (
+                      <> &middot; {new Date(score.tee_time || (score.event!.start_date + 'T00:00:00')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</>
+                    )}
+                    {score.event?.name && (
+                      <> &middot; {score.event.name}</>
+                    )}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-[var(--text-primary)]">{score.gross_score}</p>
+                  <p className={`text-xs font-medium ${
+                    (score.net_strokes_over_par ?? 0) < 0 ? 'text-red-600' :
+                    (score.net_strokes_over_par ?? 0) === 0 ? 'text-green-600' : 'text-[var(--text-muted)]'
+                  }`}>
+                    Net {score.net_strokes_over_par != null ? formatNetScore(score.net_strokes_over_par) : '-'}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* All Time Stats */}
+      <div>
+      <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">All Time Stats</h3>
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
           <Target className="w-5 h-5 text-minerva-600 mx-auto mb-1" />
@@ -254,6 +297,7 @@ export default function ProfilePage() {
           </p>
           <p className="text-xs text-[var(--text-muted)]">Worst Net</p>
         </div>
+      </div>
       </div>
 
       {/* Notable Rounds */}

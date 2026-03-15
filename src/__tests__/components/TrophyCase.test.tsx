@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import TrophyCase from '@/components/TrophyCase';
 import type { Trophy, SeasonFinish } from '@/types/database';
 
@@ -137,7 +137,49 @@ describe('TrophyCase', () => {
     render(<TrophyCase trophies={duplicateTrophies} compact={true} />);
     const badge = screen.getByLabelText('Trophy badges');
     const emojiSpans = badge.querySelectorAll('span[role="img"]');
-    // All 3 should show, not deduplicated to 1
     expect(emojiSpans.length).toBe(3);
+  });
+
+  it('shows only 5 trophies initially when more than 5 exist', () => {
+    const manyTrophies: Trophy[] = Array.from({ length: 7 }, (_, i) => ({
+      id: `t-${i}`,
+      user_id: 'u1',
+      year: 2025 - i,
+      award_type: 'minerva_tour_champion',
+      award_name: `Award ${i + 1}`,
+      description: null,
+      emoji: '🏆',
+      created_at: '2024-01-01T00:00:00Z',
+    }));
+    render(<TrophyCase trophies={manyTrophies} />);
+
+    expect(screen.getByText('Award 1')).toBeTruthy();
+    expect(screen.getByText('Award 5')).toBeTruthy();
+    expect(screen.queryByText('Award 6')).toBeNull();
+    expect(screen.getByText('Show All (7)')).toBeTruthy();
+  });
+
+  it('expands to show all trophies when Show All is clicked', () => {
+    const manyTrophies: Trophy[] = Array.from({ length: 7 }, (_, i) => ({
+      id: `t-${i}`,
+      user_id: 'u1',
+      year: 2025 - i,
+      award_type: 'minerva_tour_champion',
+      award_name: `Award ${i + 1}`,
+      description: null,
+      emoji: '🏆',
+      created_at: '2024-01-01T00:00:00Z',
+    }));
+    render(<TrophyCase trophies={manyTrophies} />);
+
+    fireEvent.click(screen.getByText('Show All (7)'));
+    expect(screen.getByText('Award 6')).toBeTruthy();
+    expect(screen.getByText('Award 7')).toBeTruthy();
+    expect(screen.getByText('Show Less')).toBeTruthy();
+  });
+
+  it('does not show expand button when 5 or fewer trophies', () => {
+    render(<TrophyCase trophies={mockTrophies} />);
+    expect(screen.queryByText(/Show All/)).toBeNull();
   });
 });
