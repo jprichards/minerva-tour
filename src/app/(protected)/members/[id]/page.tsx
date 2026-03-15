@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { ArrowLeft, TrendingUp, TrendingDown, Minus, Trophy, Target, Calendar, BarChart3, ChevronDown } from 'lucide-react';
+import Avatar from '@/components/Avatar';
 import { formatNetScore, getMaxHoles } from '@/lib/scoring';
 import { getHandicapTrend } from '@/lib/handicap-trend';
 import TrophyCase from '@/components/TrophyCase';
@@ -123,15 +124,12 @@ export default function MemberProfilePage() {
           <ArrowLeft className="w-5 h-5 text-[var(--text-muted)]" />
         </button>
         <div className="flex items-center gap-3 flex-1">
-          <div className="w-12 h-12 bg-minerva-100 rounded-full flex items-center justify-center overflow-hidden">
-            {member.profile_picture_url ? (
-              <img src={member.profile_picture_url} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-lg font-bold text-minerva-600">
-                {(member.full_name || '?')[0].toUpperCase()}
-              </span>
-            )}
-          </div>
+          <Avatar
+            src={member.profile_picture_url}
+            name={member.full_name}
+            className="w-12 h-12 bg-minerva-100"
+            textClassName="text-lg font-bold text-minerva-600"
+          />
           <div>
             <h1 className="text-lg font-bold text-[var(--text-primary)]">{member.full_name || 'Unnamed'}</h1>
             <div className="flex items-center gap-1.5">

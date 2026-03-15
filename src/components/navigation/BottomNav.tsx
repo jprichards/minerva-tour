@@ -95,7 +95,7 @@ export default function BottomNav() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center justify-center gap-0.5 min-h-[56px] px-4 py-2 rounded-lg transition-colors min-w-0 flex-1 ${
+                className={`flex flex-col items-center justify-center gap-0.5 min-h-[60px] px-4 py-3 rounded-lg transition-colors min-w-0 flex-1 ${
                   isActive ? 'text-minerva-600' : 'text-[var(--text-faint)] hover:text-[var(--text-muted)]'
                 }`}
               >
@@ -109,7 +109,7 @@ export default function BottomNav() {
           {/* More menu */}
           <button
             onClick={() => setMenuOpen(true)}
-            className={`flex flex-col items-center justify-center gap-0.5 min-h-[56px] px-4 py-2 rounded-lg transition-colors min-w-0 flex-1 ${
+            className={`flex flex-col items-center justify-center gap-0.5 min-h-[60px] px-4 py-3 rounded-lg transition-colors min-w-0 flex-1 ${
               menuOpen ? 'text-minerva-600' : 'text-[var(--text-faint)] hover:text-[var(--text-muted)]'
             }`}
           >

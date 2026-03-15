@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import useSWR from 'swr';
 import Link from 'next/link';
-import Image from 'next/image';
+import Avatar from '@/components/Avatar';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { formatNetScore } from '@/lib/scoring';
@@ -241,19 +241,12 @@ function CompareMembers({ members, currentUserId }: { members: User[]; currentUs
               className="flex items-center justify-between bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)]"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-[var(--bg-subtle)] rounded-full flex items-center justify-center overflow-hidden shrink-0">
-                  {m.profile_picture_url ? (
-                    <Image
-                      src={m.profile_picture_url}
-                      alt={m.full_name || 'Member'}
-                      width={32}
-                      height={32}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-xs font-bold text-[var(--text-muted)]">{(m.full_name || '?')[0].toUpperCase()}</span>
-                  )}
-                </div>
+                <Avatar
+                  src={m.profile_picture_url}
+                  name={m.full_name}
+                  className="w-8 h-8 bg-[var(--bg-subtle)] shrink-0"
+                  textClassName="text-xs font-bold text-[var(--text-muted)]"
+                />
                 <p className="text-sm font-medium text-[var(--text-primary)]">{m.full_name || 'Unnamed'}</p>
               </div>
               <ArrowRight className="w-4 h-4 text-[var(--text-faint)]" />

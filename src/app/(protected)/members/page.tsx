@@ -5,6 +5,7 @@ import useSWR from 'swr';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Search, Users, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import Avatar from '@/components/Avatar';
 import { getHandicapTrend } from '@/lib/handicap-trend';
 import type { User, Trophy } from '@/types/database';
 
@@ -128,15 +129,12 @@ export default function MembersPage() {
               href={`/members/${member.id}`}
               className="flex items-center gap-3 bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] hover:shadow-md transition-shadow"
             >
-              <div className="w-11 h-11 bg-minerva-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
-                {member.profile_picture_url ? (
-                  <img src={member.profile_picture_url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-sm font-bold text-minerva-600">
-                    {(member.full_name || member.email || '?')[0].toUpperCase()}
-                  </span>
-                )}
-              </div>
+              <Avatar
+                src={member.profile_picture_url}
+                name={member.full_name || member.email}
+                className="w-11 h-11 bg-minerva-100 flex-shrink-0"
+                textClassName="text-sm font-bold text-minerva-600"
+              />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <p className="text-sm font-semibold text-[var(--text-primary)] truncate">

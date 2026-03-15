@@ -4,13 +4,14 @@ import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import useSWR from 'swr';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import Avatar from '@/components/Avatar';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useSeason } from '@/lib/hooks/useSeason';
 import { Plus, Search, Clock, CheckCircle, Target, Link2, User as UserIcon, Calendar } from 'lucide-react';
 import { formatNetScore, getMaxHoles, calculateNetScore } from '@/lib/scoring';
 import type { Score } from '@/types/database';
+import { parseLocalDate } from '@/lib/date-utils';
 
 type TabType = 'completed' | 'teetimes';
 
@@ -262,19 +263,12 @@ function ScoresContent() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   {/* Profile Picture */}
-                  <div className="w-10 h-10 rounded-full bg-[var(--bg-subtle)] flex items-center justify-center shrink-0 overflow-hidden">
-                    {score.user?.profile_picture_url ? (
-                      <Image
-                        src={score.user.profile_picture_url}
-                        alt={score.user?.full_name || 'Player'}
-                        width={40}
-                        height={40}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <UserIcon className="w-4 h-4 text-[var(--text-faint)]" />
-                    )}
-                  </div>
+                  <Avatar
+                    src={score.user?.profile_picture_url}
+                    name={score.user?.full_name}
+                    className="w-10 h-10 bg-[var(--bg-subtle)] shrink-0"
+                    fallback={<UserIcon className="w-4 h-4 text-[var(--text-faint)]" />}
+                  />
                   <div className="flex-1 min-w-0 space-y-0.5">
                     <p className="text-[13px] font-semibold text-[var(--text-primary)] truncate">
                       {score.course?.course_name || 'Unknown Course'}
@@ -286,7 +280,7 @@ function ScoresContent() {
                       {score.user?.full_name || score.user?.email || 'Unknown'}
                       {!score.is_complete && score.gross_score != null ? (
                         <span className="text-[var(--text-faint)]"> &middot; {score.gross_score} {(() => {
-                          const scoreIsHistorical = score.event && new Date(score.event.end_date).getFullYear() < (currentSeason?.year ?? new Date().getFullYear());
+                          const scoreIsHistorical = score.event && parseLocalDate(score.event.end_date).getFullYear() < (currentSeason?.year ?? new Date().getFullYear());
                           const netOP = score.net_strokes_over_par ?? (
                             !scoreIsHistorical && score.course && score.user?.handicap_index != null
                               ? calculateNetScore(score.gross_score!, score.user.handicap_index, score.course.slope, score.course.rating, score.course.par, score.holes_played || 0, getMaxHoles(score.course.type), currentSeason?.handicap_allowance ?? 95).netStrokesOverPar

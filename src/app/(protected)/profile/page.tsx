@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { Edit, LogOut, Camera, TrendingUp, TrendingDown, Minus, Trophy, Target, Calendar, Sun, Moon, Monitor, MessageSquare, BarChart3, ChevronDown } from 'lucide-react';
 import TrophyCase from '@/components/TrophyCase';
+import Avatar from '@/components/Avatar';
 import { logAuditEvent } from '@/lib/audit';
 import { formatNetScore } from '@/lib/scoring';
 import { getHandicapTrend } from '@/lib/handicap-trend';
@@ -170,19 +171,12 @@ export default function ProfilePage() {
       {/* Profile Header */}
       <div className="flex items-start gap-4">
         <div className="relative">
-          <div className="w-20 h-20 bg-minerva-100 rounded-full flex items-center justify-center overflow-hidden">
-            {profile?.profile_picture_url ? (
-              <img
-                src={profile.profile_picture_url}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-2xl font-bold text-minerva-600">
-                {(profile?.full_name || profile?.email || '?')[0].toUpperCase()}
-              </span>
-            )}
-          </div>
+          <Avatar
+            src={profile?.profile_picture_url}
+            name={profile?.full_name || profile?.email}
+            className="w-20 h-20 bg-minerva-100"
+            textClassName="text-2xl font-bold text-minerva-600"
+          />
           <label className="absolute bottom-0 right-0 w-7 h-7 bg-minerva-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-minerva-700 transition-colors">
             <Camera className="w-3.5 h-3.5 text-white" />
             <input

@@ -5,6 +5,7 @@ import useSWR from 'swr';
 import { createClient } from '@/lib/supabase/client';
 import { AWARD_EMOJI, AWARD_DISPLAY_NAMES, type AwardType } from '@/lib/trophy-utils';
 import type { Trophy, User } from '@/types/database';
+import Avatar from '@/components/Avatar';
 
 type TrophyWithUser = Trophy & { user: Pick<User, 'id' | 'full_name' | 'profile_picture_url'> };
 
@@ -100,19 +101,12 @@ export default function HallOfFamePage() {
                     }`}
                   >
                     {/* Player photo */}
-                    <div className="w-9 h-9 bg-minerva-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {trophy.user?.profile_picture_url ? (
-                        <img
-                          src={trophy.user.profile_picture_url}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-xs font-bold text-minerva-600">
-                          {(trophy.user?.full_name || '?')[0].toUpperCase()}
-                        </span>
-                      )}
-                    </div>
+                    <Avatar
+                      src={trophy.user?.profile_picture_url}
+                      name={trophy.user?.full_name}
+                      className="w-9 h-9 bg-minerva-100 flex-shrink-0"
+                      textClassName="text-xs font-bold text-minerva-600"
+                    />
 
                     {/* Details */}
                     <div className="flex-1 min-w-0">

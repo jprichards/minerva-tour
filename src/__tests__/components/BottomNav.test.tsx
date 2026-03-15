@@ -91,6 +91,18 @@ describe('BottomNav', () => {
     expect(screen.queryByText('Admin')).not.toBeInTheDocument();
   });
 
+  it('nav items have sufficient touch target height', () => {
+    mockUseUser.mockReturnValue({
+      isAdmin: false,
+      isAuthenticated: true,
+    });
+    render(<BottomNav />);
+
+    const scoresLink = screen.getByText('Scores').closest('a');
+    expect(scoresLink).toHaveClass('min-h-[60px]');
+    expect(scoresLink).toHaveClass('py-3');
+  });
+
   it('closes More menu when X is clicked', () => {
     mockUseUser.mockReturnValue({
       isAdmin: false,

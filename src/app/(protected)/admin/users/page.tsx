@@ -7,7 +7,7 @@ import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
 import { ArrowLeft, Search, Save, TrendingUp, Camera } from 'lucide-react';
-import Image from 'next/image';
+import Avatar from '@/components/Avatar';
 import type { User, UserRole } from '@/types/database';
 
 const roles: { value: UserRole; label: string }[] = [
@@ -209,21 +209,12 @@ export default function AdminUsersPage() {
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="relative flex-shrink-0">
-                    <div className="w-10 h-10 bg-[var(--bg-subtle)] rounded-full flex items-center justify-center overflow-hidden">
-                      {user.profile_picture_url ? (
-                        <Image
-                          src={user.profile_picture_url}
-                          alt={user.full_name || 'User'}
-                          width={40}
-                          height={40}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-sm font-bold text-[var(--text-muted)]">
-                          {(user.full_name || user.email || '?')[0].toUpperCase()}
-                        </span>
-                      )}
-                    </div>
+                    <Avatar
+                      src={user.profile_picture_url}
+                      name={user.full_name || user.email}
+                      className="w-10 h-10 bg-[var(--bg-subtle)]"
+                      textClassName="text-sm font-bold text-[var(--text-muted)]"
+                    />
                     <label className="absolute -bottom-1 -right-1 w-5 h-5 bg-minerva-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-minerva-700 transition-colors">
                       <Camera className="w-3 h-3 text-white" />
                       <input

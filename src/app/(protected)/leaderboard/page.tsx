@@ -5,12 +5,14 @@ import useSWR, { useSWRConfig } from 'swr';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { Trophy, Medal, TrendingUp, AlertCircle, Download } from 'lucide-react';
+import Avatar from '@/components/Avatar';
 import { downloadCSV } from '@/lib/export';
 import { useSeason } from '@/lib/hooks/useSeason';
 import { formatNetScore } from '@/lib/scoring';
 import { computeEventLeaderboard, computeSeasonStandings } from '@/lib/standings';
 import type { Score, Event, Season } from '@/types/database';
 import type { ScoringMode } from '@/lib/standings';
+import { formatLocalDate } from '@/lib/date-utils';
 
 type ViewMode = 'event' | 'season';
 
@@ -248,8 +250,8 @@ export default function LeaderboardPage() {
               </p>
               <p className="text-xs text-minerva-600">
                 {currentEvent.holes} holes &middot;{' '}
-                {new Date(currentEvent.start_date).toLocaleDateString()} &ndash;{' '}
-                {new Date(currentEvent.end_date).toLocaleDateString()}
+                {formatLocalDate(currentEvent.start_date)} &ndash;{' '}
+                {formatLocalDate(currentEvent.end_date)}
               </p>
             </div>
           ) : (
@@ -287,20 +289,12 @@ export default function LeaderboardPage() {
                       )}
                     </div>
 
-                    {/* Avatar */}
-                    {entry.profilePicture ? (
-                      <img
-                        src={entry.profilePicture}
-                        alt={entry.playerName}
-                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-[var(--bg-skeleton)] flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-[var(--text-muted)]">
-                          {entry.playerName.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                    )}
+                    <Avatar
+                      src={entry.profilePicture}
+                      name={entry.playerName}
+                      className="w-8 h-8 bg-[var(--bg-skeleton)] flex-shrink-0"
+                      textClassName="text-xs font-bold text-[var(--text-muted)]"
+                    />
 
                     {/* Player Info */}
                     <div className="flex-1 min-w-0 space-y-0.5">
@@ -398,20 +392,12 @@ export default function LeaderboardPage() {
                       )}
                     </div>
 
-                    {/* Avatar */}
-                    {entry.profilePicture ? (
-                      <img
-                        src={entry.profilePicture}
-                        alt={entry.playerName}
-                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-[var(--bg-skeleton)] flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-[var(--text-muted)]">
-                          {entry.playerName.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                    )}
+                    <Avatar
+                      src={entry.profilePicture}
+                      name={entry.playerName}
+                      className="w-8 h-8 bg-[var(--bg-skeleton)] flex-shrink-0"
+                      textClassName="text-xs font-bold text-[var(--text-muted)]"
+                    />
 
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm font-medium truncate ${isCurrentUser ? 'text-minerva-800' : 'text-[var(--text-primary)]'}`}>

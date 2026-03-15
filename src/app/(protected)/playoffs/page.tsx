@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Trophy, ChevronRight } from 'lucide-react';
+import Avatar from '@/components/Avatar';
 import type { Season, User } from '@/types/database';
 
 interface PlayoffBracket {
@@ -228,15 +229,12 @@ function PlayerSlot({ player, seed, result, isWinner, isLoser }: {
           #{seed}
         </span>
       )}
-      <div className="w-7 h-7 rounded-full bg-[var(--bg-subtle)] flex items-center justify-center overflow-hidden flex-shrink-0">
-        {player?.profile_picture_url ? (
-          <img src={player.profile_picture_url} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <span className="text-[10px] font-bold text-[var(--text-muted)]">
-            {player?.full_name?.[0]?.toUpperCase() || '?'}
-          </span>
-        )}
-      </div>
+      <Avatar
+        src={player?.profile_picture_url}
+        name={player?.full_name}
+        className="w-7 h-7 bg-[var(--bg-subtle)] flex-shrink-0"
+        textClassName="text-[10px] font-bold text-[var(--text-muted)]"
+      />
       <span className={`text-sm truncate ${isWinner ? 'font-bold text-green-700' : 'font-medium text-[var(--text-secondary)]'}`}>
         {player?.full_name || 'TBD'}
       </span>
