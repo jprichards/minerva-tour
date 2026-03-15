@@ -232,6 +232,60 @@ describe('computePointsRace', () => {
     expect(data[1].eventLabel).toBe('1');
   });
 
+  it('does not treat early events as majors in scratch mode when later season events exist without scores', () => {
+    const events = [
+      makeEvent({ id: 'e1', event_number: 1 }),
+      makeEvent({ id: 'e2', event_number: 2 }),
+      makeEvent({ id: 'e3', event_number: 3 }),
+      makeEvent({ id: 'e4', event_number: 4 }),
+      makeEvent({ id: 'e5', event_number: 5 }),
+      makeEvent({ id: 'e6', event_number: 6 }),
+      makeEvent({ id: 'e7', event_number: 7 }),
+      makeEvent({ id: 'e8', event_number: 8 }),
+      makeEvent({ id: 'e9', event_number: 9 }),
+    ];
+
+    const scores: Score[] = [
+      makeScore({ id: 's1', user_id: 'alice', event_id: 'e1', net_strokes_over_par: -3, gross_score: 70 }),
+      makeScore({ id: 's2', user_id: 'bob', event_id: 'e1', net_strokes_over_par: -1, gross_score: 75 }),
+      makeScore({ id: 's3', user_id: 'charlie', event_id: 'e1', net_strokes_over_par: 2, gross_score: 80 }),
+    ];
+
+    const { data } = computePointsRace(scores, events, members, 'scratch');
+
+    // Event 1 is NOT the last season event (event 9 is), so it should use
+    // regular points, not major points. 3 participants: 1st=3, 2nd=2, 3rd=1
+    expect(data[1].alice).toBe(3);
+    expect(data[1].bob).toBe(2);
+    expect(data[1].charlie).toBe(1);
+  });
+
+  it('treats the actual last season event as major in scratch mode', () => {
+    const events = [
+      makeEvent({ id: 'e1', event_number: 1 }),
+      makeEvent({ id: 'e2', event_number: 2 }),
+      makeEvent({ id: 'e3', event_number: 3 }),
+    ];
+
+    const scores: Score[] = [
+      makeScore({ id: 's1', user_id: 'alice', event_id: 'e1', net_strokes_over_par: -3, gross_score: 70 }),
+      makeScore({ id: 's2', user_id: 'bob', event_id: 'e1', net_strokes_over_par: -1, gross_score: 75 }),
+      // Event 3 (last) should be major for scratch
+      makeScore({ id: 's3', user_id: 'alice', event_id: 'e3', net_strokes_over_par: -2, gross_score: 72 }),
+      makeScore({ id: 's4', user_id: 'bob', event_id: 'e3', net_strokes_over_par: 0, gross_score: 78 }),
+    ];
+
+    const { data } = computePointsRace(scores, events, members, 'scratch');
+
+    // Event 1: regular, 2 participants => 1st=2, 2nd=1
+    expect(data[1].alice).toBe(2);
+    expect(data[1].bob).toBe(1);
+
+    // Event 3 (last): major for scratch, 2 participants => 1st=max(round(2*1.33),10)=10, 2nd=7
+    expect(data[2].alice).toBe(12); // cumulative: 2 + 10
+    expect(data[2].bob).toBe(8);   // cumulative: 1 + 7
+  });
+
   it('prepends a starting point at zero so lines are drawn from origin', () => {
     const events = [makeEvent({ id: 'e1', event_number: 1 })];
 

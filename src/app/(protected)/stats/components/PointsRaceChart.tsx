@@ -53,6 +53,7 @@ function computePointsRace(
   const cumulative: Record<string, number> = {};
   const participatedMembers = new Set<string>();
   const data: RaceDataPoint[] = [];
+  const lastSeasonEventNumber = Math.max(...events.map((e) => e.event_number));
 
   for (const event of sortedEvents) {
     const eventScores = scores.filter((s) => s.event_id === event.id);
@@ -96,7 +97,7 @@ function computePointsRace(
 
     const numParticipants = ranked.length;
 
-    const isLastEvent = event.event_number === Math.max(...sortedEvents.map((e) => e.event_number));
+    const isLastEvent = event.event_number === lastSeasonEventNumber;
     const isMajorForMode = mode === 'scratch'
       ? (event.is_major || isLastEvent)
       : event.is_major;
