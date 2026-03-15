@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
 import { ArrowLeft, Plus, Trophy, Power, PowerOff, Trash2, Edit, Save, X } from 'lucide-react';
 import type { Tournament, Season } from '@/types/database';
+import { formatLocalDate } from '@/lib/date-utils';
 
 export default function AdminTournamentsPage() {
   const { isAdmin, loading: userLoading } = useUser();
@@ -285,7 +286,7 @@ export default function AdminTournamentsPage() {
                       {t.is_active && <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full font-medium">Active</span>}
                     </div>
                     <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                      {t.format?.replace(/_/g, ' ') || 'Stroke play'} &middot; {new Date(t.start_date).toLocaleDateString()} &ndash; {new Date(t.end_date).toLocaleDateString()}
+                      {t.format?.replace(/_/g, ' ') || 'Stroke play'} &middot; {formatLocalDate(t.start_date)} &ndash; {formatLocalDate(t.end_date)}
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5">

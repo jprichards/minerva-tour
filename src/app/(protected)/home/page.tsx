@@ -8,6 +8,7 @@ import { Trophy, Target, MapPin, Calendar, ExternalLink, Clock, TrendingUp, Imag
 import ShareButton from '@/components/navigation/ShareButton';
 import { getMaxHoles } from '@/lib/scoring';
 import type { Event, Season, Score } from '@/types/database';
+import { formatLocalDate } from '@/lib/date-utils';
 
 export default function HomePage() {
   const { profile, loading: userLoading } = useUser();
@@ -133,8 +134,8 @@ export default function HomePage() {
           </h2>
           <p className="text-minerva-200 text-sm mt-1">
             {currentEvent.holes} holes &middot;{' '}
-            {new Date(currentEvent.start_date).toLocaleDateString()} &ndash;{' '}
-            {new Date(currentEvent.end_date).toLocaleDateString()}
+            {formatLocalDate(currentEvent.start_date)} &ndash;{' '}
+            {formatLocalDate(currentEvent.end_date)}
           </p>
           <div className="mt-3 flex gap-2">
             <Link

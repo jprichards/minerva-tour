@@ -5,6 +5,7 @@ import useSWR from 'swr';
 import { createClient } from '@/lib/supabase/client';
 import { Calendar, List, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Event, Season } from '@/types/database';
+import { parseLocalDate, formatLocalDate } from '@/lib/date-utils';
 
 type ViewMode = 'calendar' | 'list';
 
@@ -144,7 +145,7 @@ export default function SchedulePage() {
                         {event.is_playoff && <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-medium">Playoff</span>}
                       </div>
                       <p className="text-xs text-[var(--text-muted)] mt-1">
-                        {event.holes} holes &middot; {new Date(event.start_date).toLocaleDateString()} &ndash; {new Date(event.end_date).toLocaleDateString()}
+                        {event.holes} holes &middot; {formatLocalDate(event.start_date)} &ndash; {formatLocalDate(event.end_date)}
                       </p>
                     </div>
                     {isActive && <span className="text-xs bg-minerva-600 text-white px-2 py-0.5 rounded-full font-medium">Active</span>}
@@ -208,8 +209,8 @@ export default function SchedulePage() {
           <div className="mt-4 space-y-1 border-t border-[var(--border-light)] pt-3">
             {events
               .filter((e) => {
-                const startMonth = new Date(e.start_date).getMonth();
-                const endMonth = new Date(e.end_date).getMonth();
+                const startMonth = parseLocalDate(e.start_date).getMonth();
+                const endMonth = parseLocalDate(e.end_date).getMonth();
                 const cm = calendarMonth.getMonth();
                 return startMonth === cm || endMonth === cm;
               })
@@ -220,7 +221,7 @@ export default function SchedulePage() {
                     <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color.dot }} />
                     <span className="font-medium" style={{ color: color.text }}>{e.name || `Event ${e.event_number}`}</span>
                     <span className="text-[var(--text-faint)]">
-                      {!e.is_playoff && e.event_number !== 0 && `${e.holes}H · `}{new Date(e.start_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} &ndash; {new Date(e.end_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      {!e.is_playoff && e.event_number !== 0 && `${e.holes}H · `}{formatLocalDate(e.start_date, { month: 'short', day: 'numeric' })} &ndash; {formatLocalDate(e.end_date, { month: 'short', day: 'numeric' })}
                     </span>
                   </div>
                 );

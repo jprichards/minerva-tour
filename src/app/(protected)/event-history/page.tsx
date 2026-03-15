@@ -7,6 +7,7 @@ import { formatNetScore } from '@/lib/scoring';
 import { Calendar, ChevronDown, ChevronUp, Trophy, Medal, Download } from 'lucide-react';
 import { downloadCSV } from '@/lib/export';
 import type { Event, Score, Season } from '@/types/database';
+import { formatLocalDate } from '@/lib/date-utils';
 
 interface EventWithScores extends Event {
   scores: Score[];
@@ -152,7 +153,7 @@ export default function EventHistoryPage() {
                       )}
                     </div>
                     <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                      {event.holes}h &middot; {new Date(event.start_date).toLocaleDateString()} &ndash; {new Date(event.end_date).toLocaleDateString()}
+                      {event.holes}h &middot; {formatLocalDate(event.start_date)} &ndash; {formatLocalDate(event.end_date)}
                       &middot; {ranked.length} player{ranked.length !== 1 ? 's' : ''}
                     </p>
                   </div>

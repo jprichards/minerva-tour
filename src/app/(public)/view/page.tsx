@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { formatNetScore, calculateRegularEventPoints, calculateMajorEventPoints } from '@/lib/scoring';
 import { Trophy, Medal, Calendar, LogIn } from 'lucide-react';
 import type { Event, Score, Season } from '@/types/database';
+import { formatLocalDate } from '@/lib/date-utils';
 
 export default function PublicViewPage() {
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
@@ -135,7 +136,7 @@ export default function PublicViewPage() {
                   )}
                 </h2>
                 <p className="text-xs text-[var(--text-muted)] mt-1">
-                  {currentEvent.holes} holes &middot; {new Date(currentEvent.start_date).toLocaleDateString()} &ndash; {new Date(currentEvent.end_date).toLocaleDateString()}
+                  {currentEvent.holes} holes &middot; {formatLocalDate(currentEvent.start_date)} &ndash; {formatLocalDate(currentEvent.end_date)}
                 </p>
               </div>
             ) : (

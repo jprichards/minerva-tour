@@ -10,6 +10,7 @@ import { computeEventLeaderboard, computeSeasonStandings } from '@/lib/standings
 import { formatNetScore } from '@/lib/scoring';
 import { ArrowLeft, Sparkles, Send, Loader2, AlertTriangle, RotateCcw, CheckCircle } from 'lucide-react';
 import type { Score, Event, Season, EventRecap } from '@/types/database';
+import { formatLocalDate } from '@/lib/date-utils';
 
 export default function RecapPage() {
   const params = useParams();
@@ -228,7 +229,7 @@ export default function RecapPage() {
     setPublishing(true);
     try {
       const eventName = event.name || `Event ${event.event_number}`;
-      const eventDates = `${new Date(event.start_date).toLocaleDateString()} – ${new Date(event.end_date).toLocaleDateString()}`;
+      const eventDates = `${formatLocalDate(event.start_date)} – ${formatLocalDate(event.end_date)}`;
 
       const standingsImages = {
         event_net: {
@@ -342,7 +343,7 @@ export default function RecapPage() {
         <div>
           <h1 className="text-xl font-bold text-[var(--text-primary)]">{eventName} Recap</h1>
           <p className="text-xs text-[var(--text-muted)]">
-            {new Date(event.start_date).toLocaleDateString()} – {new Date(event.end_date).toLocaleDateString()}
+            {formatLocalDate(event.start_date)} – {formatLocalDate(event.end_date)}
             {event.is_major && ' · Major'}
           </p>
         </div>

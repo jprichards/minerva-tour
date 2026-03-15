@@ -96,6 +96,22 @@ describe('Member Profile - Notable Rounds & Courses', () => {
     expect(worstSection).toHaveTextContent('Gross: 82');
   });
 
+  it('renders Best Gross and Worst Gross round cards', async () => {
+    render(<MemberProfilePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Best Gross Round')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Worst Gross Round')).toBeInTheDocument();
+
+    const bestGross = screen.getByText('Best Gross Round').closest('a')!;
+    expect(bestGross).toHaveAttribute('href', '/scores/s-1');
+
+    const worstGross = screen.getByText('Worst Gross Round').closest('a')!;
+    expect(worstGross).toHaveAttribute('href', '/scores/s-2');
+  });
+
   it('renders Courses Played Most with counts', async () => {
     render(<MemberProfilePage />);
 

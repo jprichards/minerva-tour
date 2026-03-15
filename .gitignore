@@ -25,13 +25,18 @@ playwright-report/
 # misc
 .DS_Store
 *.pem
-docs/bugs-feedback
+docs/bugs-feedback.md
 docs/bugs/
 docs/handicap-dump/
 docs/glide-app/
 docs/95percent_calc.png
+docs/basic.ics
+docs/event-date-comparison.txt
+docs/ideas/
 scripts/ncrdb-verify/
+scripts/*.mjs
 supabase/.temp/
+.cursor/
 
 # debug
 npm-debug.log*

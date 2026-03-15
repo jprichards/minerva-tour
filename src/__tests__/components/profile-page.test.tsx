@@ -133,6 +133,22 @@ describe('Profile Page - Stat Tiles', () => {
     expect(names).toContain('Oak Hills');
   });
 
+  it('renders Best Gross and Worst Gross round cards', async () => {
+    render(<ProfilePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Best Gross Round')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Worst Gross Round')).toBeInTheDocument();
+
+    const bestGross = screen.getByText('Best Gross Round').closest('a')!;
+    expect(bestGross).toHaveAttribute('href', '/scores/score-1');
+
+    const worstGross = screen.getByText('Worst Gross Round').closest('a')!;
+    expect(worstGross).toHaveAttribute('href', '/scores/score-4');
+  });
+
   it('renders Courses Played Most section with top courses', async () => {
     render(<ProfilePage />);
 

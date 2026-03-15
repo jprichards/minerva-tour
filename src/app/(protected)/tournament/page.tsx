@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { formatNetScore } from '@/lib/scoring';
 import { Trophy, Medal, Target, Calendar, Users } from 'lucide-react';
 import type { Tournament, Score } from '@/types/database';
+import { parseLocalDate, formatLocalDate } from '@/lib/date-utils';
 
 export default function TournamentPage() {
   const [tournament, setTournament] = useState<Tournament | null>(null);
@@ -117,7 +118,7 @@ export default function TournamentPage() {
           <h1 className="text-xl font-bold">{tournament.name}</h1>
           <p className="text-amber-200 text-sm mt-1">
             {tournament.format?.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Stroke Play'}
-            &middot; {new Date(tournament.start_date).toLocaleDateString()} &ndash; {new Date(tournament.end_date).toLocaleDateString()}
+            &middot; {formatLocalDate(tournament.start_date)} &ndash; {formatLocalDate(tournament.end_date)}
           </p>
           {tournament.is_active && (
             <Link
@@ -151,7 +152,7 @@ export default function TournamentPage() {
           <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-light)] shadow-[var(--shadow-sm)] text-center">
             <Calendar className="w-4 h-4 text-amber-600 mx-auto mb-1" />
             <p className="text-lg font-bold text-[var(--text-primary)]">
-              {tournament ? Math.ceil((new Date(tournament.end_date).getTime() - new Date(tournament.start_date).getTime()) / (1000 * 60 * 60 * 24)) + 1 : 0}
+              {tournament ? Math.ceil((parseLocalDate(tournament.end_date).getTime() - parseLocalDate(tournament.start_date).getTime()) / (1000 * 60 * 60 * 24)) + 1 : 0}
             </p>
             <p className="text-[10px] text-[var(--text-muted)]">Days</p>
           </div>

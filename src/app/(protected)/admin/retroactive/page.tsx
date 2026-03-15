@@ -12,6 +12,7 @@ import { useSeason } from '@/lib/hooks/useSeason';
 import { fetchAllCourses } from '@/lib/courses';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import type { User, Event, Course } from '@/types/database';
+import { formatLocalDate } from '@/lib/date-utils';
 
 export default function AdminRetroactiveScoresPage() {
   const { isAdmin, loading: userLoading } = useUser();
@@ -220,7 +221,7 @@ export default function AdminRetroactiveScoresPage() {
               <option value="">Select an event</option>
               {events.map((ev) => (
                 <option key={ev.id} value={ev.id}>
-                  Event {ev.event_number}{ev.name ? ` — ${ev.name}` : ''} ({new Date(ev.start_date).toLocaleDateString()} – {new Date(ev.end_date).toLocaleDateString()})
+                  Event {ev.event_number}{ev.name ? ` — ${ev.name}` : ''} ({formatLocalDate(ev.start_date)} – {formatLocalDate(ev.end_date)})
                 </option>
               ))}
             </select>
