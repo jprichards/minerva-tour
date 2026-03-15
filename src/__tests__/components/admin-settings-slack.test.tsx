@@ -32,6 +32,7 @@ describe('AdminSettingsPage - Slack Integration', () => {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
       upsert: vi.fn().mockResolvedValue({ error: null }),
     });
   });
@@ -105,10 +106,13 @@ describe('AdminSettingsPage - Slack Integration', () => {
     });
 
     const switches = screen.getAllByRole('switch');
-    expect(switches.length).toBe(6);
-    switches.forEach((sw) => {
+    // 5 score event toggles + 1 feedback toggle + 1 recap images toggle = 7
+    expect(switches.length).toBe(7);
+    // First 6 are notification event toggles (default on), last is recap images (default off)
+    switches.slice(0, 6).forEach((sw) => {
       expect(sw.getAttribute('aria-checked')).toBe('true');
     });
+    expect(switches[6].getAttribute('aria-checked')).toBe('false');
   });
 
   it('toggles an event switch off and on', async () => {
@@ -152,33 +156,34 @@ describe('AdminSettingsPage - Slack Integration', () => {
     // Mock config with existing token and channel
     const fromMock = vi.fn();
     let callCount = 0;
+    const singleImpl = () => {
+      callCount++;
+      if (callCount === 3) {
+        return Promise.resolve({
+          data: {
+            value: {
+              bot_token: 'xoxb-test-token',
+              channel_id: 'C123',
+              channel_name: '#test-channel',
+              events: {
+                tee_time: true,
+                score_in_progress: true,
+                round_complete: true,
+                score_edit: false,
+                retroactive: true,
+              },
+            },
+          },
+          error: null,
+        });
+      }
+      return Promise.resolve({ data: null, error: null });
+    };
     fromMock.mockReturnValue({
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockImplementation(() => {
-        callCount++;
-        if (callCount === 3) {
-          // Third call is slack_config
-          return Promise.resolve({
-            data: {
-              value: {
-                bot_token: 'xoxb-test-token',
-                channel_id: 'C123',
-                channel_name: '#test-channel',
-                events: {
-                  tee_time: true,
-                  score_in_progress: true,
-                  round_complete: true,
-                  score_edit: false,
-                  retroactive: true,
-                },
-              },
-            },
-            error: null,
-          });
-        }
-        return Promise.resolve({ data: null, error: null });
-      }),
+      single: vi.fn().mockImplementation(singleImpl),
+      maybeSingle: vi.fn().mockImplementation(singleImpl),
       upsert: vi.fn().mockResolvedValue({ error: null }),
     });
     mockSupabaseClient.from.mockImplementation(fromMock);
@@ -193,32 +198,34 @@ describe('AdminSettingsPage - Slack Integration', () => {
   it('shows Connected status when Slack config has token and channel', async () => {
     const fromMock = vi.fn();
     let callCount = 0;
+    const singleImpl = () => {
+      callCount++;
+      if (callCount === 3) {
+        return Promise.resolve({
+          data: {
+            value: {
+              bot_token: 'xoxb-test',
+              channel_id: 'C001',
+              channel_name: '#general',
+              events: {
+                tee_time: true,
+                score_in_progress: true,
+                round_complete: true,
+                score_edit: true,
+                retroactive: true,
+              },
+            },
+          },
+          error: null,
+        });
+      }
+      return Promise.resolve({ data: null, error: null });
+    };
     fromMock.mockReturnValue({
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockImplementation(() => {
-        callCount++;
-        if (callCount === 3) {
-          return Promise.resolve({
-            data: {
-              value: {
-                bot_token: 'xoxb-test',
-                channel_id: 'C001',
-                channel_name: '#general',
-                events: {
-                  tee_time: true,
-                  score_in_progress: true,
-                  round_complete: true,
-                  score_edit: true,
-                  retroactive: true,
-                },
-              },
-            },
-            error: null,
-          });
-        }
-        return Promise.resolve({ data: null, error: null });
-      }),
+      single: vi.fn().mockImplementation(singleImpl),
+      maybeSingle: vi.fn().mockImplementation(singleImpl),
       upsert: vi.fn().mockResolvedValue({ error: null }),
     });
     mockSupabaseClient.from.mockImplementation(fromMock);

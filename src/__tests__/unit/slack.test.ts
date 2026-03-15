@@ -186,6 +186,21 @@ describe('formatSlackMessage', () => {
       expect(text).not.toContain('Scratch');
     });
 
+    it('does not include tee time line', () => {
+      const payload: SlackNotifyPayload = {
+        ...basePayload,
+        event_type: 'score_in_progress',
+        holes_played: 14,
+        is_complete: false,
+        tee_time: '2026-03-15T13:00:00Z',
+      };
+
+      const msg = formatSlackMessage(payload);
+      const text = allBlockText(msg);
+
+      expect(text).not.toContain('Tee Time:');
+    });
+
     it('omits chirp when no net_strokes_over_par', () => {
       const payload: SlackNotifyPayload = {
         ...basePayload,
@@ -212,6 +227,13 @@ describe('formatSlackMessage', () => {
       expect(text).toContain('Net');
       expect(text).toContain('Mock chirp for John');
       expect(text).toContain('Points: -');
+    });
+
+    it('does not include tee time line', () => {
+      const msg = formatSlackMessage(basePayload);
+      const text = allBlockText(msg);
+
+      expect(text).not.toContain('Tee Time:');
     });
 
     it('shows projected net and scratch points when available', () => {

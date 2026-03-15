@@ -106,11 +106,11 @@ describe('Page rendering', () => {
       expect(screen.getByText('Playoffs')).toBeInTheDocument();
     });
 
-    it('renders flight tabs', () => {
+    it('hides flight tabs when no bracket data exists', () => {
       render(<PlayoffsPage />);
-      expect(screen.getByText('Championship')).toBeInTheDocument();
-      expect(screen.getByText('Consolation')).toBeInTheDocument();
-      expect(screen.getByText('Unicorn')).toBeInTheDocument();
+      expect(screen.queryByText('Championship')).not.toBeInTheDocument();
+      expect(screen.queryByText('Consolation')).not.toBeInTheDocument();
+      expect(screen.queryByText('Unicorn')).not.toBeInTheDocument();
     });
   });
 

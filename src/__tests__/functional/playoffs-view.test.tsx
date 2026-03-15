@@ -56,6 +56,34 @@ const mockBrackets = [
     player1: { id: 'u3', full_name: 'Arnold Palmer', profile_picture_url: null },
     player2: null,
   },
+  {
+    id: 'b3',
+    season_id: 's1',
+    flight: 'consolation',
+    round: 1,
+    matchup_number: 1,
+    player1_id: 'u4',
+    player2_id: 'u5',
+    winner_id: null,
+    player1_result: null,
+    player2_result: null,
+    player1: { id: 'u4', full_name: 'Phil Mickelson', profile_picture_url: null },
+    player2: { id: 'u5', full_name: 'Rory McIlroy', profile_picture_url: null },
+  },
+  {
+    id: 'b4',
+    season_id: 's1',
+    flight: 'unicorn',
+    round: 1,
+    matchup_number: 1,
+    player1_id: 'u6',
+    player2_id: 'u7',
+    winner_id: null,
+    player1_result: null,
+    player2_result: null,
+    player1: { id: 'u6', full_name: 'Dustin Johnson', profile_picture_url: null },
+    player2: { id: 'u7', full_name: 'Jordan Spieth', profile_picture_url: null },
+  },
 ];
 
 describe('Playoffs Member View', () => {
@@ -78,10 +106,10 @@ describe('Playoffs Member View', () => {
 
   it('renders flight tabs', async () => {
     render(<PlayoffsPage />);
-    await screen.findByText('Playoffs');
-    expect(screen.getByText('Championship')).toBeInTheDocument();
-    expect(screen.getByText('Consolation')).toBeInTheDocument();
-    expect(screen.getByText('Unicorn')).toBeInTheDocument();
+    await screen.findByText('Tiger Woods');
+    expect(screen.getByText(/Championship/)).toBeInTheDocument();
+    expect(screen.getByText(/Consolation/)).toBeInTheDocument();
+    expect(screen.getByText(/Unicorn/)).toBeInTheDocument();
   });
 
   it('renders bracket matchups with player names', async () => {
@@ -119,13 +147,13 @@ describe('Playoffs Member View', () => {
 
   it('shows Loser Advances banner when Unicorn tab is selected', async () => {
     render(<PlayoffsPage />);
-    await screen.findByText('Playoffs');
+    await screen.findByText('Tiger Woods');
 
     // Banner should not be visible for Championship (default tab)
     expect(screen.queryByText(/Reverse bracket/)).not.toBeInTheDocument();
 
     // Click Unicorn tab
-    fireEvent.click(screen.getByText('Unicorn'));
+    fireEvent.click(screen.getByText(/Unicorn/));
 
     await waitFor(() => {
       expect(screen.getByText(/Reverse bracket/)).toBeInTheDocument();
@@ -135,13 +163,13 @@ describe('Playoffs Member View', () => {
 
   it('does not show Loser Advances banner for Championship or Consolation', async () => {
     render(<PlayoffsPage />);
-    await screen.findByText('Playoffs');
+    await screen.findByText('Tiger Woods');
 
     // Default is Championship
     expect(screen.queryByText(/Reverse bracket/)).not.toBeInTheDocument();
 
     // Switch to Consolation
-    fireEvent.click(screen.getByText('Consolation'));
+    fireEvent.click(screen.getByText(/Consolation/));
     await waitFor(() => {
       expect(screen.queryByText(/Reverse bracket/)).not.toBeInTheDocument();
     });

@@ -78,15 +78,23 @@ let supabaseMocks: Record<string, unknown>;
 
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => {
-    const chain = () => {
+    const chain = (tableName?: string) => {
       const obj: Record<string, unknown> = {};
       obj.select = vi.fn().mockReturnValue(obj);
       obj.eq = vi.fn().mockImplementation((col: string, val: string) => {
         if (col === 'id' && val === 'test-event-id') {
           obj.single = vi.fn().mockResolvedValue({ data: mockEventData, error: null });
         }
+        if (col === 'id' && val === 'season-1') {
+          obj.single = vi.fn().mockResolvedValue({ data: mockEventData.season, error: null });
+        }
         if (col === 'event_id' && val === 'test-event-id') {
           obj.single = vi.fn().mockResolvedValue({ data: null, error: null });
+          obj.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+        }
+        if (col === 'key') {
+          obj.single = vi.fn().mockResolvedValue({ data: null, error: null });
+          obj.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
         }
         if (col === 'season_id') {
           obj.order = vi.fn().mockResolvedValue({
@@ -99,11 +107,12 @@ vi.mock('@/lib/supabase/client', () => ({
       obj.in = vi.fn().mockResolvedValue({ data: mockScores, error: null });
       obj.order = vi.fn().mockReturnValue(obj);
       obj.single = vi.fn().mockResolvedValue({ data: null, error: null });
+      obj.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
       return obj;
     };
 
     return {
-      from: vi.fn().mockImplementation(() => chain()),
+      from: vi.fn().mockImplementation((table: string) => chain(table)),
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'admin-user' } }, error: null }) },
     };
   },

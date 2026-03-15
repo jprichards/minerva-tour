@@ -207,13 +207,8 @@ function formatScoreInProgress(p: SlackScorePayload, dbTemplates?: Record<string
 
   const lines: string[] = [
     playerLine(p),
+    courseLine(p),
   ];
-
-  if (p.tee_time) {
-    lines.push(`Tee Time: ${formatTeeTimeDate(p.tee_time)}`);
-  }
-
-  lines.push(courseLine(p));
 
   const scoreLine = scoreLineMarkdown(p);
   if (scoreLine) {
@@ -242,13 +237,8 @@ function formatRoundComplete(p: SlackScorePayload, dbTemplates?: Record<string, 
 
   const lines: string[] = [
     playerLine(p),
+    courseLine(p),
   ];
-
-  if (p.tee_time) {
-    lines.push(`Tee Time: ${formatTeeTimeDate(p.tee_time)}`);
-  }
-
-  lines.push(courseLine(p));
 
   const scoreLine = scoreLineMarkdown(p);
   if (scoreLine) {

@@ -50,6 +50,7 @@ export const mockSupabaseClient = {
     limit: vi.fn().mockReturnThis(),
     range: vi.fn().mockResolvedValue({ data: [], error: null }),
     single: vi.fn().mockResolvedValue({ data: null, error: null }),
+    maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
     then: vi.fn(),
   }),
   channel: vi.fn().mockReturnValue({
