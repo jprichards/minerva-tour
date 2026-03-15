@@ -32,6 +32,7 @@ export function useQuickScoreSave({ score, onSaved, allowance = 95 }: QuickScore
   const slackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestStateRef = useRef<QuickScoreState | null>(null);
   const previousGrossRef = useRef<number | null>(score.gross_score);
+  const wasAlreadyCompleteRef = useRef<boolean>(score.is_complete === true);
   const hasFlushedRef = useRef(false);
 
   const doDbSave = useCallback(async (state: QuickScoreState) => {
@@ -141,11 +142,10 @@ export function useQuickScoreSave({ score, onSaved, allowance = 95 }: QuickScore
       netStrokesOverPar = result.netStrokesOverPar;
     }
 
-    const hadScoreBefore = previousGrossRef.current != null;
     let eventType: 'score_in_progress' | 'round_complete' | 'score_edit';
     if (!isFullRound) {
       eventType = 'score_in_progress';
-    } else if (!hadScoreBefore) {
+    } else if (!wasAlreadyCompleteRef.current) {
       eventType = 'round_complete';
     } else {
       eventType = 'score_edit';
@@ -173,6 +173,7 @@ export function useQuickScoreSave({ score, onSaved, allowance = 95 }: QuickScore
 
     notifySlack(payload);
     previousGrossRef.current = grossScore;
+    if (isFullRound) wasAlreadyCompleteRef.current = true;
   }, [score]);
 
   const scheduleUpdate = useCallback((state: QuickScoreState) => {

@@ -13,6 +13,7 @@ import { useSeason } from '@/lib/hooks/useSeason';
 import { fetchAllCourses, formatCourseType } from '@/lib/courses';
 import { ArrowLeft, Edit, Trash2, Save, Search, ChevronRight, X, Copy } from 'lucide-react';
 import MemberPicker from '@/components/MemberPicker';
+import { parseLocalDate } from '@/lib/date-utils';
 import QuickScore from '@/components/QuickScore';
 import type { Score, Event, Course, User } from '@/types/database';
 
@@ -116,7 +117,7 @@ export default function ScoreDetailPage() {
   const canDelete = canEdit;
 
   const currentSeasonYear = season?.year ?? new Date().getFullYear();
-  const isHistorical = score?.event != null && new Date(score.event.end_date).getFullYear() < currentSeasonYear;
+  const isHistorical = score?.event != null && parseLocalDate(score.event.end_date).getFullYear() < currentSeasonYear;
 
   const editHasScore = scoreEntryMode === 'toPar' ? grossToPar !== '' : grossScore !== '';
   const editMissingHoles = editHasScore && isPartialRound && !holesPlayed;
@@ -247,17 +248,15 @@ export default function ScoreDetailPage() {
     });
 
     if (!isHistorical) {
-      const hadScoreBefore = score.gross_score != null;
+      const wasAlreadyComplete = score.is_complete === true;
       const isFullRound = holesPlayedNum != null && holesPlayedNum >= maxHoles;
       const playerUser = score.user as unknown as { full_name: string | null; email: string | null; handicap_index: number | null };
 
       let slackEventType: 'score_in_progress' | 'round_complete' | 'score_edit';
       if (!isFullRound) {
         slackEventType = 'score_in_progress';
-      } else if (isFullRound && !hadScoreBefore) {
+      } else if (!wasAlreadyComplete) {
         slackEventType = 'round_complete';
-      } else if (isFullRound && hadScoreBefore) {
-        slackEventType = 'score_edit';
       } else {
         slackEventType = 'score_edit';
       }
@@ -932,7 +931,7 @@ export default function ScoreDetailPage() {
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
           <p className="text-sm font-medium text-amber-800">Historical Score</p>
           <p className="text-xs text-amber-600 mt-0.5">
-            Imported from Glide ({new Date(score.event!.end_date).getFullYear()} season).{isAdmin ? '' : ' This score is read-only.'}
+            Imported from Glide ({parseLocalDate(score.event!.end_date).getFullYear()} season).{isAdmin ? '' : ' This score is read-only.'}
             {score.handicap_index_used != null && (
               <> Handicap at time of play: {score.handicap_index_used}</>
             )}

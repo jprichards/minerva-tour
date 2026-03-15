@@ -259,6 +259,60 @@ describe('useQuickScoreSave', () => {
     expect(notifySlackMock.mock.calls[0][0].event_type).toBe('round_complete');
   });
 
+  it('uses round_complete (not score_edit) when partial round is completed to full', async () => {
+    const score = makeScore({ gross_score: 78, holes_played: 16, is_complete: false });
+    const { result } = renderHook(() => useQuickScoreSave({ score }));
+
+    act(() => {
+      result.current.scheduleUpdate({ grossToPar: 18, holesPlayed: 18 });
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(20_000);
+    });
+
+    expect(notifySlackMock).toHaveBeenCalledTimes(1);
+    expect(notifySlackMock.mock.calls[0][0].event_type).toBe('round_complete');
+  });
+
+  it('uses score_edit when an already-complete round is edited', async () => {
+    const score = makeScore({ gross_score: 85, holes_played: 18, is_complete: true });
+    const { result } = renderHook(() => useQuickScoreSave({ score }));
+
+    act(() => {
+      result.current.scheduleUpdate({ grossToPar: 20, holesPlayed: 18 });
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(20_000);
+    });
+
+    expect(notifySlackMock).toHaveBeenCalledTimes(1);
+    expect(notifySlackMock.mock.calls[0][0].event_type).toBe('score_edit');
+  });
+
+  it('uses score_edit for subsequent updates after round_complete fires', async () => {
+    const score = makeScore({ gross_score: null, holes_played: null, is_complete: false });
+    const { result } = renderHook(() => useQuickScoreSave({ score }));
+
+    act(() => {
+      result.current.scheduleUpdate({ grossToPar: 5, holesPlayed: 18 });
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(20_000);
+    });
+    expect(notifySlackMock.mock.calls[0][0].event_type).toBe('round_complete');
+
+    act(() => {
+      result.current.scheduleUpdate({ grossToPar: 6, holesPlayed: 18 });
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(20_000);
+    });
+    expect(notifySlackMock).toHaveBeenCalledTimes(2);
+    expect(notifySlackMock.mock.calls[1][0].event_type).toBe('score_edit');
+  });
+
   it('saves nulls to DB when holesPlayed is 0 (not started)', async () => {
     const score = makeScore();
     const { result } = renderHook(() => useQuickScoreSave({ score }));
