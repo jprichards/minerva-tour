@@ -169,6 +169,17 @@ function computePointsRace(
     data.push(point);
   }
 
+  if (data.length > 0) {
+    const startPoint: RaceDataPoint = {
+      eventLabel: '0',
+      eventNumber: 0,
+    };
+    for (const memberId of participatedMembers) {
+      startPoint[memberId] = 0;
+    }
+    data.unshift(startPoint);
+  }
+
   const activeMemberIds = members
     .filter((m) => participatedMembers.has(m.id))
     .map((m) => m.id);

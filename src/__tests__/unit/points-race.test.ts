@@ -69,18 +69,25 @@ describe('computePointsRace', () => {
 
     const { data, activeMemberIds } = computePointsRace(scores, events, members, 'net');
 
-    expect(data).toHaveLength(2);
+    // 3 data points: starting zero + 2 events
+    expect(data).toHaveLength(3);
     expect(activeMemberIds).toEqual(['alice', 'bob', 'charlie']);
 
+    // Starting point: all at 0
+    expect(data[0].eventLabel).toBe('0');
+    expect(data[0].alice).toBe(0);
+    expect(data[0].bob).toBe(0);
+    expect(data[0].charlie).toBe(0);
+
     // Event 1: 3 participants => 1st=3pts, 2nd=2pts, 3rd=1pt
-    expect(data[0].alice).toBe(3);
-    expect(data[0].bob).toBe(2);
-    expect(data[0].charlie).toBe(1);
+    expect(data[1].alice).toBe(3);
+    expect(data[1].bob).toBe(2);
+    expect(data[1].charlie).toBe(1);
 
     // Event 2 cumulative: Alice 3+2=5, Bob 2+3=5, Charlie 1+1=2
-    expect(data[1].alice).toBe(5);
-    expect(data[1].bob).toBe(5);
-    expect(data[1].charlie).toBe(2);
+    expect(data[2].alice).toBe(5);
+    expect(data[2].bob).toBe(5);
+    expect(data[2].charlie).toBe(2);
   });
 
   it('handles ties with split points', () => {
@@ -96,9 +103,9 @@ describe('computePointsRace', () => {
     const { data } = computePointsRace(scores, events, members, 'net');
 
     // 3 participants: 1st=3, 2nd=2 => tied => split (3+2)/2 = 2.5
-    expect(data[0].alice).toBe(2.5);
-    expect(data[0].bob).toBe(2.5);
-    expect(data[0].charlie).toBe(1);
+    expect(data[1].alice).toBe(2.5);
+    expect(data[1].bob).toBe(2.5);
+    expect(data[1].charlie).toBe(1);
   });
 
   it('awards major event points for major events', () => {
@@ -112,9 +119,9 @@ describe('computePointsRace', () => {
     const { data } = computePointsRace(scores, events, members, 'net');
 
     // Major: 2 participants => 1st = max(round(2*1.33*10)/10, 10) = 10
-    expect(data[0].alice).toBe(10);
+    expect(data[1].alice).toBe(10);
     // 2nd = 10 - 3 = 7
-    expect(data[0].bob).toBe(7);
+    expect(data[1].bob).toBe(7);
   });
 
   it('picks best score per user per event', () => {
@@ -129,8 +136,8 @@ describe('computePointsRace', () => {
     const { data } = computePointsRace(scores, events, members, 'net');
 
     // Alice's best is -1 (1st), Bob is 0 (2nd)
-    expect(data[0].alice).toBe(2);
-    expect(data[0].bob).toBe(1);
+    expect(data[1].alice).toBe(2);
+    expect(data[1].bob).toBe(1);
   });
 
   it('excludes playoff events in net mode', () => {
@@ -148,9 +155,10 @@ describe('computePointsRace', () => {
 
     const { data } = computePointsRace(scores, events, members, 'net');
 
-    // Only event 1 should be included
-    expect(data).toHaveLength(1);
-    expect(data[0].eventLabel).toBe('1');
+    // Starting zero + event 1
+    expect(data).toHaveLength(2);
+    expect(data[0].eventLabel).toBe('0');
+    expect(data[1].eventLabel).toBe('1');
   });
 
   it('includes playoff events in scratch mode', () => {
@@ -168,8 +176,8 @@ describe('computePointsRace', () => {
 
     const { data } = computePointsRace(scores, events, members, 'scratch');
 
-    // Both events included in scratch mode
-    expect(data).toHaveLength(2);
+    // Starting zero + both events included in scratch mode
+    expect(data).toHaveLength(3);
   });
 
   it('labels major events with asterisk', () => {
@@ -185,8 +193,9 @@ describe('computePointsRace', () => {
 
     const { data } = computePointsRace(scores, events, members, 'net');
 
-    expect(data[0].eventLabel).toBe('1');
-    expect(data[1].eventLabel).toBe('2*');
+    expect(data[0].eventLabel).toBe('0');
+    expect(data[1].eventLabel).toBe('1');
+    expect(data[2].eventLabel).toBe('2*');
   });
 
   it('only includes members who participated in activeMemberIds', () => {
@@ -217,7 +226,34 @@ describe('computePointsRace', () => {
 
     const { data } = computePointsRace(scores, events, members, 'net');
 
-    expect(data).toHaveLength(1);
-    expect(data[0].eventLabel).toBe('1');
+    // Starting zero + 1 event with scores
+    expect(data).toHaveLength(2);
+    expect(data[0].eventLabel).toBe('0');
+    expect(data[1].eventLabel).toBe('1');
+  });
+
+  it('prepends a starting point at zero so lines are drawn from origin', () => {
+    const events = [makeEvent({ id: 'e1', event_number: 1 })];
+
+    const scores: Score[] = [
+      makeScore({ id: 's1', user_id: 'alice', event_id: 'e1', net_strokes_over_par: -3 }),
+      makeScore({ id: 's2', user_id: 'bob', event_id: 'e1', net_strokes_over_par: 0 }),
+    ];
+
+    const { data } = computePointsRace(scores, events, members, 'net');
+
+    expect(data).toHaveLength(2);
+
+    // First data point is the origin
+    expect(data[0].eventLabel).toBe('0');
+    expect(data[0].eventNumber).toBe(0);
+    expect(data[0].alice).toBe(0);
+    expect(data[0].bob).toBe(0);
+    expect(data[0].charlie).toBeUndefined();
+
+    // Second data point is event 1 with actual points
+    expect(data[1].eventLabel).toBe('1');
+    expect(data[1].alice).toBe(2);
+    expect(data[1].bob).toBe(1);
   });
 });
