@@ -892,7 +892,7 @@ export default function ScoreDetailPage() {
             {/* Hero: Score Needed to shoot Net E */}
             <div className="text-center pb-3 border-b border-[var(--border-light)]">
               <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Score Needed to shoot Net E</p>
-              <p className="text-3xl font-bold text-minerva-600 mt-1">{scoreForNetE}</p>
+              <p className="text-3xl font-bold text-minerva-600 mt-1">{formatGrossScore(scoreForNetE, course.par)}</p>
             </div>
 
             {/* Handicap rows */}
