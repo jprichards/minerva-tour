@@ -17,6 +17,21 @@ import type { Course, User } from '@/types/database';
 
 type Step = 'course' | 'player' | 'details' | 'success';
 
+async function resolveEventForDate(
+  supabase: ReturnType<typeof createClient>,
+  seasonId: string,
+  roundDate: string
+): Promise<string | null> {
+  const { data: events } = await supabase
+    .from('events')
+    .select('id')
+    .eq('season_id', seasonId)
+    .lte('start_date', roundDate)
+    .gte('end_date', roundDate)
+    .limit(1);
+  return events?.[0]?.id ?? null;
+}
+
 export default function AddScorePage() {
   return (
     <Suspense fallback={<div className="p-4"><div className="h-6 bg-[var(--bg-skeleton)] rounded animate-pulse w-32" /></div>}>
@@ -69,6 +84,7 @@ function AddScoreContent() {
   const [copiedMemberIds, setCopiedMemberIds] = useState<string[]>([]);
   const [copyDisabledIds, setCopyDisabledIds] = useState<string[]>([]);
   const [copyLoading, setCopyLoading] = useState(false);
+  const [resolvedEventId, setResolvedEventId] = useState<string | null>(null);
 
   // Track whether the preselected course was already resolved to prevent re-running
   const [preselectionResolved, setPreselectionResolved] = useState(false);
@@ -243,10 +259,15 @@ function AddScoreContent() {
 
     const { data: { user } } = await supabase.auth.getUser();
 
+    const eventId = season?.id
+      ? await resolveEventForDate(supabase, season.id, roundDate)
+      : null;
+    setResolvedEventId(eventId);
+
     const scoreData = {
       user_id: selectedPlayer.id,
       course_id: selectedCourse.id,
-      event_id: currentEvent?.id || null,
+      event_id: eventId,
       tee_time: combinedTeeTime,
       gross_score: grossScoreNum,
       holes_played: holesPlayedNum,
@@ -312,12 +333,12 @@ function AddScoreContent() {
     setCopiedMemberIds([selectedPlayer.id]);
 
     // Find members who already have a tee time for this course+event
-    if (currentEvent?.id) {
+    if (eventId) {
       const { data: existingScores } = await supabase
         .from('scores')
         .select('user_id')
         .eq('course_id', selectedCourse.id)
-        .eq('event_id', currentEvent.id);
+        .eq('event_id', eventId);
       const existingUserIds = (existingScores || []).map((s: { user_id: string }) => s.user_id);
       setCopyDisabledIds(existingUserIds.filter((uid: string) => uid !== selectedPlayer.id));
     }
@@ -334,7 +355,7 @@ function AddScoreContent() {
     const rows = memberIds.map((uid) => ({
       user_id: uid,
       course_id: selectedCourse.id,
-      event_id: currentEvent?.id || null,
+      event_id: resolvedEventId,
       tee_time: combinedTeeTime,
       gross_score: null,
       holes_played: null,

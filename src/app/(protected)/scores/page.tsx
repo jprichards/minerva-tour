@@ -65,7 +65,7 @@ function ScoresContent() {
     async () => {
       let query = supabase
         .from('scores')
-        .select('*, course:courses(*), user:users!user_id(full_name, email, profile_picture_url, handicap_index), event:events!inner(*)')
+        .select('*, course:courses(*), user:users!user_id(full_name, email, profile_picture_url, handicap_index), event:events(*)')
         .order('tee_time', { ascending: false });
 
       if (tab === 'teetimes') {
@@ -74,17 +74,12 @@ function ScoresContent() {
         query = query.eq('is_complete', true);
       }
 
-      // Filter by season year at the DB level to stay under Supabase row limits
+      // Filter by tee_time year to include both event and non-event scores
       if (yearFilter !== 'all' && yearFilter !== 'pending') {
         const selectedYear = parseInt(yearFilter);
-        const { data: seasonData } = await supabase
-          .from('seasons')
-          .select('id')
-          .eq('year', selectedYear)
-          .single();
-        if (seasonData) {
-          query = query.eq('events.season_id', seasonData.id);
-        }
+        query = query
+          .gte('tee_time', `${selectedYear}-01-01`)
+          .lt('tee_time', `${selectedYear + 1}-01-01`);
       }
 
       const { data, error } = await query;
@@ -105,11 +100,12 @@ function ScoresContent() {
   );
 
   // Derive available events from the (already year-filtered) scores
-  const availableEvents = (() => {
-    if (yearFilter === 'all' || yearFilter === 'pending') return [];
+  const { availableEvents, hasNoEventScores } = (() => {
+    if (yearFilter === 'all' || yearFilter === 'pending') return { availableEvents: [], hasNoEventScores: false };
     const eventsInYear = new Map<string, { id: string; eventNumber: number; eventName: string }>();
+    let noEvent = false;
     for (const s of scores) {
-      if (!s.event) continue;
+      if (!s.event) { noEvent = true; continue; }
       const eid = s.event.id;
       if (!eventsInYear.has(eid)) {
         eventsInYear.set(eid, {
@@ -119,7 +115,10 @@ function ScoresContent() {
         });
       }
     }
-    return [...eventsInYear.values()].sort((a, b) => a.eventNumber - b.eventNumber);
+    return {
+      availableEvents: [...eventsInYear.values()].sort((a, b) => a.eventNumber - b.eventNumber),
+      hasNoEventScores: noEvent,
+    };
   })();
 
   // Auto-default to the current event when available; fall back to 'all'
@@ -135,6 +134,7 @@ function ScoresContent() {
   // If the selected event doesn't exist in the current tab's data, fall back to
   // 'all' for display/filtering while preserving the state for tab-switch restore.
   const effectiveEventFilter = eventFilter === 'all'
+    || eventFilter === 'no-event'
     || (availableEvents.length > 0 && availableEvents.some(ev => ev.id === eventFilter))
     ? eventFilter
     : 'all';
@@ -142,7 +142,8 @@ function ScoresContent() {
   const filtered = scores.filter((s) => {
     if (filterMyRounds && profile?.id && s.user_id !== profile.id) return false;
 
-    if (effectiveEventFilter !== 'all' && s.event?.id !== effectiveEventFilter) return false;
+    if (effectiveEventFilter === 'no-event' && s.event_id != null) return false;
+    if (effectiveEventFilter !== 'all' && effectiveEventFilter !== 'no-event' && s.event?.id !== effectiveEventFilter) return false;
 
     if (!search) return true;
     const lower = search.toLowerCase();
@@ -216,7 +217,7 @@ function ScoresContent() {
             <option key={y} value={y}>{y}</option>
           ))}
         </select>
-        {availableEvents.length > 0 && (
+        {(availableEvents.length > 0 || hasNoEventScores) && (
           <select
             value={effectiveEventFilter}
             onChange={(e) => setEventFilter(e.target.value)}
@@ -228,6 +229,9 @@ function ScoresContent() {
                 {ev.eventName}
               </option>
             ))}
+            {hasNoEventScores && (
+              <option value="no-event">No Event</option>
+            )}
           </select>
         )}
         <button
