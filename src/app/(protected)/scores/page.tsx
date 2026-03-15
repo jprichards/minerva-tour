@@ -8,7 +8,7 @@ import Avatar from '@/components/Avatar';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useSeason } from '@/lib/hooks/useSeason';
-import { Plus, Search, Clock, CheckCircle, Target, Link2, User as UserIcon, Calendar } from 'lucide-react';
+import { Plus, Search, Clock, CheckCircle, Target, User as UserIcon, Calendar } from 'lucide-react';
 import { formatNetScore, getMaxHoles, calculateNetScore } from '@/lib/scoring';
 import type { Score } from '@/types/database';
 import { parseLocalDate } from '@/lib/date-utils';
@@ -146,13 +146,6 @@ function ScoresContent() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-[var(--text-primary)]">Scores</h1>
         <div className="flex items-center gap-2">
-          <Link
-            href="/scores/bridge"
-            className="flex items-center gap-1.5 bg-[var(--bg-subtle)] text-[var(--text-secondary)] text-sm font-medium px-3 py-2 rounded-xl hover:bg-[var(--bg-skeleton)] transition-colors"
-          >
-            <Link2 className="w-4 h-4" />
-            Bridge
-          </Link>
           <Link
             href="/scores/add"
             className="flex items-center gap-1.5 bg-minerva-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-minerva-700 transition-colors"
