@@ -210,7 +210,8 @@ function ScoresContent() {
         <select
           value={yearFilter === 'pending' ? 'all' : yearFilter}
           onChange={(e) => { setYearFilter(e.target.value); setEventFilter('all'); }}
-          className="flex-1 py-3 px-3 text-xs font-medium rounded-xl border bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-default)] hover:bg-[var(--bg-page)] transition-colors appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-minerva-500 text-center"
+          className="flex-1 py-3 px-3 text-xs font-medium rounded-xl border bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-default)] hover:bg-[var(--bg-page)] transition-colors appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-minerva-500"
+          style={{ textAlign: 'center', textAlignLast: 'center' }}
         >
           <option value="all">All Years</option>
           {availableYears.map((y) => (
@@ -221,7 +222,8 @@ function ScoresContent() {
           <select
             value={effectiveEventFilter}
             onChange={(e) => setEventFilter(e.target.value)}
-            className="flex-1 py-3 px-3 text-xs font-medium rounded-xl border bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-default)] hover:bg-[var(--bg-page)] transition-colors appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-minerva-500 text-center"
+            className="flex-1 py-3 px-3 text-xs font-medium rounded-xl border bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-default)] hover:bg-[var(--bg-page)] transition-colors appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-minerva-500"
+            style={{ textAlign: 'center', textAlignLast: 'center' }}
           >
             <option value="all">All Events</option>
             {availableEvents.map((ev) => (
