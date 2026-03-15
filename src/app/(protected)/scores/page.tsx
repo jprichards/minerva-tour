@@ -26,7 +26,7 @@ export default function ScoresPage() {
 function ScoresContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { season: currentSeason } = useSeason();
+  const { season: currentSeason, currentEvent: seasonCurrentEvent } = useSeason();
   const initialTab = (searchParams.get('tab') as TabType) || 'completed';
   const playerFilter = searchParams.get('player') || '';
   const [tab, setTab] = useState<TabType>(initialTab);
@@ -35,14 +35,12 @@ function ScoresContent() {
   const [yearFilter, setYearFilter] = useState<string>('pending');
   const [eventFilter, setEventFilter] = useState<string>('all');
   const hasSetDefaultYear = useRef(false);
+  const hasSetDefaultEvent = useRef(false);
   const { profile } = useUser();
   const supabase = createClient();
 
   const switchTab = useCallback((newTab: TabType) => {
     setTab(newTab);
-    setEventFilter('all');
-    hasSetDefaultYear.current = false;
-    setYearFilter('pending');
     const params = new URLSearchParams(window.location.search);
     params.set('tab', newTab);
     router.replace(`/scores?${params.toString()}`, { scroll: false });
@@ -124,11 +122,27 @@ function ScoresContent() {
     return [...eventsInYear.values()].sort((a, b) => a.eventNumber - b.eventNumber);
   })();
 
+  // Auto-default to the current event when available; fall back to 'all'
+  useEffect(() => {
+    if (!hasSetDefaultEvent.current && availableEvents.length > 0 && seasonCurrentEvent) {
+      hasSetDefaultEvent.current = true;
+      if (availableEvents.some(ev => ev.id === seasonCurrentEvent.id)) {
+        setEventFilter(seasonCurrentEvent.id);
+      }
+    }
+  }, [availableEvents, seasonCurrentEvent]);
+
+  // If the selected event doesn't exist in the current tab's data, fall back to
+  // 'all' for display/filtering while preserving the state for tab-switch restore.
+  const effectiveEventFilter = eventFilter === 'all'
+    || (availableEvents.length > 0 && availableEvents.some(ev => ev.id === eventFilter))
+    ? eventFilter
+    : 'all';
+
   const filtered = scores.filter((s) => {
     if (filterMyRounds && profile?.id && s.user_id !== profile.id) return false;
 
-    // Apply event filter
-    if (eventFilter !== 'all' && s.event?.id !== eventFilter) return false;
+    if (effectiveEventFilter !== 'all' && s.event?.id !== effectiveEventFilter) return false;
 
     if (!search) return true;
     const lower = search.toLowerCase();
@@ -204,7 +218,7 @@ function ScoresContent() {
         </select>
         {availableEvents.length > 0 && (
           <select
-            value={eventFilter}
+            value={effectiveEventFilter}
             onChange={(e) => setEventFilter(e.target.value)}
             className="flex-1 py-3 px-3 text-xs font-medium rounded-xl border bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-default)] hover:bg-[var(--bg-page)] transition-colors appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-minerva-500 text-center"
           >
