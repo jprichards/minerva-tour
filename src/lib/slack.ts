@@ -231,7 +231,7 @@ function formatScoreInProgress(p: SlackScorePayload, dbTemplates?: Record<string
     const chirp = dbTemplates
       ? getChirpFromTemplates(dbTemplates, p.net_strokes_over_par, ctx, bucketRanges)
       : getChirp(p.net_strokes_over_par, ctx, bucketRanges);
-    blocks.push(sectionBlock(`:studio_microphone: _"${chirp}"_`));
+    blocks.push(sectionBlock(`_${chirp}_`));
   }
 
   return { text: fallbackText, blocks };
@@ -266,7 +266,7 @@ function formatRoundComplete(p: SlackScorePayload, dbTemplates?: Record<string, 
     const chirp = dbTemplates
       ? getChirpFromTemplates(dbTemplates, p.net_strokes_over_par, ctx, bucketRanges)
       : getChirp(p.net_strokes_over_par, ctx, bucketRanges);
-    blocks.push(sectionBlock(`:studio_microphone: _"${chirp}"_`));
+    blocks.push(sectionBlock(`_${chirp}_`));
   }
 
   return { text: fallbackText, blocks };
