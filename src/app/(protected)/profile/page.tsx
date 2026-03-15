@@ -9,7 +9,7 @@ import { Edit, LogOut, Camera, TrendingUp, TrendingDown, Minus, Trophy, Target, 
 import TrophyCase from '@/components/TrophyCase';
 import Avatar from '@/components/Avatar';
 import { logAuditEvent } from '@/lib/audit';
-import { formatNetScore, getMaxHoles } from '@/lib/scoring';
+import { formatNetScore, formatGrossScore, getMaxHoles, calculatePartialPar } from '@/lib/scoring';
 import { getHandicapTrend } from '@/lib/handicap-trend';
 import { useThemeContext } from '@/components/ThemeProvider';
 import type { ThemePreference } from '@/lib/hooks/useTheme';
@@ -22,6 +22,8 @@ interface NotableStats {
   worstNet: number | null;
   bestRound: Score | null;
   worstRound: Score | null;
+  bestGrossRound: Score | null;
+  worstGrossRound: Score | null;
   topCourses: { name: string; count: number }[];
   uniqueCourses: number;
 }
@@ -43,6 +45,8 @@ export default function ProfilePage() {
     worstNet: null,
     bestRound: null,
     worstRound: null,
+    bestGrossRound: null,
+    worstGrossRound: null,
     topCourses: [],
     uniqueCourses: 0,
   });
@@ -73,8 +77,19 @@ export default function ProfilePage() {
         setScores(scoresData);
         const scores = scoresData;
         const nets = scores.map((s) => s.net_strokes_over_par!);
+        const grossOverPar = scores.map((s) => {
+          if (s.gross_score == null || s.course?.par == null) return Infinity;
+          const maxH = getMaxHoles(s.course?.type || '18_holes');
+          const effectivePar = (s.holes_played != null && s.holes_played !== maxH)
+            ? calculatePartialPar(s.course.par, s.holes_played, maxH)
+            : s.course.par;
+          return s.gross_score - effectivePar;
+        });
         const bestIdx = nets.indexOf(Math.min(...nets));
         const worstIdx = nets.indexOf(Math.max(...nets));
+        const bestGrossIdx = grossOverPar.indexOf(Math.min(...grossOverPar));
+        const finiteGrossOverPar = grossOverPar.filter((g) => g !== Infinity);
+        const worstGrossIdx = finiteGrossOverPar.length > 0 ? grossOverPar.indexOf(Math.max(...finiteGrossOverPar)) : -1;
 
         const courseCount: Record<string, { name: string; count: number }> = {};
         for (const s of scores) {
@@ -91,6 +106,8 @@ export default function ProfilePage() {
           worstNet: Math.max(...nets),
           bestRound: scores[bestIdx],
           worstRound: scores[worstIdx],
+          bestGrossRound: grossOverPar[bestGrossIdx] !== Infinity ? scores[bestGrossIdx] : null,
+          worstGrossRound: worstGrossIdx >= 0 ? scores[worstGrossIdx] : null,
           topCourses,
           uniqueCourses: new Set(scores.map((s) => s.course?.course_name)).size,
         });
@@ -301,7 +318,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Notable Rounds */}
-      {(stats.bestRound || stats.worstRound) && (
+      {(stats.bestRound || stats.worstRound || stats.bestGrossRound || stats.worstGrossRound) && (
         <div>
           <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">Notable Rounds</h3>
           <div className="space-y-2">
@@ -331,6 +348,42 @@ export default function ProfilePage() {
                 </div>
               </Link>
             )}
+            {stats.bestGrossRound && (() => {
+              const s = stats.bestGrossRound;
+              const maxH = getMaxHoles(s.course?.type || '18_holes');
+              const effPar = (s.holes_played != null && s.holes_played !== maxH) ? calculatePartialPar(s.course?.par ?? 72, s.holes_played, maxH) : (s.course?.par ?? 72);
+              return (
+              <Link href={`/scores/${s.id}`} className="flex items-center justify-between bg-green-50 dark:bg-green-900/30 rounded-xl p-3 border border-green-100 dark:border-green-800">
+                <div>
+                  <p className="text-xs text-green-600 dark:text-green-400 font-medium">Best Gross Round</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{s.course?.course_name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(s.tee_time || s.created_at).toLocaleDateString('en-US', { timeZone: 'UTC' })}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-green-700 dark:text-green-400">{formatGrossScore(s.gross_score!, effPar)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Net: {formatNetScore(s.net_strokes_over_par!)}</p>
+                </div>
+              </Link>
+              );
+            })()}
+            {stats.worstGrossRound && stats.worstGrossRound.id !== stats.bestGrossRound?.id && (() => {
+              const s = stats.worstGrossRound;
+              const maxH = getMaxHoles(s.course?.type || '18_holes');
+              const effPar = (s.holes_played != null && s.holes_played !== maxH) ? calculatePartialPar(s.course?.par ?? 72, s.holes_played, maxH) : (s.course?.par ?? 72);
+              return (
+              <Link href={`/scores/${s.id}`} className="flex items-center justify-between bg-red-50 dark:bg-red-900/30 rounded-xl p-3 border border-red-100 dark:border-red-800">
+                <div>
+                  <p className="text-xs text-red-600 dark:text-red-400 font-medium">Worst Gross Round</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{s.course?.course_name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(s.tee_time || s.created_at).toLocaleDateString('en-US', { timeZone: 'UTC' })}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-red-700 dark:text-red-400">{formatGrossScore(s.gross_score!, effPar)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Net: {formatNetScore(s.net_strokes_over_par!)}</p>
+                </div>
+              </Link>
+              );
+            })()}
           </div>
         </div>
       )}
