@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSWRConfig } from 'swr';
 import { createClient } from '@/lib/supabase/client';
@@ -62,6 +62,8 @@ function AddScoreContent() {
   const [isPartialRound, setIsPartialRound] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   // Post-submit copy state
   const [copiedMemberIds, setCopiedMemberIds] = useState<string[]>([]);
@@ -597,14 +599,18 @@ function AddScoreContent() {
           <div className="flex gap-2">
             <div className="flex-1">
               <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Date</label>
-              <div className="relative rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3">
+              <div
+                className="relative rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-3 cursor-pointer"
+                onClick={() => { try { dateInputRef.current?.showPicker(); } catch {} }}
+              >
                 <input
+                  ref={dateInputRef}
                   type="date"
                   value={roundDate}
                   onChange={(e) => setRoundDate(e.target.value || roundDate)}
-                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
                 />
-                <span className="text-sm">
+                <span className="text-sm pointer-events-none">
                   {roundDate
                     ? new Date(roundDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
                     : <span className="text-[var(--text-muted)]">Select date</span>}

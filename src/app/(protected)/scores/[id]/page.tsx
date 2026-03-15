@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSWRConfig } from 'swr';
 import { createClient } from '@/lib/supabase/client';
@@ -40,6 +40,7 @@ export default function ScoreDetailPage() {
   const [isPartialRound, setIsPartialRound] = useState(false);
   const [roundDate, setRoundDate] = useState('');
   const [teeTimeOfDay, setTeeTimeOfDay] = useState('');
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const [editHandicapIndex, setEditHandicapIndex] = useState('');
 
   // Event change fields (historical only)
@@ -641,14 +642,18 @@ export default function ScoreDetailPage() {
           <div className="flex gap-2">
             <div className="flex-1">
               <label className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Date</label>
-              <div className="relative rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 mt-1">
+              <div
+                className="relative rounded-xl border bg-[var(--input-bg)] border-[var(--input-border)] px-4 py-2.5 mt-1 cursor-pointer"
+                onClick={() => { try { dateInputRef.current?.showPicker(); } catch {} }}
+              >
                 <input
+                  ref={dateInputRef}
                   type="date"
                   value={roundDate}
                   onChange={(e) => setRoundDate(e.target.value || roundDate)}
-                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
                 />
-                <span className="text-sm">
+                <span className="text-sm pointer-events-none">
                   {roundDate
                     ? new Date(roundDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
                     : <span className="text-[var(--text-muted)]">Select date</span>}
