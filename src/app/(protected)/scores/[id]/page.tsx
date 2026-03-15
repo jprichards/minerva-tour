@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
-import { calculateNetScore, calculateScratchScore, getMaxHoles, formatNetScore, formatGrossScore, courseMatchesEventHoles, calculateUnroundedCourseHandicap, calculateUnroundedPlayingHandicap, calculateScoringDifferential } from '@/lib/scoring';
+import { calculateNetScore, calculateScratchScore, getMaxHoles, formatNetScore, formatGrossScore, courseMatchesEventHoles, calculateUnroundedCourseHandicap, calculateUnroundedPlayingHandicap, calculateScoringDifferential, calculatePartialPar } from '@/lib/scoring';
 import { notifySlack } from '@/lib/slack-notify';
 import { useSeason } from '@/lib/hooks/useSeason';
 import { fetchAllCourses, formatCourseType } from '@/lib/courses';
@@ -945,13 +945,19 @@ export default function ScoreDetailPage() {
       )}
 
       {/* Score Results (view mode only, when score data exists) */}
-      {!editing && !copying && score.gross_score != null && (
+      {!editing && !copying && score.gross_score != null && (() => {
+        const viewMaxHoles = getMaxHoles(score.course?.type || '18_holes');
+        const viewHolesPlayed = score.holes_played ?? viewMaxHoles;
+        const effectivePar = viewHolesPlayed < viewMaxHoles
+          ? calculatePartialPar(score.course?.par || 72, viewHolesPlayed, viewMaxHoles)
+          : (score.course?.par || 72);
+        return (
         <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-5 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Gross (Scratch) Score</p>
               <p className="text-xl font-bold text-[var(--text-primary)] mt-0.5">
-                {formatGrossScore(score.gross_score, score.course?.par || 72)}
+                {formatGrossScore(score.gross_score, effectivePar)}
               </p>
             </div>
             <div>
@@ -986,7 +992,7 @@ export default function ScoreDetailPage() {
                     {formatNetScore(score.scratch_strokes_over_rating)}
                   </p>
                 </div>
-              ) : !isHistorical && score.course ? (
+              ) : !isHistorical && score.course && score.is_complete ? (
                 <div>
                   <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">Scoring Differential</p>
                   <p className="text-sm font-medium text-[var(--text-primary)] mt-0.5">
@@ -1016,7 +1022,8 @@ export default function ScoreDetailPage() {
             </div>
           )}
         </div>
-      )}
+        );
+      })()}
 
       {/* Copy to Members */}
       {!editing && canEdit && !isHistorical && copying && (
