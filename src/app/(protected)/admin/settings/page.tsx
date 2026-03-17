@@ -257,9 +257,18 @@ export default function AdminSettingsPage() {
       logAuditEvent('update_settings', 'app_settings', undefined, {
         google_photos_url: googlePhotosUrl,
         rules_url: rulesUrl,
-        slack_channel: slackChannelName,
+        slack_channel_name: slackChannelName,
+        slack_channel_id: slackChannelId,
         slack_events: slackEvents,
+        feedback_channel_name: feedbackChannelName || null,
+        feedback_channel_id: feedbackChannelId || null,
+        recap_channel_name: recapChannelName || null,
+        recap_channel_id: recapChannelId || null,
+        recap_images_in_thread: recapImagesInThread,
         ai_model: aiModel,
+        ai_endpoint: aiEndpoint,
+        ai_max_tokens: aiMaxTokens,
+        ai_system_prompt: aiSystemPrompt,
       });
 
       showToast('Settings saved!', 'success');

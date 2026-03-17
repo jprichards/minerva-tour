@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import AdminSettingsPage from '@/app/(protected)/admin/settings/page';
 import { mockSupabaseClient } from '../setup';
+import * as auditModule from '@/lib/audit';
 
 // Mock useUser to return admin
 vi.mock('@/lib/hooks/useUser', () => ({
@@ -245,6 +246,41 @@ describe('AdminSettingsPage - Slack Integration', () => {
       expect(link).toBeInTheDocument();
       expect(link).toHaveAttribute('href', 'https://api.slack.com/apps');
       expect(link).toHaveAttribute('target', '_blank');
+    });
+  });
+
+  it('audit log includes all 3 Slack channel configs and AI recap settings on save', async () => {
+    const logAuditEvent = vi.mocked(auditModule.logAuditEvent);
+
+    render(<AdminSettingsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Slack Integration')).toBeInTheDocument();
+    });
+
+    const saveButton = screen.getByRole('button', { name: /save settings/i });
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect(logAuditEvent).toHaveBeenCalledWith(
+        'update_settings',
+        'app_settings',
+        undefined,
+        expect.objectContaining({
+          slack_channel_name: expect.toSatisfy((v: unknown) => v !== undefined),
+          slack_channel_id: expect.toSatisfy((v: unknown) => v !== undefined),
+          slack_events: expect.toSatisfy((v: unknown) => v !== undefined),
+          feedback_channel_name: expect.toSatisfy((v: unknown) => v !== undefined),
+          feedback_channel_id: expect.toSatisfy((v: unknown) => v !== undefined),
+          recap_channel_name: expect.toSatisfy((v: unknown) => v !== undefined),
+          recap_channel_id: expect.toSatisfy((v: unknown) => v !== undefined),
+          recap_images_in_thread: expect.toSatisfy((v: unknown) => v !== undefined),
+          ai_model: expect.toSatisfy((v: unknown) => v !== undefined),
+          ai_endpoint: expect.toSatisfy((v: unknown) => v !== undefined),
+          ai_max_tokens: expect.toSatisfy((v: unknown) => v !== undefined),
+          ai_system_prompt: expect.toSatisfy((v: unknown) => v !== undefined),
+        })
+      );
     });
   });
 });
