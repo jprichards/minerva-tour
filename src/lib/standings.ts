@@ -363,11 +363,7 @@ export function computeSeasonStandings(
       const numTied = rj - ri;
       let assignedPoints: number;
 
-      const maxEventNumber = Math.max(...eventsToInclude.map(e => e.event_number));
-      const isLastEvent = event.event_number === maxEventNumber;
-      const isMajorForMode = scoringMode === 'scratch'
-        ? (event.is_major || isLastEvent)
-        : event.is_major;
+      const isMajorForMode = event.is_major;
 
       if (numTied > 1) {
         const tiedPts: number[] = [];

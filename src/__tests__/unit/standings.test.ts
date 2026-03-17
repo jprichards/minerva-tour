@@ -202,6 +202,51 @@ describe('computeSeasonStandings', () => {
     expect(scratchResult[0].eventsPlayed).toBe(2);
   });
 
+  it('scratch standings use regular points for non-major events regardless of position in season', () => {
+    // Major status comes solely from event.is_major in the database.
+    // A regular event should never be scored as a major, even if it is the last event
+    // in the season or the last event in a throughEventNumber-filtered snapshot.
+    const event1 = makeEvent({ id: 'ev1', event_number: 1, is_major: false });
+    const event2 = makeEvent({ id: 'ev2', event_number: 2, is_major: false });
+    const event3 = makeEvent({ id: 'ev3', event_number: 3, is_major: false });
+    const allSeasonEvents = [event1, event2, event3];
+
+    const userA = { ...makeScore().user!, id: 'u1', full_name: 'Player A' };
+    const userB = { ...makeScore().user!, id: 'u2', full_name: 'Player B' };
+
+    const scores = [
+      makeScore({ id: 's1', user_id: 'u1', event_id: 'ev1', gross_score: 72, user: userA, event: event1 }),
+      makeScore({ id: 's2', user_id: 'u2', event_id: 'ev1', gross_score: 78, user: userB, event: event1 }),
+    ];
+
+    const throughEvent1 = computeSeasonStandings(scores, allSeasonEvents, 'scratch', 1);
+
+    // Regular points for 2 players: 1st=2, 2nd=1
+    expect(throughEvent1[0].totalPoints).toBe(2);
+    expect(throughEvent1[1].totalPoints).toBe(1);
+  });
+
+  it('scratch standings use major points only when event.is_major is true', () => {
+    const regularEvent = makeEvent({ id: 'ev1', event_number: 1, is_major: false });
+    const majorEvent = makeEvent({ id: 'ev2', event_number: 2, is_major: true });
+    const allSeasonEvents = [regularEvent, majorEvent];
+
+    const userA = { ...makeScore().user!, id: 'u1', full_name: 'Player A' };
+
+    const regularScores = [
+      makeScore({ id: 's1', user_id: 'u1', event_id: 'ev1', gross_score: 72, user: userA, event: regularEvent }),
+    ];
+    const majorScores = [
+      makeScore({ id: 's2', user_id: 'u1', event_id: 'ev2', gross_score: 72, user: userA, event: majorEvent }),
+    ];
+
+    const regularResult = computeSeasonStandings(regularScores, allSeasonEvents, 'scratch');
+    const majorResult = computeSeasonStandings(majorScores, allSeasonEvents, 'scratch');
+
+    // Major event should award more points than regular event (1 player: regular=1, major=max(1.33,10)=10)
+    expect(majorResult[0].totalPoints).toBeGreaterThan(regularResult[0].totalPoints);
+  });
+
   it('sorts by total points descending', () => {
     const event1 = makeEvent({ id: 'ev1', event_number: 1 });
     const userA = { ...makeScore().user!, id: 'u1', full_name: 'Player A', handicap_index: 5 };
