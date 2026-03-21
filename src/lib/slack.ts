@@ -93,7 +93,7 @@ function formatCourseType(courseType?: CourseType): string {
  * Format the player line: "John Smith (12.4)" or "John Smith" if no handicap
  */
 function playerLine(p: SlackScorePayload): string {
-  const hcp = p.handicap_index != null ? ` (${p.handicap_index})` : '';
+  const hcp = p.handicap_index != null ? ` *(${p.handicap_index})*` : '';
   return `*${p.player_name}*${hcp}`;
 }
 
@@ -140,9 +140,12 @@ function scoreLineMarkdown(payload: SlackScorePayload): string {
   }
 
   if (payload.holes_played != null && payload.max_holes) {
-    parts.push(`*Holes:* ${payload.holes_played} of ${payload.max_holes}`);
+    const thruValue = payload.holes_played >= payload.max_holes
+      ? 'F'
+      : `${payload.holes_played} of ${payload.max_holes}`;
+    parts.push(`*Thru:* ${thruValue}`);
   } else if (payload.holes_played != null) {
-    parts.push(`*Holes:* ${payload.holes_played}`);
+    parts.push(`*Thru:* ${payload.holes_played}`);
   }
 
   return parts.join('  |  ');
@@ -205,10 +208,18 @@ function formatTeeTime(p: SlackScorePayload): SlackMessage {
 function formatScoreInProgress(p: SlackScorePayload, dbTemplates?: Record<string, string[]>, bucketRanges?: BucketRange[]): SlackMessage {
   const fallbackText = `Score Update — ${p.player_name} at ${p.course_name}`;
 
-  const lines: string[] = [
-    playerLine(p),
-    courseLine(p),
-  ];
+  const lines: string[] = [];
+
+  if (p.net_strokes_over_par != null) {
+    const ctx = buildChirpContext(p);
+    const chirp = dbTemplates
+      ? getChirpFromTemplates(dbTemplates, p.net_strokes_over_par, ctx, bucketRanges)
+      : getChirp(p.net_strokes_over_par, ctx, bucketRanges);
+    lines.push(chirp);
+  }
+
+  lines.push(playerLine(p));
+  lines.push(courseLine(p));
 
   const scoreLine = scoreLineMarkdown(p);
   if (scoreLine) {
@@ -220,14 +231,6 @@ function formatScoreInProgress(p: SlackScorePayload, dbTemplates?: Record<string
   const blocks: SlackBlock[] = [
     sectionBlock(lines.join('\n')),
   ];
-
-  if (p.net_strokes_over_par != null) {
-    const ctx = buildChirpContext(p);
-    const chirp = dbTemplates
-      ? getChirpFromTemplates(dbTemplates, p.net_strokes_over_par, ctx, bucketRanges)
-      : getChirp(p.net_strokes_over_par, ctx, bucketRanges);
-    blocks.push(sectionBlock(`_${chirp}_`));
-  }
 
   return { text: fallbackText, blocks };
 }
@@ -235,10 +238,18 @@ function formatScoreInProgress(p: SlackScorePayload, dbTemplates?: Record<string
 function formatRoundComplete(p: SlackScorePayload, dbTemplates?: Record<string, string[]>, bucketRanges?: BucketRange[]): SlackMessage {
   const fallbackText = `Round Complete — ${p.player_name} at ${p.course_name}`;
 
-  const lines: string[] = [
-    playerLine(p),
-    courseLine(p),
-  ];
+  const lines: string[] = [];
+
+  if (p.net_strokes_over_par != null) {
+    const ctx = buildChirpContext(p);
+    const chirp = dbTemplates
+      ? getChirpFromTemplates(dbTemplates, p.net_strokes_over_par, ctx, bucketRanges)
+      : getChirp(p.net_strokes_over_par, ctx, bucketRanges);
+    lines.push(chirp);
+  }
+
+  lines.push(playerLine(p));
+  lines.push(courseLine(p));
 
   const scoreLine = scoreLineMarkdown(p);
   if (scoreLine) {
@@ -250,14 +261,6 @@ function formatRoundComplete(p: SlackScorePayload, dbTemplates?: Record<string, 
   const blocks: SlackBlock[] = [
     sectionBlock(lines.join('\n')),
   ];
-
-  if (p.net_strokes_over_par != null) {
-    const ctx = buildChirpContext(p);
-    const chirp = dbTemplates
-      ? getChirpFromTemplates(dbTemplates, p.net_strokes_over_par, ctx, bucketRanges)
-      : getChirp(p.net_strokes_over_par, ctx, bucketRanges);
-    blocks.push(sectionBlock(`_${chirp}_`));
-  }
 
   return { text: fallbackText, blocks };
 }
@@ -278,7 +281,7 @@ function formatScoreEdit(p: SlackScorePayload): SlackMessage {
     parts.push(`*Net:* ${formatNetScore(p.old_net_score)} → ${formatNetScore(p.net_strokes_over_par)}`);
   }
   if (p.holes_played != null) {
-    parts.push(`*Holes:* ${p.holes_played}`);
+    parts.push(`*Thru:* ${p.holes_played}`);
   }
   if (parts.length > 0) {
     lines.push(parts.join('  |  '));

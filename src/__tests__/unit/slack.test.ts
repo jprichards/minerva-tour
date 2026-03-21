@@ -378,10 +378,33 @@ describe('formatSlackMessage', () => {
       const msg = formatSlackMessage(payload);
       const text = allBlockText(msg);
 
-      expect(text).toContain('9 of 18');
+      expect(text).toContain('*Thru:* 9 of 18');
     });
 
-    it('shows holes without max_holes', () => {
+    it('shows Thru: F for completed 18-hole rounds', () => {
+      const msg = formatSlackMessage(basePayload);
+      const text = allBlockText(msg);
+
+      expect(text).toContain('*Thru:* F');
+      expect(text).not.toContain('18 of 18');
+    });
+
+    it('shows Thru: F for completed 9-hole rounds', () => {
+      const payload: SlackNotifyPayload = {
+        ...basePayload,
+        course_type: '9_holes',
+        holes_played: 9,
+        max_holes: 9,
+      };
+
+      const msg = formatSlackMessage(payload);
+      const text = allBlockText(msg);
+
+      expect(text).toContain('*Thru:* F');
+      expect(text).not.toContain('9 of 9');
+    });
+
+    it('shows thru without max_holes', () => {
       const payload: SlackNotifyPayload = {
         ...basePayload,
         max_holes: undefined,
@@ -390,14 +413,14 @@ describe('formatSlackMessage', () => {
       const msg = formatSlackMessage(payload);
       const text = allBlockText(msg);
 
-      expect(text).toContain('*Holes:* 18');
+      expect(text).toContain('*Thru:* 18');
     });
 
     it('uses only section blocks (no header, title, context, or divider blocks)', () => {
       const msg = formatSlackMessage(basePayload);
 
       expect(msg.blocks.every((b) => b.type === 'section')).toBe(true);
-      // First block is the content section
+      // Single block contains chirp, player, course, scores
       expect(msg.blocks[0].text?.text).toContain('John Smith');
     });
 
