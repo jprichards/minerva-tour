@@ -27,12 +27,18 @@ vi.mock('@/lib/export', () => ({
   generateLeaderboardHTML: vi.fn(),
 }));
 
+const _today = new Date();
+const _start = new Date(_today);
+_start.setDate(_start.getDate() - 14);
+const _end = new Date(_today);
+_end.setDate(_end.getDate() + 14);
+
 const mockEvent = {
   id: 'evt-1',
   name: 'Event 1',
   event_number: 1,
-  start_date: '2026-03-01',
-  end_date: '2026-03-15',
+  start_date: _start.toISOString().split('T')[0],
+  end_date: _end.toISOString().split('T')[0],
   holes: 18,
   is_major: false,
   is_playoff: false,

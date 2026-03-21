@@ -29,10 +29,18 @@ vi.mock('@/lib/hooks/useUser', () => ({
   }),
 }));
 
+const _today = new Date();
+const _start = new Date(_today);
+_start.setDate(_start.getDate() - 14);
+const _end = new Date(_today);
+_end.setDate(_end.getDate() + 14);
+const _startStr = _start.toISOString().split('T')[0];
+const _endStr = _end.toISOString().split('T')[0];
+
 vi.mock('@/lib/hooks/useSeason', () => ({
   useSeason: () => ({
     season: { id: 's-1', mode: 'regular_season', handicap_allowance: 95 },
-    currentEvent: { id: 'evt-current', name: 'Event 3', event_number: 3, holes: 18, start_date: '2026-03-02', end_date: '2026-03-15', is_major: false, is_playoff: false },
+    currentEvent: { id: 'evt-current', name: 'Event 3', event_number: 3, holes: 18, start_date: _startStr, end_date: _endStr, is_major: false, is_playoff: false },
     loading: false,
     isOffSeason: false,
     isRegularSeason: true,
@@ -125,7 +133,7 @@ vi.mock('@/lib/supabase/client', () => ({
         if (currentTable === 'events') {
           eventQueryCalls.push({ table: currentTable, filters: { ...filters } });
           const startLte = filters['start_date_lte'] as string | undefined;
-          if (startLte && startLte >= '2026-03-02' && startLte <= '2026-03-15') {
+          if (startLte && startLte >= _startStr && startLte <= _endStr) {
             resolve({ data: [{ id: 'evt-resolved' }], error: null });
           } else {
             resolve({ data: [], error: null });
