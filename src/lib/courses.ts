@@ -6,6 +6,13 @@ export function formatCourseType(type: CourseType | string): string {
   return type.replace(/_/g, ' ').replace(/\b[a-z]/g, (c) => c.toUpperCase());
 }
 
+/** Returns " (front)" or " (back)" for front/back 9 courses, empty string otherwise. */
+export function nineHoleSuffix(type: CourseType | string): string {
+  if (type === 'front_9') return ' (front)';
+  if (type === 'back_9') return ' (back)';
+  return '';
+}
+
 const PAGE_SIZE = 1000;
 
 /**

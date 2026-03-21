@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { fetchAllCourses } from '@/lib/courses';
+import { fetchAllCourses, nineHoleSuffix } from '@/lib/courses';
 
 function createMockSupabase(pages: Record<string, unknown>[][]) {
   let callIndex = 0;
@@ -20,6 +20,24 @@ function createMockSupabase(pages: Record<string, unknown>[][]) {
     mockRange,
   };
 }
+
+describe('nineHoleSuffix', () => {
+  it('returns " (front)" for front_9', () => {
+    expect(nineHoleSuffix('front_9')).toBe(' (front)');
+  });
+
+  it('returns " (back)" for back_9', () => {
+    expect(nineHoleSuffix('back_9')).toBe(' (back)');
+  });
+
+  it('returns empty string for 9_holes', () => {
+    expect(nineHoleSuffix('9_holes')).toBe('');
+  });
+
+  it('returns empty string for 18_holes', () => {
+    expect(nineHoleSuffix('18_holes')).toBe('');
+  });
+});
 
 describe('fetchAllCourses', () => {
   it('returns all courses from a single page', async () => {

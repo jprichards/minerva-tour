@@ -12,6 +12,7 @@ import { Plus, Search, Clock, CheckCircle, Target, User as UserIcon, Calendar } 
 import { formatNetScore, getMaxHoles, calculateNetScore } from '@/lib/scoring';
 import type { Score } from '@/types/database';
 import { parseLocalDate } from '@/lib/date-utils';
+import { nineHoleSuffix } from '@/lib/courses';
 
 type TabType = 'completed' | 'teetimes';
 
@@ -300,9 +301,9 @@ function ScoresContent() {
                               : null
                           );
                           return netOP != null ? `(net ${formatNetScore(netOP)}) ` : '';
-                        })()}thru {score.holes_played} of {getMaxHoles(score.course?.type || '18_holes')}</span>
+                        })()}thru {score.holes_played} of {getMaxHoles(score.course?.type || '18_holes')}{nineHoleSuffix(score.course?.type || '18_holes') && <span className="opacity-60">{nineHoleSuffix(score.course?.type || '18_holes')}</span>}</span>
                       ) : (
-                        <span className="text-[var(--text-faint)]"> &middot; {score.holes_played ?? getMaxHoles(score.course?.type || '18_holes')} holes</span>
+                        <span className="text-[var(--text-faint)]"> &middot; {score.holes_played ?? getMaxHoles(score.course?.type || '18_holes')} holes{nineHoleSuffix(score.course?.type || '18_holes') && <span className="opacity-60">{nineHoleSuffix(score.course?.type || '18_holes')}</span>}</span>
                       )}
                     </p>
                     <p className="text-xs text-[var(--text-faint)] truncate">
