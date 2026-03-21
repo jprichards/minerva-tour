@@ -72,7 +72,7 @@ These pull data from other sheets (Courses, Profile) based on the selected cours
 ```
 **Logic:** Look up the player's handicap from the Profile sheet. Uses the **18-hole handicap index** (Profile col C) for 18-hole courses, or the **9-hole handicap** (Profile col E) for 9-hole courses.
 
-**App equivalent:** `users.handicap_index` -- our app only stores one handicap index. The 9-hole handicap is typically half the 18-hole index per USGA rules.
+**App equivalent:** `users.handicap_index` stores the 18-hole GHIN index. For 9-hole courses, `effectiveHandicapIndex()` in `scoring.ts` halves it and rounds to 1 decimal (`round(HI / 2, 1)`) before applying the WHS formula, matching the Glide app's separate 9-hole handicap column.
 
 ---
 

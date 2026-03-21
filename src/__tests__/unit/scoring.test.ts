@@ -17,6 +17,9 @@ import {
   calculateUnroundedCourseHandicap,
   calculateUnroundedPlayingHandicap,
   calculateScoringDifferential,
+  nineHoleHandicapIndex,
+  effectiveHandicapIndex,
+  calculatePlayingHandicap,
 } from '@/lib/scoring';
 
 // ============================================
@@ -249,16 +252,17 @@ describe('calculateNetScore', () => {
     expect(result.netStrokesOverPar).toBe(0);
   });
 
-  it('handles 9-hole course (not partial)', () => {
-    // HI=15.0, Slope=120, Rating=35.0, Par=36, Gross=42, 9/9, 95%
-    // UnroundedCH = (15*120/113) + (35-36) = 15.929 + (-1) = 14.929
-    // PH = round(0.95 * 14.929) = round(14.183) = 14
-    // Net = 42 - 14 = 28, NOP = 42 - 14 - 36 = -8
+  it('handles 9-hole course with halved handicap index', () => {
+    // HI=15.0 on 9-hole course → 9h HI = round(15.0/2, 1) = 7.5
+    // Slope=120, Rating=35.0, Par=36, Gross=42, 9/9, 95%
+    // UnroundedCH = (7.5*120/113) + (35-36) = 7.965 + (-1) = 6.965
+    // PH = round(0.95 * 6.965) = round(6.616) = 7
+    // Net = 42 - 7 = 35, NOP = 42 - 7 - 36 = -1
     const result = calculateNetScore(42, 15.0, 120, 35.0, 36, 9, 9, 95);
     expect(result.isPartial).toBe(false);
-    expect(result.courseHandicap).toBe(14);
-    expect(result.netScore).toBe(28);
-    expect(result.netStrokesOverPar).toBe(-8);
+    expect(result.courseHandicap).toBe(7);
+    expect(result.netScore).toBe(35);
+    expect(result.netStrokesOverPar).toBe(-1);
   });
 });
 
@@ -840,5 +844,157 @@ describe('courseMatchesEventHoles', () => {
     expect(courseMatchesEventHoles('front_9', 9)).toBe(true);
     expect(courseMatchesEventHoles('back_9', 9)).toBe(true);
     expect(courseMatchesEventHoles('18_holes', 9)).toBe(false);
+  });
+});
+
+// ============================================
+// nineHoleHandicapIndex
+// ============================================
+describe('nineHoleHandicapIndex', () => {
+  it('halves and rounds to 1 decimal', () => {
+    // 15.0 / 2 = 7.5
+    expect(nineHoleHandicapIndex(15.0)).toBe(7.5);
+  });
+
+  it('rounds 15.3 / 2 = 7.65 → 7.7', () => {
+    expect(nineHoleHandicapIndex(15.3)).toBe(7.7);
+  });
+
+  it('rounds 7.5 / 2 = 3.75 → 3.8', () => {
+    expect(nineHoleHandicapIndex(7.5)).toBe(3.8);
+  });
+
+  it('rounds 8.7 / 2 = 4.35 → 4.4', () => {
+    expect(nineHoleHandicapIndex(8.7)).toBe(4.4);
+  });
+
+  it('handles 0 handicap', () => {
+    expect(nineHoleHandicapIndex(0)).toBe(0);
+  });
+
+  it('handles plus (negative) handicap', () => {
+    // -2.0 / 2 = -1.0
+    expect(nineHoleHandicapIndex(-2.0)).toBe(-1.0);
+  });
+
+  it('handles odd values where rounding matters: 9.1 / 2 = 4.55 → 4.6', () => {
+    expect(nineHoleHandicapIndex(9.1)).toBe(4.6);
+  });
+});
+
+// ============================================
+// effectiveHandicapIndex
+// ============================================
+describe('effectiveHandicapIndex', () => {
+  it('returns full index for 18-hole courses', () => {
+    expect(effectiveHandicapIndex(15.3, 18)).toBe(15.3);
+  });
+
+  it('returns halved+rounded index for 9-hole courses', () => {
+    expect(effectiveHandicapIndex(15.3, 9)).toBe(7.7);
+  });
+
+  it('treats maxHoles <= 9 as 9-hole', () => {
+    expect(effectiveHandicapIndex(10.0, 9)).toBe(5.0);
+    expect(effectiveHandicapIndex(10.0, 5)).toBe(5.0);
+  });
+
+  it('does not halve for 18 or 36', () => {
+    expect(effectiveHandicapIndex(10.0, 18)).toBe(10.0);
+    expect(effectiveHandicapIndex(10.0, 36)).toBe(10.0);
+  });
+});
+
+// ============================================
+// 9-hole specific: calculateCourseHandicap
+// ============================================
+describe('calculateCourseHandicap (9-hole)', () => {
+  it('uses halved HI for 9-hole courses', () => {
+    // HI=15.0, 9h HI=7.5, Slope=120, Rating=35.0, Par=36
+    // (7.5 * 120 / 113) + (35 - 36) = 7.965 - 1 = 6.965 → 7
+    expect(calculateCourseHandicap(15.0, 120, 35.0, 36, 9)).toBe(7);
+  });
+
+  it('uses full HI for 18-hole courses (default)', () => {
+    // Same params but maxHoles=18 (default)
+    // (15.0 * 120 / 113) + (35 - 36) = 15.929 - 1 = 14.929 → 15
+    expect(calculateCourseHandicap(15.0, 120, 35.0, 36)).toBe(15);
+    expect(calculateCourseHandicap(15.0, 120, 35.0, 36, 18)).toBe(15);
+  });
+
+  it('18-hole regression: Devin Blankenship unchanged', () => {
+    expect(calculateCourseHandicap(8.7, 132, 71.0, 71, 18)).toBe(10);
+  });
+});
+
+// ============================================
+// 9-hole specific: calculatePlayingHandicap
+// ============================================
+describe('calculatePlayingHandicap (9-hole)', () => {
+  it('uses halved HI for 9-hole courses with allowance', () => {
+    // HI=15.0, 9h HI=7.5, Slope=120, Rating=35.0, Par=36, 95%
+    // UnroundedCH = (7.5*120/113) + (35-36) = 6.965
+    // PH = round(0.95 * 6.965) = round(6.616) = 7
+    expect(calculatePlayingHandicap(15.0, 120, 35.0, 36, 95, 9)).toBe(7);
+  });
+
+  it('uses full HI for 18-hole courses (default)', () => {
+    expect(calculatePlayingHandicap(15.0, 120, 35.0, 36, 95)).toBe(14);
+    expect(calculatePlayingHandicap(15.0, 120, 35.0, 36, 95, 18)).toBe(14);
+  });
+
+  it('commissioner example: HI=15.3 on 9-hole', () => {
+    // 9h HI = round(15.3/2, 1) = 7.7
+    // Slope=120, Rating=35.0, Par=36, 95%
+    // UnroundedCH = (7.7*120/113) + (35-36) = 8.177 - 1 = 7.177
+    // PH = round(0.95 * 7.177) = round(6.818) = 7
+    expect(calculatePlayingHandicap(15.3, 120, 35.0, 36, 95, 9)).toBe(7);
+  });
+});
+
+// ============================================
+// 9-hole specific: calculateNetScore
+// ============================================
+describe('calculateNetScore (9-hole)', () => {
+  it('handles 9-hole partial round (5 of 9 holes)', () => {
+    // HI=12.0, 9h HI=6.0, Slope=120, Rating=35.0, Par=36, Gross=24, 5/9, 95%
+    // UnroundedCH = (6.0*120/113) + (35-36) = 6.372 - 1 = 5.372
+    // Full PH = round(0.95 * 5.372) = round(5.103) = 5
+    // Partial PH = round(5 * 5/9) = round(2.778) = 3
+    // Partial Par = round(36 * 5/9) = round(20.0) = 20
+    // Net = 24 - 3 = 21, NOP = round(21 - 20) = 1
+    const result = calculateNetScore(24, 12.0, 120, 35.0, 36, 5, 9, 95);
+    expect(result.isPartial).toBe(true);
+    expect(result.courseHandicap).toBe(3);
+    expect(result.netScore).toBe(21);
+    expect(result.netStrokesOverPar).toBe(1);
+  });
+
+  it('18-hole regression: existing tests still pass', () => {
+    const result = calculateNetScore(81, 8.7, 132, 71.0, 71, 18, 18, 95);
+    expect(result.courseHandicap).toBe(10);
+    expect(result.netStrokesOverPar).toBe(0);
+  });
+});
+
+// ============================================
+// 9-hole specific: calculateUnroundedCourseHandicap
+// ============================================
+describe('calculateUnroundedCourseHandicap (9-hole)', () => {
+  it('uses halved HI for 9-hole courses', () => {
+    // HI=15.0, 9h HI=7.5, Slope=120, Rating=35.0, Par=36
+    // (7.5 * 120 / 113) + (35 - 36) = 7.965 - 1 = 6.965
+    const result = calculateUnroundedCourseHandicap(15.0, 120, 35.0, 36, 9);
+    expect(result).toBeCloseTo(6.9646, 3);
+  });
+
+  it('returns full value for 18-hole (default)', () => {
+    const result = calculateUnroundedCourseHandicap(15.0, 120, 35.0, 36);
+    expect(result).toBeCloseTo(14.929, 2);
+  });
+
+  it('18-hole regression: Devin Blankenship unchanged', () => {
+    const result = calculateUnroundedCourseHandicap(8.7, 132, 71.0, 71, 18);
+    expect(result).toBeCloseTo(10.159, 2);
   });
 });

@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
-import { calculateNetScore, calculateScratchScore, getMaxHoles, formatNetScore, formatGrossScore, courseMatchesEventHoles, calculateUnroundedCourseHandicap, calculateUnroundedPlayingHandicap, calculateScoringDifferential, calculatePartialPar } from '@/lib/scoring';
+import { calculateNetScore, calculateScratchScore, getMaxHoles, formatNetScore, formatGrossScore, courseMatchesEventHoles, calculateUnroundedCourseHandicap, calculateUnroundedPlayingHandicap, calculateScoringDifferential, calculatePartialPar, effectiveHandicapIndex } from '@/lib/scoring';
 import { notifySlack } from '@/lib/slack-notify';
 import { useSeason } from '@/lib/hooks/useSeason';
 import { fetchAllCourses, formatCourseType } from '@/lib/courses';
@@ -881,9 +881,12 @@ export default function ScoreDetailPage() {
         if (handicapIndex == null || !course) return null;
 
         const allowance = season?.handicap_allowance ?? 95;
+        const maxH = getMaxHoles(course.type);
+        const isNineHole = maxH <= 9;
+        const usedHI = effectiveHandicapIndex(handicapIndex, maxH);
 
-        const courseHcpUnrounded = calculateUnroundedCourseHandicap(handicapIndex, course.slope, course.rating, course.par);
-        const playingHcpUnrounded = calculateUnroundedPlayingHandicap(handicapIndex, course.slope, course.rating, course.par, allowance);
+        const courseHcpUnrounded = calculateUnroundedCourseHandicap(handicapIndex, course.slope, course.rating, course.par, maxH);
+        const playingHcpUnrounded = calculateUnroundedPlayingHandicap(handicapIndex, course.slope, course.rating, course.par, allowance, maxH);
         const playingHcpRounded = Math.round(playingHcpUnrounded);
         const scoreForNetE = course.par + playingHcpRounded;
 
@@ -898,8 +901,8 @@ export default function ScoreDetailPage() {
             {/* Handicap rows */}
             <div className="space-y-3">
               <div className="flex items-baseline justify-between">
-                <p className="text-sm text-[var(--text-muted)]">Handicap Index</p>
-                <p className="text-sm font-semibold text-[var(--text-primary)]">{handicapIndex}</p>
+                <p className="text-sm text-[var(--text-muted)]">Handicap Index{isNineHole ? ' (9-hole)' : ''}</p>
+                <p className="text-sm font-semibold text-[var(--text-primary)]">{usedHI}</p>
               </div>
 
               <div className="flex items-baseline justify-between">

@@ -93,8 +93,8 @@ export function computeEventLeaderboard(
           const bMax = getMaxHoles(best.course?.type || '18_holes');
           const sIdx = s.handicap_index_used ?? s.user?.handicap_index ?? 0;
           const bIdx = best.handicap_index_used ?? best.user?.handicap_index ?? 0;
-          const sPH = s.course ? calculatePlayingHandicap(sIdx, s.course.slope, s.course.rating, s.course.par, allowanceNet) : 0;
-          const bPH = best.course ? calculatePlayingHandicap(bIdx, best.course.slope, best.course.rating, best.course.par, allowanceNet) : 0;
+          const sPH = s.course ? calculatePlayingHandicap(sIdx, s.course.slope, s.course.rating, s.course.par, allowanceNet, sMax) : 0;
+          const bPH = best.course ? calculatePlayingHandicap(bIdx, best.course.slope, best.course.rating, best.course.par, allowanceNet, bMax) : 0;
           const sProj = s.course ? calculateProjectedScore(s.gross_score!, s.holes_played || 0, sMax, sPH, s.course.par, s.course.rating).projectedNetOverPar : 999;
           const bProj = best.course ? calculateProjectedScore(best.gross_score!, best.holes_played || 0, bMax, bPH, best.course.par, best.course.rating).projectedNetOverPar : 999;
           return sProj < bProj ? s : best;
@@ -110,7 +110,7 @@ export function computeEventLeaderboard(
           let sScratch: number;
           if (sPartial && s.course) {
             const hIdx = s.handicap_index_used ?? s.user?.handicap_index ?? 0;
-            const ph = calculatePlayingHandicap(hIdx, s.course.slope, s.course.rating, s.course.par, allowance);
+            const ph = calculatePlayingHandicap(hIdx, s.course.slope, s.course.rating, s.course.par, allowance, sMax);
             sScratch = calculateProjectedScore(s.gross_score!, s.holes_played || 0, sMax, ph, s.course.par, s.course.rating).projectedScratchOverRating;
           } else {
             sScratch = calculateScratchScore(s.gross_score!, s.course?.rating || 72, s.course?.par || 72, s.holes_played || sMax, sMax).scratchStrokesOverRating;
@@ -121,7 +121,7 @@ export function computeEventLeaderboard(
           let bScratch: number;
           if (bPartial && best.course) {
             const hIdx = best.handicap_index_used ?? best.user?.handicap_index ?? 0;
-            const ph = calculatePlayingHandicap(hIdx, best.course.slope, best.course.rating, best.course.par, allowance);
+            const ph = calculatePlayingHandicap(hIdx, best.course.slope, best.course.rating, best.course.par, allowance, bMax);
             bScratch = calculateProjectedScore(best.gross_score!, best.holes_played || 0, bMax, ph, best.course.par, best.course.rating).projectedScratchOverRating;
           } else {
             bScratch = calculateScratchScore(best.gross_score!, best.course?.rating || 72, best.course?.par || 72, best.holes_played || bMax, bMax).scratchStrokesOverRating;
@@ -148,7 +148,7 @@ export function computeEventLeaderboard(
         const hcpIdx = bestScore.handicap_index_used ?? bestScore.user?.handicap_index ?? 0;
         const fullPH = calculatePlayingHandicap(
           hcpIdx, bestScore.course.slope, bestScore.course.rating,
-          bestScore.course.par, allowance
+          bestScore.course.par, allowance, maxH
         );
         const projected = calculateProjectedScore(
           bestScore.gross_score, bestScore.holes_played || 0, maxH,

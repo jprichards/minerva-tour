@@ -1,9 +1,15 @@
 /**
  * Minerva Tour Scoring Calculations (WHS formula)
  *
- * Unrounded Course Handicap = (Handicap Index × Slope / 113) + (Rating − Par)
- * Playing Handicap = round(Allowance/100 × Unrounded Course Handicap)
- * Net Strokes Over Par = Gross Score − Playing Handicap − Par
+ * 18-hole:
+ *   Unrounded Course Handicap = (Handicap Index × Slope / 113) + (Rating − Par)
+ *   Playing Handicap = round(Allowance/100 × Unrounded Course Handicap)
+ *   Net Strokes Over Par = Gross Score − Playing Handicap − Par
+ *
+ * 9-hole (commissioner-confirmed Glide formula):
+ *   1. 9-Hole HI = round(Handicap Index / 2, 1 decimal)
+ *   2. Unrounded Course Handicap = (9-Hole HI × Slope / 113) + (Rating − Par)
+ *   3. Playing Handicap = round(Allowance/100 × Unrounded Course Handicap)
  *
  * For partial rounds:
  *   Partial Playing Handicap = round(Full Playing Handicap × Holes Played / Max Holes)
@@ -13,29 +19,52 @@
  */
 
 /**
+ * Convert 18-hole handicap index to 9-hole: divide by 2, round to 1 decimal.
+ * Matches the Glide app's separate 9-hole handicap column.
+ */
+export function nineHoleHandicapIndex(handicapIndex: number): number {
+  return Math.round(handicapIndex / 2 * 10) / 10;
+}
+
+/**
+ * Return the effective handicap index for the given hole count.
+ * For 9-hole courses: halve and round to 1 decimal.
+ * For 18-hole courses: return as-is.
+ */
+export function effectiveHandicapIndex(handicapIndex: number, maxHoles: number): number {
+  return maxHoles <= 9 ? nineHoleHandicapIndex(handicapIndex) : handicapIndex;
+}
+
+/**
  * WHS Course Handicap = round((Index × Slope / 113) + (Rating − Par))
+ * For 9-hole courses, pass maxHoles=9 to use the halved handicap index.
  */
 export function calculateCourseHandicap(
   handicapIndex: number,
   slope: number,
   rating: number,
-  par: number
+  par: number,
+  maxHoles: number = 18
 ): number {
-  return Math.round((handicapIndex * slope) / 113 + (rating - par));
+  const hi = effectiveHandicapIndex(handicapIndex, maxHoles);
+  return Math.round((hi * slope) / 113 + (rating - par));
 }
 
 /**
  * Calculate the WHS Playing Handicap with course difficulty adjustment and handicap allowance.
  * Playing Handicap = round((Index * Slope / 113 + (Rating - Par)) * allowance / 100)
+ * For 9-hole courses, pass maxHoles=9 to use the halved handicap index.
  */
 export function calculatePlayingHandicap(
   handicapIndex: number,
   slope: number,
   rating: number,
   par: number,
-  allowance: number = 100
+  allowance: number = 100,
+  maxHoles: number = 18
 ): number {
-  return Math.round(((handicapIndex * slope) / 113 + (rating - par)) * allowance / 100);
+  const hi = effectiveHandicapIndex(handicapIndex, maxHoles);
+  return Math.round(((hi * slope) / 113 + (rating - par)) * allowance / 100);
 }
 
 /**
@@ -105,7 +134,7 @@ export function calculateNetScore(
   netStrokesOverPar: number;
   isPartial: boolean;
 } {
-  const fullPlayingHandicap = calculatePlayingHandicap(handicapIndex, slope, rating, par, allowance);
+  const fullPlayingHandicap = calculatePlayingHandicap(handicapIndex, slope, rating, par, allowance, maxHoles);
   const isPartial = holesPlayed < maxHoles;
 
   if (isPartial) {
@@ -359,27 +388,32 @@ export function calculateProjectedPoints(
 
 /**
  * Unrounded WHS course handicap: (Index × Slope / 113) + (Rating − Par)
+ * For 9-hole courses, pass maxHoles=9 to use the halved handicap index.
  */
 export function calculateUnroundedCourseHandicap(
   handicapIndex: number,
   slope: number,
   rating: number,
-  par: number
+  par: number,
+  maxHoles: number = 18
 ): number {
-  return (handicapIndex * slope) / 113 + (rating - par);
+  const hi = effectiveHandicapIndex(handicapIndex, maxHoles);
+  return (hi * slope) / 113 + (rating - par);
 }
 
 /**
  * Unrounded playing handicap: unrounded course handicap × (allowance / 100)
+ * For 9-hole courses, pass maxHoles=9 to use the halved handicap index.
  */
 export function calculateUnroundedPlayingHandicap(
   handicapIndex: number,
   slope: number,
   rating: number,
   par: number,
-  allowance: number = 100
+  allowance: number = 100,
+  maxHoles: number = 18
 ): number {
-  return calculateUnroundedCourseHandicap(handicapIndex, slope, rating, par) * (allowance / 100);
+  return calculateUnroundedCourseHandicap(handicapIndex, slope, rating, par, maxHoles) * (allowance / 100);
 }
 
 /**

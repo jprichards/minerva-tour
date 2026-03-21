@@ -86,6 +86,10 @@ Local Minerva Tour Rules and Guidelines
   - The Playing Handicap is subtracted from the gross score, then Par is subtracted to get “Net Strokes Over Par”.
   - The `(Course Rating − Par)` term adjusts for courses where rating differs from par (e.g., a par 72 course rated 69.3 reduces the handicap strokes given). The allowance percentage is applied to the entire unrounded value before a single final rounding.
   - The player with the lowest “Net Strokes Over Par” is the winner.
+- **9-Hole Handicap Adjustment**: For 9-hole events/courses, the handicap index is halved and rounded to one decimal place before applying the WHS formula. This matches the Glide app’s use of a separate 9-hole handicap column (which was HI / 2, rounded to 1 decimal):
+  1. **9-Hole HI** = `round(Handicap Index / 2, 1 decimal)`
+  2. **Playing Handicap** = `round((9-Hole HI × Slope / 113 + (Rating − Par)) × Handicap Allowance)`
+  - The app stores only the 18-hole GHIN index (`users.handicap_index`). The halving is applied automatically in `effectiveHandicapIndex()` when the course type is 9-hole.
 - **Handicap Allowance**: A configurable percentage applied to each player’s course handicap for net scoring purposes, set per season on the Admin > Seasons page. This follows USGA/WHS “handicap allowance” terminology.
   - The full formula: `Playing Handicap = round((Index × Slope / 113 + (Rating − Par)) × allowance / 100)`
   - Default: 100% (full handicap). Starting in 2024, the league adopted a 95% handicap allowance to better balance competition between low and high handicap players.
