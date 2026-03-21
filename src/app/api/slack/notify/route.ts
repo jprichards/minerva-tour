@@ -208,13 +208,15 @@ async function enrichWithProjectedPoints(
     let netScoresForRanking = [...allBestNetScores];
     let scratchScoresForRanking = [...allBestScratchScores];
 
-    if (!payload.is_complete) {
-      // In-progress: rank hypothetically against completed scores
-      // Add the player temporarily to see where they'd rank
+    // Infer completeness from event_type when is_complete isn't explicitly set,
+    // so that completed scores already in the DB aren't double-counted.
+    const isComplete = payload.is_complete ??
+      ['round_complete', 'retroactive'].includes(payload.event_type);
+
+    if (!isComplete) {
       if (playerNet != null) netScoresForRanking.push(playerNet);
       if (playerScratch != null) scratchScoresForRanking.push(playerScratch);
     }
-    // For completed rounds, the score should already be in the DB query results
 
     const { netPoints, scratchPoints } = calculateProjectedPoints(
       playerNet,

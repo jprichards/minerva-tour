@@ -168,6 +168,7 @@ export function useQuickScoreSave({ score, onSaved, allowance = 95 }: QuickScore
       max_holes: maxHoles,
       tee_time: score.tee_time || null,
       event_name: score.event?.name || (score.event ? `Event ${score.event.event_number}` : null),
+      is_complete: isFullRound,
       old_gross_score: previousGrossRef.current,
     };
 

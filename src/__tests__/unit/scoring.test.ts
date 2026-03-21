@@ -569,6 +569,20 @@ describe('calculateProjectedPoints', () => {
     const result = calculateProjectedPoints(0, null, [5, -2, 3, 0], [], false);
     expect(result.netPoints).toBe(3);
   });
+
+  it('double-counted score creates phantom tie and inflates points', () => {
+    // Bug scenario: player's score (4) appears twice because enrichWithProjectedPoints
+    // adds it both from DB and from the payload when is_complete is missing.
+    // With [0, 4, 4] the player ties for 2nd with themselves → (2+1)/2 = 1.5
+    const bugResult = calculateProjectedPoints(4, 6, [0, 4, 4], [0, 6, 6], false);
+    expect(bugResult.netPoints).toBe(1.5);
+    expect(bugResult.scratchPoints).toBe(1.5);
+
+    // Correct: with only [0, 4], player is 2nd of 2 → 1 point
+    const correctResult = calculateProjectedPoints(4, 6, [0, 4], [0, 6], false);
+    expect(correctResult.netPoints).toBe(1);
+    expect(correctResult.scratchPoints).toBe(1);
+  });
 });
 
 // ============================================

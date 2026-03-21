@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { formatSlackMessage } from '@/lib/slack';
 
 // Mock the server Supabase client
 const mockSupabaseServer = {
@@ -23,6 +24,8 @@ vi.mock('@/lib/slack', () => ({
     blocks: [{ type: 'section', text: { type: 'mrkdwn', text: 'Test' } }],
   }),
 }));
+
+const mockFormatSlackMessage = vi.mocked(formatSlackMessage);
 
 /**
  * Create a chainable mock that supports all common Supabase query methods.
@@ -334,6 +337,84 @@ describe('Slack API Routes', () => {
           }),
         })
       );
+    });
+
+    it('does not double-count completed score when is_complete is missing from payload', async () => {
+      mockSupabaseServer.auth.getUser.mockResolvedValue({
+        data: { user: { id: 'user-2' } },
+        error: null,
+      });
+
+      setupFromMock({
+        app_settings: mockChain({
+          data: {
+            value: {
+              bot_token: 'xoxb-test',
+              channel_id: 'C001',
+              channel_name: '#test',
+              events: { round_complete: true },
+            },
+          },
+          error: null,
+        }),
+        seasons: mockChain({ data: [{ id: 'season-1' }], error: null }),
+        events: mockChain({ data: [{ id: 'event-1', is_major: false }], error: null }),
+        scores: mockChain({
+          data: [
+            {
+              user_id: 'user-1',
+              gross_score: 72,
+              net_strokes_over_par: 0,
+              holes_played: 18,
+              is_complete: true,
+              course: { rating: 72, par: 72, type: '18_holes' },
+            },
+            {
+              user_id: 'user-2',
+              gross_score: 90,
+              net_strokes_over_par: 4,
+              holes_played: 18,
+              is_complete: true,
+              course: { rating: 72, par: 72, type: '18_holes' },
+            },
+          ],
+          error: null,
+        }),
+      });
+
+      mockFetch.mockResolvedValueOnce({
+        json: () => Promise.resolve({ ok: true }),
+      });
+
+      const { POST } = await import('@/app/api/slack/notify/route');
+      const req = new Request('http://localhost/api/slack/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_type: 'round_complete',
+          player_name: 'Matt Davis',
+          course_name: 'Test Course',
+          tee_name: 'White',
+          par: 72,
+          rating: 72,
+          gross_score: 90,
+          net_strokes_over_par: 4,
+          holes_played: 18,
+          max_holes: 18,
+          // is_complete intentionally omitted — this is the bug scenario
+        }),
+      });
+
+      const res = await POST(req as any);
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.ok).toBe(true);
+
+      const payload = mockFormatSlackMessage.mock.calls[0][0] as any;
+      // 2nd of 2 participants → 1 point each (not 1.5 from phantom self-tie)
+      expect(payload.projected_net_points).toBe(1);
+      expect(payload.projected_scratch_points).toBe(1);
     });
 
     it('handles Slack API failure gracefully', async () => {

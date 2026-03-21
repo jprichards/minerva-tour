@@ -159,6 +159,7 @@ export default function AdminRetroactiveScoresPage() {
       holes_played: holesNum,
       max_holes: maxHoles,
       event_name: selectedEvent?.name || (selectedEvent ? `Event ${selectedEvent.event_number}` : null),
+      is_complete: true,
     });
 
     showToast('Retroactive score submitted!', 'success');

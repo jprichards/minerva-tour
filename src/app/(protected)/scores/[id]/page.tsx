@@ -278,6 +278,7 @@ export default function ScoreDetailPage() {
         max_holes: maxHoles,
         tee_time: combinedTeeTime,
         event_name: score.event?.name || (score.event ? `Event ${score.event.event_number}` : null),
+        is_complete: isComplete,
         old_gross_score: score.gross_score,
         old_net_score: score.net_strokes_over_par,
       });
