@@ -47,7 +47,9 @@ export type AuditActionType =
   | 'chirp_template_add'
   | 'chirp_template_edit'
   | 'chirp_template_delete'
-  | 'user_seen';
+  | 'user_seen'
+  | 'feature_flag_toggle'
+  | 'feature_flag_update';
 
 export interface User {
   id: string;
@@ -253,6 +255,17 @@ export interface Feedback {
   // Joined
   user?: User;
   responder?: User;
+}
+
+export interface FeatureFlag {
+  key: string;
+  description: string;
+  enabled: boolean;
+  target_user_ids: string[];
+  target_roles: string[];
+  created_at: string;
+  updated_at: string;
+  updated_by: string | null;
 }
 
 export type SlackScoreEventType = 'tee_time' | 'score_in_progress' | 'round_complete' | 'score_edit' | 'retroactive';

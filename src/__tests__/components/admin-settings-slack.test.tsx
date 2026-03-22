@@ -32,6 +32,7 @@ describe('AdminSettingsPage - Slack Integration', () => {
     mockSupabaseClient.from.mockReturnValue({
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: [], error: null }),
       single: vi.fn().mockResolvedValue({ data: null, error: null }),
       maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
       upsert: vi.fn().mockResolvedValue({ error: null }),
@@ -183,6 +184,7 @@ describe('AdminSettingsPage - Slack Integration', () => {
     fromMock.mockReturnValue({
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: [], error: null }),
       single: vi.fn().mockImplementation(singleImpl),
       maybeSingle: vi.fn().mockImplementation(singleImpl),
       upsert: vi.fn().mockResolvedValue({ error: null }),
@@ -225,6 +227,7 @@ describe('AdminSettingsPage - Slack Integration', () => {
     fromMock.mockReturnValue({
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: [], error: null }),
       single: vi.fn().mockImplementation(singleImpl),
       maybeSingle: vi.fn().mockImplementation(singleImpl),
       upsert: vi.fn().mockResolvedValue({ error: null }),

@@ -1012,3 +1012,48 @@ Automates the end-of-event recap process. After an event wraps, the commissioner
 - `app_settings` key `ai_config`: stores AI endpoint, key, model, prompt, max_tokens
 - `slack_config` extended with `recap_channel_id` and `recap_channel_name`
 
+---
+
+## 13. Feature Flags
+
+### **Overview:**
+
+A self-hosted feature flag system for gradual rollouts. Flags gate new functionality so it can be tested with specific users before full rollout, and can be turned off instantly without affecting existing behavior.
+
+### **How it works:**
+
+- Flags are created in code (added to the `FEATURE_FLAGS` registry in `src/lib/feature-flags.ts` and inserted into the database via SQL) — never from the admin UI
+- The admin UI (Admin > Settings, bottom of page) shows all existing flags with toggle switches and targeting controls
+- Flags support per-user targeting (`target_user_ids`) and per-role targeting (`target_roles`) with OR logic
+- A disabled flag or missing flag always evaluates to `false` (safe default)
+- Client components use `useFeatureFlag(FEATURE_FLAGS.KEY)` which returns `{ enabled, loading }`
+- API routes and server components use `isFeatureEnabled(supabase, FEATURE_FLAGS.KEY, userId)`
+- Flag state is cached in localStorage for flash-free page loads and offline PWA support
+
+### **Targeting logic:**
+
+- `enabled = false` → OFF for everyone (kill switch)
+- `enabled = true` + no targeting → ON for everyone (global rollout)
+- `enabled = true` + `target_user_ids` set → ON only for listed users
+- `enabled = true` + `target_roles` set → ON only for matching roles
+- Both set → OR (either match grants access)
+
+### **Admin UI (Admin > Settings > Feature Flags):**
+
+- Toggle flags on/off (saves immediately)
+- Expand per-flag targeting: role checkboxes and user picker
+- No create or delete — flag lifecycle is managed in code, DB rows via SQL
+
+### **Flag lifecycle:**
+
+1. Created in code during development (registry entry + DB row via SQL)
+2. Enabled for specific testers via admin targeting
+3. Widened to roles for broader rollout
+4. Global rollout (clear targeting arrays)
+5. Cleanup: remove flag checks from code, delete DB row via SQL
+
+### **Database:**
+
+- `feature_flags` table: key (PK), description, enabled, target_user_ids (UUID[]), target_roles (TEXT[]), created_at, updated_at, updated_by
+- RLS: all authenticated users can read, admins can manage
+

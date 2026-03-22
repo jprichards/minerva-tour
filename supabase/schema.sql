@@ -235,6 +235,18 @@ CREATE TABLE IF NOT EXISTS season_finishes (
 CREATE INDEX IF NOT EXISTS idx_season_finishes_user_id ON season_finishes(user_id);
 CREATE INDEX IF NOT EXISTS idx_season_finishes_year ON season_finishes(year);
 
+-- Feature flags
+CREATE TABLE IF NOT EXISTS feature_flags (
+  key TEXT PRIMARY KEY,
+  description TEXT NOT NULL DEFAULT '',
+  enabled BOOLEAN NOT NULL DEFAULT false,
+  target_user_ids UUID[] DEFAULT '{}',
+  target_roles TEXT[] DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_by UUID REFERENCES users(id)
+);
+
 -- Initial settings
 INSERT INTO app_settings (key, value) VALUES
   ('google_photos_url', '{"url": ""}'),
@@ -259,6 +271,7 @@ ALTER TABLE playoff_brackets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tournaments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE feature_flags ENABLE ROW LEVEL SECURITY;
 
 -- Users policies (avoid self-referencing queries to prevent infinite recursion)
 CREATE POLICY "Authenticated users can read all users" ON users
@@ -344,6 +357,12 @@ CREATE POLICY "Admins can manage app settings" ON app_settings FOR ALL USING (
   EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
 );
 
+-- Feature flags policies
+CREATE POLICY "Anyone can read feature flags" ON feature_flags FOR SELECT USING (true);
+CREATE POLICY "Admins can manage feature flags" ON feature_flags FOR ALL USING (
+  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+);
+
 -- Notifications policies
 CREATE POLICY "Users can read own notifications" ON notifications FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can update own notifications" ON notifications FOR UPDATE USING (auth.uid() = user_id);
@@ -373,6 +392,7 @@ CREATE TRIGGER tr_courses_updated_at BEFORE UPDATE ON courses FOR EACH ROW EXECU
 CREATE TRIGGER tr_scores_updated_at BEFORE UPDATE ON scores FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER tr_playoff_brackets_updated_at BEFORE UPDATE ON playoff_brackets FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER tr_tournaments_updated_at BEFORE UPDATE ON tournaments FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE TRIGGER tr_feature_flags_updated_at BEFORE UPDATE ON feature_flags FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- Function to handle new user signup
 CREATE OR REPLACE FUNCTION handle_new_user()

@@ -7,6 +7,7 @@ import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
 import { ArrowLeft, Save, Image, ExternalLink, Hash, Eye, EyeOff, CheckCircle, XCircle, Loader2, MessageSquare, Bot } from 'lucide-react';
+import FeatureFlagsSection from '@/components/admin/FeatureFlagsSection';
 import type { SlackConfig, SlackEventType, AIConfig } from '@/types/database';
 
 const SLACK_EVENT_LABELS: Record<SlackEventType, string> = {
@@ -649,6 +650,9 @@ export default function AdminSettingsPage() {
               </p>
             </div>
           </div>
+
+          {/* Feature Flags */}
+          <FeatureFlagsSection />
 
           {/* Save Button */}
           <button
