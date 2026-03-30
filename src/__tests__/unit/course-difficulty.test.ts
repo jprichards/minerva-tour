@@ -47,13 +47,11 @@ describe('computeCourseDifficulty', () => {
     expect(result[0].roundCount).toBe(3);
   });
 
-  it('filters out courses with fewer than 3 rounds', () => {
+  it('filters out courses with fewer than 2 rounds', () => {
     const scores = [
       makeScore('alice', 'Pine Hills', 2, 's1'),
-      makeScore('bob', 'Pine Hills', 3, 's2'),
       makeScore('alice', 'Oak Valley', 1, 's3'),
       makeScore('bob', 'Oak Valley', 2, 's4'),
-      makeScore('charlie', 'Oak Valley', 0, 's5'),
     ];
 
     const result = computeCourseDifficulty(scores);
@@ -108,12 +106,10 @@ describe('computeCourseDifficulty', () => {
   it('skips scores with null net_strokes_over_par', () => {
     const scores = [
       makeScore('a', 'Pine Hills', 2, 's1'),
-      makeScore('b', 'Pine Hills', 4, 's2'),
-      { ...makeScore('c', 'Pine Hills', 0, 's3'), net_strokes_over_par: null },
+      { ...makeScore('b', 'Pine Hills', 0, 's2'), net_strokes_over_par: null },
     ];
 
     const result = computeCourseDifficulty(scores);
-    // Only 2 valid scores for Pine Hills, below the 3-round minimum
     expect(result).toHaveLength(0);
   });
 

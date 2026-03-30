@@ -14,7 +14,7 @@ interface CourseDifficultyEntry {
   roundCount: number;
 }
 
-const MIN_ROUNDS = 3;
+const MIN_ROUNDS = 2;
 
 function courseKey(s: Score): string | null {
   const name = s.course?.course_name;
