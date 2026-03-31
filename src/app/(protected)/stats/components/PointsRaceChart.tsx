@@ -174,6 +174,14 @@ function computePointsRace(
       startPoint[memberId] = 0;
     }
     data.unshift(startPoint);
+
+    for (let i = 1; i < data.length; i++) {
+      for (const memberId of participatedMembers) {
+        if (data[i][memberId] === undefined && data[i - 1][memberId] !== undefined) {
+          data[i][memberId] = data[i - 1][memberId];
+        }
+      }
+    }
   }
 
   const activeMemberIds = members

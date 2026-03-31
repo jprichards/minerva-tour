@@ -279,6 +279,40 @@ describe('computePointsRace', () => {
     expect(data[2].bob).toBe(8);   // cumulative: 1 + 7
   });
 
+  it('forward-fills cumulative points for members who skip early events', () => {
+    const events = [
+      makeEvent({ id: 'e1', event_number: 1 }),
+      makeEvent({ id: 'e2', event_number: 2 }),
+      makeEvent({ id: 'e3', event_number: 3 }),
+    ];
+
+    const scores: Score[] = [
+      // Event 1: Alice and Bob play, Charlie skips
+      makeScore({ id: 's1', user_id: 'alice', event_id: 'e1', net_strokes_over_par: -3 }),
+      makeScore({ id: 's2', user_id: 'bob', event_id: 'e1', net_strokes_over_par: 0 }),
+      // Event 2: Alice and Bob play, Charlie skips
+      makeScore({ id: 's3', user_id: 'alice', event_id: 'e2', net_strokes_over_par: -2 }),
+      makeScore({ id: 's4', user_id: 'bob', event_id: 'e2', net_strokes_over_par: 1 }),
+      // Event 3: all three play — Charlie's first event
+      makeScore({ id: 's5', user_id: 'alice', event_id: 'e3', net_strokes_over_par: -1 }),
+      makeScore({ id: 's6', user_id: 'bob', event_id: 'e3', net_strokes_over_par: 0 }),
+      makeScore({ id: 's7', user_id: 'charlie', event_id: 'e3', net_strokes_over_par: 2 }),
+    ];
+
+    const { data, activeMemberIds } = computePointsRace(scores, events, members, 'net');
+
+    expect(data).toHaveLength(4); // start + 3 events
+    expect(activeMemberIds).toContain('charlie');
+
+    // Charlie should be 0 at the start point and forward-filled through skipped events
+    expect(data[0].charlie).toBe(0);
+    expect(data[1].charlie).toBe(0); // event 1 — skipped, forward-filled
+    expect(data[2].charlie).toBe(0); // event 2 — skipped, forward-filled
+    // Event 3: Charlie played, should have actual points
+    expect(typeof data[3].charlie).toBe('number');
+    expect(data[3].charlie).toBeGreaterThan(0);
+  });
+
   it('prepends a starting point at zero so lines are drawn from origin', () => {
     const events = [makeEvent({ id: 'e1', event_number: 1 })];
 
