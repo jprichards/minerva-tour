@@ -8,7 +8,7 @@ import { Trophy, Medal, TrendingUp, AlertCircle, Download } from 'lucide-react';
 import Avatar from '@/components/Avatar';
 import { downloadCSV } from '@/lib/export';
 import { useSeason } from '@/lib/hooks/useSeason';
-import { formatNetScore } from '@/lib/scoring';
+import { formatNetScore, formatPoints } from '@/lib/scoring';
 import { computeEventLeaderboard, computeSeasonStandings } from '@/lib/standings';
 import type { Score, Event, Season } from '@/types/database';
 import type { ScoringMode } from '@/lib/standings';
@@ -173,7 +173,7 @@ export default function LeaderboardPage() {
                     Player: e.playerName,
                     Score: e.bestNetOverPar ?? '',
                     Gross: e.bestGrossScore ?? '',
-                    Points: e.projectedPoints,
+                    Points: formatPoints(e.projectedPoints),
                     Course: e.courseName,
                     Holes: e.holesPlayed,
                   })),
@@ -184,7 +184,7 @@ export default function LeaderboardPage() {
                   seasonStandings.map((e, i) => ({
                     Rank: i + 1,
                     Player: e.playerName,
-                    Points: e.totalPoints,
+                    Points: formatPoints(e.totalPoints),
                     Events: e.eventsPlayed,
                   })),
                   `leaderboard-season-${currentSeason?.year || 'current'}`
@@ -339,7 +339,7 @@ export default function LeaderboardPage() {
                       })()}
                       {entry.projectedPoints > 0 && (
                         <p className="text-xs text-yellow-600 font-medium">
-                          {entry.projectedPoints} pts
+                          {formatPoints(entry.projectedPoints)} pts
                         </p>
                       )}
                     </div>
@@ -410,7 +410,7 @@ export default function LeaderboardPage() {
                     </div>
 
                     <div className="text-right flex-shrink-0">
-                      <p className="text-lg font-bold text-[var(--text-primary)]">{entry.totalPoints}</p>
+                      <p className="text-lg font-bold text-[var(--text-primary)]">{formatPoints(entry.totalPoints)}</p>
                       <p className="text-xs text-[var(--text-faint)]">pts</p>
                     </div>
                   </div>

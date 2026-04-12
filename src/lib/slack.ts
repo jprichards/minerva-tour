@@ -111,12 +111,13 @@ function courseLine(p: SlackScorePayload): string {
  * Shows "Points: Net X | Scratch Y", falling back to "-" when unavailable.
  */
 function pointsLine(p: SlackScorePayload): string {
+  const fmt = (n: number) => Number.isInteger(n) ? String(n) : (Math.round(n * 10) / 10).toFixed(1);
   const parts: string[] = [];
   if (p.projected_net_points != null) {
-    parts.push(`Net ${p.projected_net_points}`);
+    parts.push(`Net ${fmt(p.projected_net_points)}`);
   }
   if (p.projected_scratch_points != null) {
-    parts.push(`Scratch ${p.projected_scratch_points}`);
+    parts.push(`Scratch ${fmt(p.projected_scratch_points)}`);
   }
   return parts.length > 0 ? `Points: ${parts.join(' | ')}` : 'Points: -';
 }
