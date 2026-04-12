@@ -279,30 +279,25 @@ export function calculateMajorEventPoints(
 ): number {
   if (numParticipants === 0 || place < 1 || place > numParticipants) return 0;
 
+  const r1 = (n: number) => Math.round(n * 10) / 10;
+
   const firstPlacePoints = Math.max(
-    Math.round(numParticipants * 1.33 * 10) / 10, // round to nearest tenth
+    r1(numParticipants * 1.33),
     10
   );
 
   if (place === 1) return firstPlacePoints;
 
-  // Calculate points for each place
   const points: number[] = [firstPlacePoints];
 
-  // 2nd: 1st - 3
-  points.push(points[0] - 3);
-  // 3rd: 2nd - 2
-  points.push(points[1] - 2);
-  // 4th: 3rd - 1
-  points.push(points[2] - 1);
-  // 5th: 4th - 1
-  points.push(points[3] - 1);
-  // 6th: 5th - 1
-  points.push(points[4] - 1);
+  points.push(r1(points[0] - 3));
+  points.push(r1(points[1] - 2));
+  points.push(r1(points[2] - 1));
+  points.push(r1(points[3] - 1));
+  points.push(r1(points[4] - 1));
 
-  // 7th and beyond: 1 less per place (minimum 1)
   for (let i = 6; i < numParticipants; i++) {
-    points.push(Math.max(points[i - 1] - 1, 1));
+    points.push(Math.max(r1(points[i - 1] - 1), 1));
   }
 
   return Math.max(points[place - 1] ?? 1, 1);
@@ -426,6 +421,15 @@ export function calculateScoringDifferential(
   slope: number
 ): number {
   return (113 / slope) * (grossScore - rating);
+}
+
+/**
+ * Format points for display, rounding to nearest tenth and stripping
+ * trailing ".0" for whole numbers (e.g. 10 → "10", 7.5 → "7.5").
+ */
+export function formatPoints(points: number): string {
+  const rounded = Math.round(points * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
 /**

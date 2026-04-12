@@ -14,6 +14,7 @@ import {
   calculateProjectedPoints,
   formatNetScore,
   formatGrossScore,
+  formatPoints,
   calculateUnroundedCourseHandicap,
   calculateUnroundedPlayingHandicap,
   calculateScoringDifferential,
@@ -413,24 +414,23 @@ describe('calculateMajorEventPoints', () => {
   });
 
   it('awards 4th place = 3rd - 1', () => {
-    expect(calculateMajorEventPoints(10, 4)).toBeCloseTo(7.3, 1);
+    expect(calculateMajorEventPoints(10, 4)).toBe(7.3);
   });
 
   it('awards 5th place = 4th - 1', () => {
-    expect(calculateMajorEventPoints(10, 5)).toBeCloseTo(6.3, 1);
+    expect(calculateMajorEventPoints(10, 5)).toBe(6.3);
   });
 
   it('awards 6th place = 5th - 1', () => {
-    expect(calculateMajorEventPoints(10, 6)).toBeCloseTo(5.3, 1);
+    expect(calculateMajorEventPoints(10, 6)).toBe(5.3);
   });
 
   it('awards 7th+ with 1 point decrement per place (min 1)', () => {
-    expect(calculateMajorEventPoints(10, 7)).toBeCloseTo(4.3, 1);
-    expect(calculateMajorEventPoints(10, 8)).toBeCloseTo(3.3, 1);
+    expect(calculateMajorEventPoints(10, 7)).toBe(4.3);
+    expect(calculateMajorEventPoints(10, 8)).toBe(3.3);
   });
 
   it('guarantees minimum 1 point', () => {
-    // Large enough field that bottom places get min 1
     expect(calculateMajorEventPoints(20, 20)).toBeGreaterThanOrEqual(1);
   });
 
@@ -438,6 +438,35 @@ describe('calculateMajorEventPoints', () => {
     expect(calculateMajorEventPoints(0, 1)).toBe(0);
     expect(calculateMajorEventPoints(10, 0)).toBe(0);
     expect(calculateMajorEventPoints(10, 11)).toBe(0);
+  });
+
+  it('produces clean decimals with no floating-point noise', () => {
+    // 8 participants: 1st = max(round(8*1.33*10)/10, 10) = max(10.6, 10) = 10.6
+    // Without rounding, 10.6 - 3 = 7.600000000000001 in IEEE 754
+    expect(calculateMajorEventPoints(8, 1)).toBe(10.6);
+    expect(calculateMajorEventPoints(8, 2)).toBe(7.6);
+    expect(calculateMajorEventPoints(8, 3)).toBe(5.6);
+    expect(calculateMajorEventPoints(8, 4)).toBe(4.6);
+    expect(calculateMajorEventPoints(8, 5)).toBe(3.6);
+    expect(calculateMajorEventPoints(8, 6)).toBe(2.6);
+    expect(calculateMajorEventPoints(8, 7)).toBe(1.6);
+    expect(calculateMajorEventPoints(8, 8)).toBe(1);
+
+    // Verify exact representation (no trailing digits beyond 1 decimal)
+    for (let place = 1; place <= 8; place++) {
+      const pts = calculateMajorEventPoints(8, place);
+      expect(String(pts)).toMatch(/^\d+(\.\d)?$/);
+    }
+  });
+
+  it('PRD example: 15 participants', () => {
+    expect(calculateMajorEventPoints(15, 1)).toBe(20);
+    expect(calculateMajorEventPoints(15, 2)).toBe(17);
+    expect(calculateMajorEventPoints(15, 3)).toBe(15);
+    expect(calculateMajorEventPoints(15, 4)).toBe(14);
+    expect(calculateMajorEventPoints(15, 5)).toBe(13);
+    expect(calculateMajorEventPoints(15, 6)).toBe(12);
+    expect(calculateMajorEventPoints(15, 7)).toBe(11);
   });
 });
 
@@ -626,6 +655,34 @@ describe('formatGrossScore', () => {
     expect(formatGrossScore(40, 36)).toBe('40 (+4)');
     expect(formatGrossScore(36, 36)).toBe('36 (E)');
     expect(formatGrossScore(33, 36)).toBe('33 (-3)');
+  });
+});
+
+// ============================================
+// formatPoints
+// ============================================
+describe('formatPoints', () => {
+  it('formats whole numbers without decimal', () => {
+    expect(formatPoints(10)).toBe('10');
+    expect(formatPoints(1)).toBe('1');
+    expect(formatPoints(0)).toBe('0');
+  });
+
+  it('formats fractional values to one decimal', () => {
+    expect(formatPoints(7.5)).toBe('7.5');
+    expect(formatPoints(10.3)).toBe('10.3');
+    expect(formatPoints(2.6)).toBe('2.6');
+  });
+
+  it('rounds floating-point noise to one decimal', () => {
+    expect(formatPoints(7.600000000000001)).toBe('7.6');
+    expect(formatPoints(5.300000000000001)).toBe('5.3');
+    expect(formatPoints(10.999999999999998)).toBe('11');
+  });
+
+  it('handles .0 case as whole number', () => {
+    expect(formatPoints(3.0)).toBe('3');
+    expect(formatPoints(20.0)).toBe('20');
   });
 });
 

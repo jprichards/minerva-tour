@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { computeEventLeaderboard, computeSeasonStandings } from '@/lib/standings';
-import { formatNetScore } from '@/lib/scoring';
+import { formatNetScore, formatPoints } from '@/lib/scoring';
 import { ArrowLeft, Sparkles, Send, Loader2, AlertTriangle, RotateCcw, CheckCircle } from 'lucide-react';
 import type { Score, Event, Season, EventRecap } from '@/types/database';
 import { formatLocalDate } from '@/lib/date-utils';
@@ -240,7 +240,7 @@ export default function RecapPage() {
             rank: i + 1,
             player: e.playerName,
             value: e.bestNetOverPar != null ? formatNetScore(e.bestNetOverPar) : '-',
-            secondary: String(e.projectedPoints),
+            secondary: formatPoints(e.projectedPoints),
             course: e.courseName,
           })),
         },
@@ -254,7 +254,7 @@ export default function RecapPage() {
             value: e.scratchOverRating != null
               ? (e.scratchOverRating === 0 ? 'E' : e.scratchOverRating > 0 ? `+${Math.round(e.scratchOverRating)}` : `${Math.round(e.scratchOverRating)}`)
               : '-',
-            secondary: String(e.projectedPoints),
+            secondary: formatPoints(e.projectedPoints),
             course: e.courseName,
           })),
         },
@@ -265,7 +265,7 @@ export default function RecapPage() {
           rows: seasonNetStandings.map((s, i) => ({
             rank: i + 1,
             player: s.playerName,
-            value: `${s.totalPoints}`,
+            value: formatPoints(s.totalPoints),
           })),
         },
         season_scratch: {
@@ -275,7 +275,7 @@ export default function RecapPage() {
           rows: seasonScratchStandings.map((s, i) => ({
             rank: i + 1,
             player: s.playerName,
-            value: `${s.totalPoints}`,
+            value: formatPoints(s.totalPoints),
           })),
         },
       };
@@ -380,7 +380,7 @@ export default function RecapPage() {
                   <td className={`px-3 py-1.5 text-right font-semibold ${
                     (e.bestNetOverPar ?? 0) < 0 ? 'text-red-600' : (e.bestNetOverPar ?? 0) === 0 ? 'text-green-600' : 'text-[var(--text-primary)]'
                   }`}>{e.bestNetOverPar != null ? formatNetScore(e.bestNetOverPar) : '-'}</td>
-                  <td className="px-3 py-1.5 text-right text-yellow-600">{e.projectedPoints}</td>
+                  <td className="px-3 py-1.5 text-right text-yellow-600">{formatPoints(e.projectedPoints)}</td>
                 </tr>
               ))}
             </tbody>
@@ -408,7 +408,7 @@ export default function RecapPage() {
                 <tr key={s.userId} className={i % 2 === 0 ? 'bg-[var(--bg-page)]' : ''}>
                   <td className="px-3 py-1.5 text-[var(--text-muted)]">{i + 1}</td>
                   <td className="px-3 py-1.5 font-medium text-[var(--text-primary)]">{s.playerName}</td>
-                  <td className="px-3 py-1.5 text-right font-semibold text-[var(--text-primary)]">{s.totalPoints}</td>
+                  <td className="px-3 py-1.5 text-right font-semibold text-[var(--text-primary)]">{formatPoints(s.totalPoints)}</td>
                   <td className="px-3 py-1.5 text-right text-[var(--text-muted)]">{s.eventsPlayed}</td>
                 </tr>
               ))}

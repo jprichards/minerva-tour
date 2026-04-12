@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { formatNetScore, calculateRegularEventPoints, calculateMajorEventPoints } from '@/lib/scoring';
+import { formatNetScore, formatPoints, calculateRegularEventPoints, calculateMajorEventPoints } from '@/lib/scoring';
 import { Trophy, Medal, Calendar, LogIn } from 'lucide-react';
 import type { Event, Score, Season } from '@/types/database';
 import { formatLocalDate } from '@/lib/date-utils';
@@ -176,7 +176,7 @@ export default function PublicViewPage() {
                           {score.net_strokes_over_par != null ? formatNetScore(score.net_strokes_over_par) : '-'}
                         </p>
                         {score.projectedPoints > 0 && (
-                          <p className="text-xs text-yellow-600 font-medium">{score.projectedPoints} pts</p>
+                          <p className="text-xs text-yellow-600 font-medium">{formatPoints(score.projectedPoints)} pts</p>
                         )}
                       </div>
                     </div>
