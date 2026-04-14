@@ -171,7 +171,6 @@ export default function HandicapTrends({ handicapHistory, members }: HandicapTre
               tickLine={false}
               width={35}
               allowDecimals={false}
-              reversed
             />
             <Tooltip content={<CustomTooltip memberNameMap={memberNameMap} />} wrapperStyle={{ zIndex: 50 }} />
             {activeMemberIds.map((memberId, idx) => (
