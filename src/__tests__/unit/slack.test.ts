@@ -277,6 +277,21 @@ describe('formatSlackMessage', () => {
       expect(text).not.toContain('5.300000');
     });
 
+    it('rounds floating-point noise that resolves to whole numbers', () => {
+      const payload: SlackNotifyPayload = {
+        ...basePayload,
+        projected_net_points: 10.999999999999998,
+        projected_scratch_points: 8.000000000000002,
+      };
+
+      const msg = formatSlackMessage(payload);
+      const text = allBlockText(msg);
+
+      expect(text).toContain('Points: Net 11 | Scratch 8');
+      expect(text).not.toContain('11.0');
+      expect(text).not.toContain('8.0');
+    });
+
     it('does not include divider (compact layout)', () => {
       const msg = formatSlackMessage(basePayload);
       const hasDivider = msg.blocks.some((b) => b.type === 'divider');
