@@ -291,6 +291,26 @@ export interface AIConfig {
   max_tokens: number;
 }
 
+export type ChirpTrigger = 'round_complete' | 'all_score_updates';
+
+export interface ChirpConfig {
+  trigger: ChirpTrigger;
+}
+
+export type ChirpSource = 'manual' | 'ai';
+
+export interface ChirpTemplate {
+  id: string;
+  bucket: string;
+  template: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  queue_position: number | null;
+  source: ChirpSource;
+  archived_at: string | null;
+}
+
 export interface EventRecap {
   id: string;
   event_id: string;

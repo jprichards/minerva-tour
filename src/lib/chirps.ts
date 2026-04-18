@@ -11,14 +11,12 @@
  */
 
 export type ChirpBucket =
-  | 'legendary'   // -6 or better
-  | 'excellent'   // -5 to -3
-  | 'solid'       // -2 to -1
+  | 'legendary'   // -5 or better
+  | 'excellent'   // -4 to -1
   | 'neutral'     // E to +1
-  | 'mediocre'    // +2 to +4
+  | 'mediocre'    // +2 to +4 (no chirp fired)
   | 'rough'       // +5 to +8
-  | 'bad'         // +9 to +14
-  | 'terrible';   // +15 or worse
+  | 'bad';        // +9 or worse
 
 export interface BucketRange {
   bucket: ChirpBucket;
@@ -26,35 +24,34 @@ export interface BucketRange {
 }
 
 export const DEFAULT_BUCKET_RANGES: BucketRange[] = [
-  { bucket: 'legendary', maxNet: -6 },
-  { bucket: 'excellent', maxNet: -3 },
-  { bucket: 'solid', maxNet: -1 },
+  { bucket: 'legendary', maxNet: -5 },
+  { bucket: 'excellent', maxNet: -1 },
   { bucket: 'neutral', maxNet: 1 },
   { bucket: 'mediocre', maxNet: 4 },
   { bucket: 'rough', maxNet: 8 },
-  { bucket: 'bad', maxNet: 14 },
-  { bucket: 'terrible', maxNet: null },
+  { bucket: 'bad', maxNet: null },
 ];
 
 export const BUCKET_LABELS: Record<ChirpBucket, string> = {
-  legendary: 'Legendary (-6 or better)',
-  excellent: 'Excellent (-5 to -3)',
-  solid: 'Solid (-2 to -1)',
+  legendary: 'Legendary (-5 or better)',
+  excellent: 'Excellent (-4 to -1)',
   neutral: 'Neutral (E to +1)',
   mediocre: 'Mediocre (+2 to +4)',
   rough: 'Rough (+5 to +8)',
-  bad: 'Bad (+9 to +14)',
-  terrible: 'Terrible (+15 or worse)',
+  bad: 'Bad (+9 or worse)',
 };
 
 export const ALL_BUCKETS: ChirpBucket[] = [
-  'legendary', 'excellent', 'solid', 'neutral', 'mediocre', 'rough', 'bad', 'terrible',
+  'legendary', 'excellent', 'neutral', 'mediocre', 'rough', 'bad',
 ];
+
+/** Buckets where no chirp is generated or consumed. */
+export const NO_CHIRP_BUCKETS: ReadonlySet<ChirpBucket> = new Set(['mediocre']);
 
 function formatRangeLabel(bucket: ChirpBucket, ranges: BucketRange[]): string {
   const names: Record<ChirpBucket, string> = {
-    legendary: 'Legendary', excellent: 'Excellent', solid: 'Solid', neutral: 'Neutral',
-    mediocre: 'Mediocre', rough: 'Rough', bad: 'Bad', terrible: 'Terrible',
+    legendary: 'Legendary', excellent: 'Excellent', neutral: 'Neutral',
+    mediocre: 'Mediocre', rough: 'Rough', bad: 'Bad',
   };
   const idx = ranges.findIndex((r) => r.bucket === bucket);
   if (idx === -1) return names[bucket];
@@ -109,8 +106,6 @@ export const CHIRP_TEMPLATES: Record<ChirpBucket, string[]> = {
     "Dialed in like $first_name's got the course cheat codes.",
     "$first_name's playing like he actually practiced. Disgusting.",
     "That's not golf, $first_name — that's a mid-life crisis in reverse.",
-  ],
-  solid: [
     "That'll do, $first_name. That'll do.",
     "Respectable golf from $first_name. We won't tell anyone you tried.",
     '$first_name snuck under par like he snuck an extra drink past the wife on date night.',
@@ -137,19 +132,7 @@ export const CHIRP_TEMPLATES: Record<ChirpBucket, string[]> = {
     "$first_name's scorecard: $net. The most exciting part was debating whether to get the cart or walk off the calories.",
     "A gentleman's round? More like $first_name's \"I showed up and didn't injure myself\" certificate.",
   ],
-  mediocre: [
-    "We've seen better from $first_name. We've also seen worse.",
-    '$first_name is building character out there... or just collecting excuses.',
-    "It's a game of inches, and $first_name lost a few today.",
-    '$first_name should maybe hit the range before next event.',
-    "Some days you eat the bear. Today the bear ate $first_name.",
-    "The only thing $first_name is breaking today is even. Barely.",
-    "Par is just a number. A number $first_name can't quite reach.",
-    '$first_name played like someone who read about golf once.',
-    "$first_name's game is in beta testing. Still buggy as hell.",
-    'The range called — they want their bucket back, $first_name.',
-    'Another day, another $first_name scorecard that screams "mid." Congrats on consistency.',
-  ],
+  mediocre: [],
   rough: [
     '$first_name lost more balls than a stag party in Amsterdam.',
     "D'ye know what $first_name's favorite movie is? Just tryin' tae change the subject.",
@@ -184,8 +167,6 @@ export const CHIRP_TEMPLATES: Record<ChirpBucket, string[]> = {
     'Your ball retriever deserves player of the match, $first_name — MVP status.',
     'Congrats $first_name — your round just qualified for disaster relief funds.',
     "We're not roasting $first_name today… we're holding a funeral for whatever dignity he had left.",
-  ],
-  terrible: [
     "$first_name's reanimated corpse has been dropped from coverage.",
     '$first_name ate shit for breakfast apparently.',
     "$first_name just posted a $net… we're burning the group chat and starting a new league without him.",
@@ -216,7 +197,7 @@ export function getChirpBucket(
   for (const { bucket, maxNet } of ranges) {
     if (maxNet === null || netStrokesOverPar <= maxNet) return bucket;
   }
-  return 'terrible';
+  return 'bad';
 }
 
 /**
@@ -252,6 +233,7 @@ function formatNetSign(n: number): string {
  * Pick a random template and substitute all wildcards from context.
  */
 function applyTemplate(templates: string[], ctx: ChirpContext): string {
+  if (templates.length === 0) return '';
   const idx = Math.floor(Math.random() * templates.length);
   let result = templates[idx];
   result = result.replace(/\$first_name/g, ctx.firstName);

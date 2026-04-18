@@ -23,12 +23,17 @@ function ctx(firstName: string, overrides: Partial<ChirpContext> = {}): ChirpCon
 // CHIRP_TEMPLATES — structure validation
 // ============================================
 describe('CHIRP_TEMPLATES', () => {
-  it('has all 8 performance buckets defined', () => {
+  it('has all 6 performance buckets defined', () => {
     const expectedBuckets: ChirpBucket[] = [
-      'legendary', 'excellent', 'solid', 'neutral', 'mediocre', 'rough', 'bad', 'terrible',
+      'legendary', 'excellent', 'neutral', 'mediocre', 'rough', 'bad',
     ];
     for (const bucket of expectedBuckets) {
       expect(CHIRP_TEMPLATES[bucket]).toBeDefined();
+    }
+    // mediocre is a no-chirp bucket — empty array is expected
+    expect(CHIRP_TEMPLATES.mediocre).toEqual([]);
+    // All others should have templates
+    for (const bucket of expectedBuckets.filter((b) => b !== 'mediocre')) {
       expect(CHIRP_TEMPLATES[bucket].length).toBeGreaterThan(0);
     }
   });
@@ -59,13 +64,13 @@ describe('BUCKET_LABELS', () => {
 // ALL_BUCKETS — ordered list
 // ============================================
 describe('ALL_BUCKETS', () => {
-  it('contains exactly 8 buckets', () => {
-    expect(ALL_BUCKETS.length).toBe(8);
+  it('contains exactly 6 buckets', () => {
+    expect(ALL_BUCKETS.length).toBe(6);
   });
 
   it('is ordered from best to worst', () => {
     expect(ALL_BUCKETS[0]).toBe('legendary');
-    expect(ALL_BUCKETS[7]).toBe('terrible');
+    expect(ALL_BUCKETS[ALL_BUCKETS.length - 1]).toBe('bad');
   });
 });
 
@@ -98,21 +103,17 @@ describe('CHIRP_WILDCARDS', () => {
 // getChirpBucket — maps net score to bucket
 // ============================================
 describe('getChirpBucket', () => {
-  it('returns "legendary" for -6 or better', () => {
-    expect(getChirpBucket(-6)).toBe('legendary');
+  it('returns "legendary" for -5 or better', () => {
+    expect(getChirpBucket(-5)).toBe('legendary');
     expect(getChirpBucket(-10)).toBe('legendary');
     expect(getChirpBucket(-20)).toBe('legendary');
   });
 
-  it('returns "excellent" for -5 to -3', () => {
-    expect(getChirpBucket(-5)).toBe('excellent');
+  it('returns "excellent" for -4 to -1', () => {
     expect(getChirpBucket(-4)).toBe('excellent');
     expect(getChirpBucket(-3)).toBe('excellent');
-  });
-
-  it('returns "solid" for -2 to -1', () => {
-    expect(getChirpBucket(-2)).toBe('solid');
-    expect(getChirpBucket(-1)).toBe('solid');
+    expect(getChirpBucket(-2)).toBe('excellent');
+    expect(getChirpBucket(-1)).toBe('excellent');
   });
 
   it('returns "neutral" for E to +1', () => {
@@ -132,37 +133,28 @@ describe('getChirpBucket', () => {
     expect(getChirpBucket(8)).toBe('rough');
   });
 
-  it('returns "bad" for +9 to +14', () => {
+  it('returns "bad" for +9 or worse', () => {
     expect(getChirpBucket(9)).toBe('bad');
-    expect(getChirpBucket(12)).toBe('bad');
     expect(getChirpBucket(14)).toBe('bad');
-  });
-
-  it('returns "terrible" for +15 or worse', () => {
-    expect(getChirpBucket(15)).toBe('terrible');
-    expect(getChirpBucket(20)).toBe('terrible');
-    expect(getChirpBucket(50)).toBe('terrible');
+    expect(getChirpBucket(20)).toBe('bad');
+    expect(getChirpBucket(50)).toBe('bad');
   });
 
   it('respects custom ranges when provided', () => {
     const customRanges: BucketRange[] = [
       { bucket: 'legendary', maxNet: -20 },
       { bucket: 'excellent', maxNet: -10 },
-      { bucket: 'solid', maxNet: -5 },
       { bucket: 'neutral', maxNet: 0 },
       { bucket: 'mediocre', maxNet: 5 },
       { bucket: 'rough', maxNet: 10 },
-      { bucket: 'bad', maxNet: 20 },
-      { bucket: 'terrible', maxNet: null },
+      { bucket: 'bad', maxNet: null },
     ];
     expect(getChirpBucket(-25, customRanges)).toBe('legendary');
     expect(getChirpBucket(-15, customRanges)).toBe('excellent');
-    expect(getChirpBucket(-7, customRanges)).toBe('solid');
     expect(getChirpBucket(0, customRanges)).toBe('neutral');
     expect(getChirpBucket(3, customRanges)).toBe('mediocre');
     expect(getChirpBucket(8, customRanges)).toBe('rough');
     expect(getChirpBucket(15, customRanges)).toBe('bad');
-    expect(getChirpBucket(25, customRanges)).toBe('terrible');
   });
 });
 
@@ -186,8 +178,8 @@ describe('getChirp', () => {
   it('returns different chirps for different buckets', () => {
     const spy = vi.spyOn(Math, 'random').mockReturnValue(0);
     const legendary = getChirp(-15, ctx('John'));
-    const terrible = getChirp(25, ctx('John'));
-    expect(legendary).not.toBe(terrible);
+    const bad = getChirp(25, ctx('John'));
+    expect(legendary).not.toBe(bad);
     spy.mockRestore();
   });
 
@@ -207,9 +199,9 @@ describe('getChirp', () => {
 
   it('is deterministic with fixed random seed', () => {
     const spy = vi.spyOn(Math, 'random').mockReturnValue(0.5);
-    const chirp1 = getChirp(3, ctx('George'));
+    const chirp1 = getChirp(7, ctx('George'));
     spy.mockReturnValue(0.5);
-    const chirp2 = getChirp(3, ctx('George'));
+    const chirp2 = getChirp(7, ctx('George'));
     expect(chirp1).toBe(chirp2);
     spy.mockRestore();
   });
@@ -246,7 +238,7 @@ describe('getChirpFromTemplates', () => {
 
   it('substitutes $first_name in DB templates', () => {
     const spy = vi.spyOn(Math, 'random').mockReturnValue(0);
-    const dbTemplates = { terrible: ['$first_name should go home'] };
+    const dbTemplates = { bad: ['$first_name should go home'] };
     const chirp = getChirpFromTemplates(dbTemplates, 25, ctx('Dave'));
     expect(chirp).toBe('Dave should go home');
     expect(chirp).not.toContain('$first_name');
@@ -314,7 +306,7 @@ describe('wildcard substitution', () => {
 
   it('substitutes $handicap with handicap index', () => {
     const spy = vi.spyOn(Math, 'random').mockReturnValue(0);
-    const dbTemplates = { terrible: ['With a $handicap index, $first_name has no excuse'] };
+    const dbTemplates = { bad: ['With a $handicap index, $first_name has no excuse'] };
     const chirp = getChirpFromTemplates(dbTemplates, 25, ctx('Sam', { handicap: 24.2 }));
     expect(chirp).toBe('With a 24.2 index, Sam has no excuse');
     spy.mockRestore();
@@ -357,10 +349,10 @@ describe('wildcard substitution', () => {
 // DEFAULT_BUCKET_RANGES — structure validation
 // ============================================
 describe('DEFAULT_BUCKET_RANGES', () => {
-  it('has 8 ranges in order', () => {
-    expect(DEFAULT_BUCKET_RANGES.length).toBe(8);
+  it('has 6 ranges in order', () => {
+    expect(DEFAULT_BUCKET_RANGES.length).toBe(6);
     expect(DEFAULT_BUCKET_RANGES[0].bucket).toBe('legendary');
-    expect(DEFAULT_BUCKET_RANGES[7].bucket).toBe('terrible');
+    expect(DEFAULT_BUCKET_RANGES[DEFAULT_BUCKET_RANGES.length - 1].bucket).toBe('bad');
   });
 
   it('has strictly increasing maxNet values (except last which is null)', () => {
@@ -370,7 +362,7 @@ describe('DEFAULT_BUCKET_RANGES', () => {
         expect(DEFAULT_BUCKET_RANGES[i].maxNet!).toBeGreaterThan(DEFAULT_BUCKET_RANGES[i - 1].maxNet!);
       }
     }
-    expect(DEFAULT_BUCKET_RANGES[7].maxNet).toBeNull();
+    expect(DEFAULT_BUCKET_RANGES[DEFAULT_BUCKET_RANGES.length - 1].maxNet).toBeNull();
   });
 });
 
@@ -378,9 +370,9 @@ describe('DEFAULT_BUCKET_RANGES', () => {
 // buildBucketLabels — dynamic label generation
 // ============================================
 describe('buildBucketLabels', () => {
-  it('generates labels for all 8 buckets from default ranges', () => {
+  it('generates labels for all 6 buckets from default ranges', () => {
     const labels = buildBucketLabels(DEFAULT_BUCKET_RANGES);
-    expect(Object.keys(labels).length).toBe(8);
+    expect(Object.keys(labels).length).toBe(6);
     for (const bucket of ALL_BUCKETS) {
       expect(labels[bucket]).toBeDefined();
       expect(typeof labels[bucket]).toBe('string');
@@ -389,8 +381,8 @@ describe('buildBucketLabels', () => {
 
   it('generates correct range text for default ranges', () => {
     const labels = buildBucketLabels(DEFAULT_BUCKET_RANGES);
-    expect(labels.legendary).toBe('Legendary (-6 or better)');
-    expect(labels.terrible).toBe('Terrible (+15 or worse)');
+    expect(labels.legendary).toBe('Legendary (-5 or better)');
+    expect(labels.bad).toBe('Bad (+9 or worse)');
     expect(labels.neutral).toBe('Neutral (E to +1)');
   });
 
@@ -398,17 +390,14 @@ describe('buildBucketLabels', () => {
     const custom: BucketRange[] = [
       { bucket: 'legendary', maxNet: -10 },
       { bucket: 'excellent', maxNet: -5 },
-      { bucket: 'solid', maxNet: -1 },
       { bucket: 'neutral', maxNet: 1 },
       { bucket: 'mediocre', maxNet: 4 },
       { bucket: 'rough', maxNet: 9 },
-      { bucket: 'bad', maxNet: 19 },
-      { bucket: 'terrible', maxNet: null },
+      { bucket: 'bad', maxNet: null },
     ];
     const labels = buildBucketLabels(custom);
     expect(labels.legendary).toBe('Legendary (-10 or better)');
     expect(labels.excellent).toBe('Excellent (-9 to -5)');
-    expect(labels.bad).toBe('Bad (+10 to +19)');
-    expect(labels.terrible).toBe('Terrible (+20 or worse)');
+    expect(labels.bad).toBe('Bad (+10 or worse)');
   });
 });

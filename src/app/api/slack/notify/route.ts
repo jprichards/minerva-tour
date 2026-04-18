@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { formatSlackMessage } from '@/lib/slack';
 import { calculateProjectedPoints, calculateScratchScore, getMaxHoles } from '@/lib/scoring';
-import { DEFAULT_BUCKET_RANGES, type BucketRange } from '@/lib/chirps';
-import type { SlackConfig, SlackNotifyPayload, SlackScorePayload } from '@/types/database';
+import { DEFAULT_BUCKET_RANGES, NO_CHIRP_BUCKETS, getChirpBucket, type BucketRange, type ChirpContext } from '@/lib/chirps';
+import { generateChirps } from '@/lib/chirps-ai';
+import { isFeatureEnabled, FEATURE_FLAGS } from '@/lib/feature-flags';
+import type { SlackConfig, SlackNotifyPayload, SlackScorePayload, ChirpConfig } from '@/types/database';
 
 /**
  * POST /api/slack/notify
@@ -65,14 +67,47 @@ export async function POST(request: NextRequest) {
       await enrichWithProjectedPoints(supabase, payload as SlackScorePayload);
     }
 
-    // Load chirp templates and bucket ranges from DB (best-effort, falls back to hardcoded)
-    const dbTemplates = isFeedback ? undefined : await loadChirpTemplates(supabase);
-    const bucketRanges = isFeedback ? undefined : await loadBucketRanges(supabase);
+    // Determine if chirps should fire for this event type
+    const isScoreEvent = ['score_in_progress', 'round_complete'].includes(payload.event_type);
+    const chirpTrigger = isFeedback ? null : await loadChirpTrigger(supabase);
+    const shouldSkipChirp = isScoreEvent && chirpTrigger === 'round_complete' && payload.event_type === 'score_in_progress';
+
+    // Check if chirps-queue flag is enabled
+    const queueEnabled = !isFeedback && !shouldSkipChirp && isScoreEvent
+      ? await isFeatureEnabled(supabase, FEATURE_FLAGS.CHIRPS_QUEUE)
+      : false;
+
+    let chirpOverride: string | null | undefined;
+    let consumedBucket: string | null = null;
+
+    if (shouldSkipChirp) {
+      chirpOverride = null;
+    } else if (queueEnabled && isScoreEvent) {
+      const scorePayload = payload as SlackScorePayload;
+      if (scorePayload.net_strokes_over_par != null) {
+        const bucketRanges = await loadBucketRanges(supabase);
+        const bucket = getChirpBucket(scorePayload.net_strokes_over_par, bucketRanges);
+
+        if (NO_CHIRP_BUCKETS.has(bucket)) {
+          chirpOverride = null;
+        } else {
+          const popped = await popChirpFromQueue(supabase, bucket);
+          if (popped) {
+            chirpOverride = substituteWildcards(popped.template, scorePayload);
+            consumedBucket = bucket;
+          }
+        }
+      }
+    }
+
+    // Load chirp templates for non-queue path
+    const dbTemplates = (!isFeedback && !queueEnabled && !shouldSkipChirp) ? await loadChirpTemplates(supabase) : undefined;
+    const bucketRanges = (!isFeedback && !queueEnabled && !shouldSkipChirp) ? await loadBucketRanges(supabase) : undefined;
 
     // Format the message
-    const message = formatSlackMessage(payload, dbTemplates, bucketRanges);
+    const message = formatSlackMessage(payload, dbTemplates, bucketRanges, chirpOverride);
 
-    // Post to Slack
+    // Post to Slack first (don't let archiving/replenishment delay this)
     const slackResponse = await fetch('https://slack.com/api/chat.postMessage', {
       method: 'POST',
       headers: {
@@ -94,6 +129,16 @@ export async function POST(request: NextRequest) {
         { ok: false, reason: slackData.error || 'slack_error' },
         { status: 200 }
       );
+    }
+
+    // Trigger AI replenishment for the consumed bucket (archiving already
+    // happened atomically inside popChirpFromQueue)
+    if (consumedBucket) {
+      try {
+        await generateChirps(supabase, consumedBucket as import('@/lib/chirps').ChirpBucket);
+      } catch (err) {
+        console.error('Chirp replenish error (non-blocking):', err);
+      }
     }
 
     return NextResponse.json({ ok: true });
@@ -235,6 +280,72 @@ async function enrichWithProjectedPoints(
 }
 
 /**
+ * Load the chirp trigger config from app_settings.
+ * Returns 'round_complete' (default) or 'all_score_updates'.
+ */
+async function loadChirpTrigger(
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<string> {
+  try {
+    const { data } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'chirp_config')
+      .maybeSingle();
+
+    if (data?.value) {
+      const config = data.value as unknown as ChirpConfig;
+      return config.trigger || 'round_complete';
+    }
+    return 'round_complete';
+  } catch {
+    return 'round_complete';
+  }
+}
+
+/**
+ * Atomically pop the top chirp from the queue for a given bucket.
+ * Calls a Postgres function that uses FOR UPDATE SKIP LOCKED so
+ * concurrent score submissions always grab different rows.
+ * The row is archived (queue_position cleared, archived_at set) in the
+ * same transaction, so there is no separate archive step after Slack posts.
+ */
+async function popChirpFromQueue(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  bucket: string
+): Promise<{ id: string; template: string } | null> {
+  try {
+    const { data } = await supabase
+      .rpc('pop_chirp_from_queue', { target_bucket: bucket })
+      .maybeSingle();
+
+    return data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function getFirstNameFromPayload(fullName: string): string {
+  return fullName.split(' ')[0] || fullName;
+}
+
+function formatNetSign(n: number): string {
+  if (n === 0) return 'E';
+  return n > 0 ? `+${n}` : `${n}`;
+}
+
+function substituteWildcards(template: string, p: SlackScorePayload): string {
+  let result = template;
+  result = result.replace(/\$first_name/g, getFirstNameFromPayload(p.player_name));
+  if (p.course_name) result = result.replace(/\$course/g, p.course_name);
+  if (p.gross_score != null) result = result.replace(/\$gross/g, String(p.gross_score));
+  if (p.net_strokes_over_par != null) result = result.replace(/\$net/g, formatNetSign(p.net_strokes_over_par));
+  if (p.holes_played != null) result = result.replace(/\$holes/g, String(p.holes_played));
+  if (p.handicap_index != null) result = result.replace(/\$handicap/g, String(p.handicap_index));
+  return result;
+}
+
+/**
  * Load chirp templates from the database, grouped by bucket.
  * Returns undefined if the query fails or returns empty results,
  * which causes the formatter to fall back to hardcoded templates.
@@ -245,7 +356,8 @@ async function loadChirpTemplates(
   try {
     const { data, error } = await supabase
       .from('chirp_templates')
-      .select('bucket, template');
+      .select('bucket, template')
+      .is('archived_at', null);
 
     if (error || !data || data.length === 0) return undefined;
 
@@ -277,7 +389,7 @@ async function loadBucketRanges(
     if (error || !data?.value) return undefined;
 
     const stored = (data.value as unknown as { ranges: BucketRange[] })?.ranges;
-    if (!Array.isArray(stored) || stored.length !== 8) return undefined;
+    if (!Array.isArray(stored) || stored.length !== 6) return undefined;
     return stored;
   } catch {
     return undefined;

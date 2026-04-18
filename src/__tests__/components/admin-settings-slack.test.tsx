@@ -280,8 +280,7 @@ describe('AdminSettingsPage - Slack Integration', () => {
           recap_images_in_thread: expect.toSatisfy((v: unknown) => v !== undefined),
           ai_model: expect.toSatisfy((v: unknown) => v !== undefined),
           ai_endpoint: expect.toSatisfy((v: unknown) => v !== undefined),
-          ai_max_tokens: expect.toSatisfy((v: unknown) => v !== undefined),
-          ai_system_prompt: expect.toSatisfy((v: unknown) => v !== undefined),
+          chirp_trigger: expect.toSatisfy((v: unknown) => v !== undefined),
         })
       );
     });

@@ -6,9 +6,9 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
-import { ArrowLeft, Save, Image, ExternalLink, Hash, Eye, EyeOff, CheckCircle, XCircle, Loader2, MessageSquare, Bot } from 'lucide-react';
+import { ArrowLeft, Save, Image, ExternalLink, Hash, Eye, EyeOff, CheckCircle, XCircle, Loader2, MessageSquare, Bot, ChevronDown, ChevronRight, Mic } from 'lucide-react';
 import FeatureFlagsSection from '@/components/admin/FeatureFlagsSection';
-import type { SlackConfig, SlackEventType, AIConfig } from '@/types/database';
+import type { SlackConfig, SlackEventType, AIConfig, ChirpConfig, ChirpTrigger } from '@/types/database';
 
 const SLACK_EVENT_LABELS: Record<SlackEventType, string> = {
   tee_time: 'New Tee Times',
@@ -57,13 +57,26 @@ export default function AdminSettingsPage() {
   const [loadingChannels, setLoadingChannels] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
 
-  // AI config state
+  // AI Recap config state
   const [aiEndpoint, setAiEndpoint] = useState('');
   const [aiApiKey, setAiApiKey] = useState('');
   const [aiModel, setAiModel] = useState('');
   const [aiSystemPrompt, setAiSystemPrompt] = useState('');
   const [aiMaxTokens, setAiMaxTokens] = useState(700);
   const [showAiKey, setShowAiKey] = useState(false);
+  const [recapAiExpanded, setRecapAiExpanded] = useState(false);
+
+  // Chirps AI config state
+  const [chirpAiEndpoint, setChirpAiEndpoint] = useState('');
+  const [chirpAiApiKey, setChirpAiApiKey] = useState('');
+  const [chirpAiModel, setChirpAiModel] = useState('');
+  const [chirpAiSystemPrompt, setChirpAiSystemPrompt] = useState('');
+  const [chirpAiMaxTokens, setChirpAiMaxTokens] = useState(1000);
+  const [showChirpAiKey, setShowChirpAiKey] = useState(false);
+  const [chirpAiExpanded, setChirpAiExpanded] = useState(false);
+
+  // Chirp trigger config state
+  const [chirpTrigger, setChirpTrigger] = useState<ChirpTrigger>('round_complete');
 
   useEffect(() => {
     if (!userLoading && !isAdmin) router.push('/home');
@@ -118,6 +131,32 @@ export default function AdminSettingsPage() {
         if (config.model) setAiModel(config.model);
         if (config.system_prompt) setAiSystemPrompt(config.system_prompt);
         if (config.max_tokens) setAiMaxTokens(config.max_tokens);
+      }
+
+      // Fetch Chirps AI config (may not exist yet)
+      const { data: chirpAiData } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'chirp_ai_config')
+        .maybeSingle();
+      if (chirpAiData?.value) {
+        const config = chirpAiData.value as unknown as AIConfig;
+        if (config.api_endpoint) setChirpAiEndpoint(config.api_endpoint);
+        if (config.api_key) setChirpAiApiKey(config.api_key);
+        if (config.model) setChirpAiModel(config.model);
+        if (config.system_prompt) setChirpAiSystemPrompt(config.system_prompt);
+        if (config.max_tokens) setChirpAiMaxTokens(config.max_tokens);
+      }
+
+      // Fetch Chirp trigger config
+      const { data: chirpConfigData } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'chirp_config')
+        .maybeSingle();
+      if (chirpConfigData?.value) {
+        const config = chirpConfigData.value as unknown as ChirpConfig;
+        if (config.trigger) setChirpTrigger(config.trigger);
       }
 
       setLoading(false);
@@ -255,6 +294,30 @@ export default function AdminSettingsPage() {
         });
       }
 
+      // Save Chirps AI config
+      if (chirpAiEndpoint || chirpAiApiKey || chirpAiModel) {
+        const chirpAiConfig: AIConfig = {
+          api_endpoint: chirpAiEndpoint,
+          api_key: chirpAiApiKey,
+          model: chirpAiModel,
+          system_prompt: chirpAiSystemPrompt,
+          max_tokens: chirpAiMaxTokens,
+        };
+        await supabase.from('app_settings').upsert({
+          key: 'chirp_ai_config',
+          value: chirpAiConfig as unknown as Record<string, unknown>,
+          updated_at: new Date().toISOString(),
+        });
+      }
+
+      // Save Chirp trigger config
+      const chirpConfig: ChirpConfig = { trigger: chirpTrigger };
+      await supabase.from('app_settings').upsert({
+        key: 'chirp_config',
+        value: chirpConfig as unknown as Record<string, unknown>,
+        updated_at: new Date().toISOString(),
+      });
+
       logAuditEvent('update_settings', 'app_settings', undefined, {
         google_photos_url: googlePhotosUrl,
         rules_url: rulesUrl,
@@ -269,7 +332,9 @@ export default function AdminSettingsPage() {
         ai_model: aiModel,
         ai_endpoint: aiEndpoint,
         ai_max_tokens: aiMaxTokens,
-        ai_system_prompt: aiSystemPrompt,
+        chirp_ai_model: chirpAiModel,
+        chirp_ai_endpoint: chirpAiEndpoint,
+        chirp_trigger: chirpTrigger,
       });
 
       showToast('Settings saved!', 'success');
@@ -563,91 +628,240 @@ export default function AdminSettingsPage() {
             </div>
           </div>
 
-          {/* AI Configuration */}
-          <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-4 space-y-4">
-            <div className="flex items-center gap-2">
-              <Bot className="w-4 h-4 text-orange-600" />
-              <label className="text-sm font-medium text-[var(--text-primary)]">AI Recap Configuration</label>
-            </div>
-
-            <p className="text-xs text-[var(--text-faint)]">
-              Configure an OpenAI-compatible API for generating event recaps. Grok models are recommended for this prompt&apos;s tone &mdash; try grok-3 first.
-            </p>
-
-            {/* API Endpoint */}
-            <div>
-              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">API Endpoint</label>
-              <input
-                type="url"
-                value={aiEndpoint}
-                onChange={(e) => setAiEndpoint(e.target.value)}
-                placeholder="https://api.x.ai/v1/chat/completions"
-                className="w-full px-3 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-minerva-500"
-              />
-            </div>
-
-            {/* API Key */}
-            <div>
-              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">API Key</label>
-              <div className="relative">
-                <input
-                  type={showAiKey ? 'text' : 'password'}
-                  value={aiApiKey}
-                  onChange={(e) => setAiApiKey(e.target.value)}
-                  placeholder="xai-... or sk-..."
-                  className="w-full px-3 py-2.5 pr-10 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-minerva-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowAiKey(!showAiKey)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                >
-                  {showAiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+          {/* AI Recap Configuration (Collapsible) */}
+          <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setRecapAiExpanded(!recapAiExpanded)}
+              className="w-full flex items-center justify-between p-4 hover:bg-[var(--bg-subtle)] transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Bot className="w-4 h-4 text-orange-600" />
+                <span className="text-sm font-medium text-[var(--text-primary)]">AI Recap Configuration</span>
+                {aiEndpoint && aiApiKey && (
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">Configured</span>
+                )}
               </div>
-            </div>
+              {recapAiExpanded
+                ? <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
+                : <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />
+              }
+            </button>
+            {recapAiExpanded && (
+              <div className="border-t border-[var(--border-light)] p-4 space-y-4">
+                <p className="text-xs text-[var(--text-faint)]">
+                  Configure an OpenAI-compatible API for generating event recaps. Grok models are recommended for this prompt&apos;s tone &mdash; try grok-3 first.
+                </p>
 
-            {/* Model */}
-            <div>
-              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Model</label>
-              <input
-                type="text"
-                value={aiModel}
-                onChange={(e) => setAiModel(e.target.value)}
-                placeholder="grok-3"
-                className="w-full px-3 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
-              />
-            </div>
+                <div>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">API Endpoint</label>
+                  <input
+                    type="url"
+                    value={aiEndpoint}
+                    onChange={(e) => setAiEndpoint(e.target.value)}
+                    placeholder="https://api.x.ai/v1/chat/completions"
+                    className="w-full px-3 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-minerva-500"
+                  />
+                </div>
 
-            {/* Max Tokens */}
-            <div>
-              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Max Tokens</label>
-              <input
-                type="number"
-                value={aiMaxTokens}
-                onChange={(e) => setAiMaxTokens(parseInt(e.target.value) || 700)}
-                min={100}
-                max={4000}
-                className="w-full px-3 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
-              />
-              <p className="text-xs text-[var(--text-faint)] mt-1">
-                Controls max recap length. 700 = ~300-450 words.
-              </p>
-            </div>
+                <div>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">API Key</label>
+                  <div className="relative">
+                    <input
+                      type={showAiKey ? 'text' : 'password'}
+                      value={aiApiKey}
+                      onChange={(e) => setAiApiKey(e.target.value)}
+                      placeholder="xai-... or sk-..."
+                      className="w-full px-3 py-2.5 pr-10 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-minerva-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAiKey(!showAiKey)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                    >
+                      {showAiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
 
-            {/* System Prompt */}
-            <div>
-              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">System Prompt</label>
-              <textarea
-                value={aiSystemPrompt}
-                onChange={(e) => setAiSystemPrompt(e.target.value)}
-                rows={8}
-                placeholder="Paste your system prompt here..."
-                className="w-full px-3 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500 resize-y"
-              />
-              <p className="text-xs text-[var(--text-faint)] mt-1">
-                The AI personality and instructions. This is sent as the system message with every recap generation.
-              </p>
+                <div>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Model</label>
+                  <input
+                    type="text"
+                    value={aiModel}
+                    onChange={(e) => setAiModel(e.target.value)}
+                    placeholder="grok-3"
+                    className="w-full px-3 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Max Tokens</label>
+                  <input
+                    type="number"
+                    value={aiMaxTokens}
+                    onChange={(e) => setAiMaxTokens(parseInt(e.target.value) || 700)}
+                    min={100}
+                    max={4000}
+                    className="w-full px-3 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
+                  />
+                  <p className="text-xs text-[var(--text-faint)] mt-1">
+                    Controls max recap length. 700 = ~300-450 words.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">System Prompt</label>
+                  <textarea
+                    value={aiSystemPrompt}
+                    onChange={(e) => setAiSystemPrompt(e.target.value)}
+                    rows={8}
+                    placeholder="Paste your system prompt here..."
+                    className="w-full px-3 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500 resize-y"
+                  />
+                  <p className="text-xs text-[var(--text-faint)] mt-1">
+                    The AI personality and instructions. This is sent as the system message with every recap generation.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Chirps AI Configuration (Collapsible, always visible) */}
+          <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setChirpAiExpanded(!chirpAiExpanded)}
+              className="w-full flex items-center justify-between p-4 hover:bg-[var(--bg-subtle)] transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Mic className="w-4 h-4 text-pink-600" />
+                <span className="text-sm font-medium text-[var(--text-primary)]">Chirps AI Configuration</span>
+                {chirpAiEndpoint && chirpAiApiKey && (
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">Configured</span>
+                )}
+              </div>
+              {chirpAiExpanded
+                ? <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
+                : <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />
+              }
+            </button>
+            {chirpAiExpanded && (
+              <div className="border-t border-[var(--border-light)] p-4 space-y-4">
+                <p className="text-xs text-[var(--text-faint)]">
+                  Configure the AI used to auto-generate chirps for the queue system. Set this up before enabling the chirps-queue feature flag.
+                </p>
+
+                <div>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">API Endpoint</label>
+                  <input
+                    type="url"
+                    value={chirpAiEndpoint}
+                    onChange={(e) => setChirpAiEndpoint(e.target.value)}
+                    placeholder="https://api.x.ai/v1/chat/completions"
+                    className="w-full px-3 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-minerva-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">API Key</label>
+                  <div className="relative">
+                    <input
+                      type={showChirpAiKey ? 'text' : 'password'}
+                      value={chirpAiApiKey}
+                      onChange={(e) => setChirpAiApiKey(e.target.value)}
+                      placeholder="xai-... or sk-..."
+                      className="w-full px-3 py-2.5 pr-10 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-minerva-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowChirpAiKey(!showChirpAiKey)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                    >
+                      {showChirpAiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Model</label>
+                  <input
+                    type="text"
+                    value={chirpAiModel}
+                    onChange={(e) => setChirpAiModel(e.target.value)}
+                    placeholder="grok-3-mini"
+                    className="w-full px-3 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Max Tokens</label>
+                  <input
+                    type="number"
+                    value={chirpAiMaxTokens}
+                    onChange={(e) => setChirpAiMaxTokens(parseInt(e.target.value) || 1000)}
+                    min={100}
+                    max={4000}
+                    className="w-full px-3 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500"
+                  />
+                  <p className="text-xs text-[var(--text-faint)] mt-1">
+                    Controls max response length. 1000 is plenty for 10 chirps.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">System Prompt</label>
+                  <textarea
+                    value={chirpAiSystemPrompt}
+                    onChange={(e) => setChirpAiSystemPrompt(e.target.value)}
+                    rows={6}
+                    placeholder="You are a creative comedy writer for a golf league app..."
+                    className="w-full px-3 py-2.5 bg-[var(--bg-page)] border border-[var(--border-default)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-minerva-500 resize-y"
+                  />
+                  <p className="text-xs text-[var(--text-faint)] mt-1">
+                    The AI personality for generating chirps. Leave blank for a sensible default that matches the existing chirp tone.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Chirp Trigger Config */}
+          <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Mic className="w-4 h-4 text-pink-600" />
+              <label className="text-sm font-medium text-[var(--text-primary)]">Chirps Fire On</label>
+            </div>
+            <p className="text-xs text-[var(--text-faint)]">
+              Control when chirps are included in Slack notifications. &ldquo;Round complete only&rdquo; prevents burning through chirps when someone updates hole-by-hole.
+            </p>
+            <div className="space-y-2">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="chirp-trigger"
+                  checked={chirpTrigger === 'round_complete'}
+                  onChange={() => setChirpTrigger('round_complete')}
+                  className="w-4 h-4 text-minerva-600 focus:ring-minerva-500"
+                />
+                <div>
+                  <span className="text-sm text-[var(--text-primary)]">Round complete only</span>
+                  <p className="text-xs text-[var(--text-faint)]">Chirps only fire when the round is finalized</p>
+                </div>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="chirp-trigger"
+                  checked={chirpTrigger === 'all_score_updates'}
+                  onChange={() => setChirpTrigger('all_score_updates')}
+                  className="w-4 h-4 text-minerva-600 focus:ring-minerva-500"
+                />
+                <div>
+                  <span className="text-sm text-[var(--text-primary)]">Every score update</span>
+                  <p className="text-xs text-[var(--text-faint)]">Chirps fire on in-progress scores and completed rounds</p>
+                </div>
+              </label>
             </div>
           </div>
 

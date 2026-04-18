@@ -8,7 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * Add new entries here when creating a flag, remove when cleaning up.
  */
 export const FEATURE_FLAGS = {
-  // Example: STATS_V2: 'stats-v2',
+  CHIRPS_QUEUE: 'chirps-queue',
 } as const;
 
 export type FeatureFlagKey = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS];

@@ -118,9 +118,9 @@ describe('Chirps - Score Commentary', () => {
     expect(chirp).not.toContain('$first_name');
   });
 
-  it('generates appropriate chirps for terrible rounds', () => {
+  it('generates appropriate chirps for bad rounds', () => {
     const bucket = getChirpBucket(25);
-    expect(bucket).toBe('terrible');
+    expect(bucket).toBe('bad');
     const chirp = getChirp(25, 'George');
     expect(chirp.length).toBeGreaterThan(0);
     expect(chirp).not.toContain('$first_name');
@@ -137,11 +137,9 @@ describe('Chirps - Score Commentary', () => {
   });
 
   it('maps all boundary values correctly', () => {
-    expect(getChirpBucket(-6)).toBe('legendary');
-    expect(getChirpBucket(-5)).toBe('excellent');
-    expect(getChirpBucket(-3)).toBe('excellent');
-    expect(getChirpBucket(-2)).toBe('solid');
-    expect(getChirpBucket(-1)).toBe('solid');
+    expect(getChirpBucket(-5)).toBe('legendary');
+    expect(getChirpBucket(-4)).toBe('excellent');
+    expect(getChirpBucket(-1)).toBe('excellent');
     expect(getChirpBucket(0)).toBe('neutral');
     expect(getChirpBucket(1)).toBe('neutral');
     expect(getChirpBucket(2)).toBe('mediocre');
@@ -150,7 +148,7 @@ describe('Chirps - Score Commentary', () => {
     expect(getChirpBucket(8)).toBe('rough');
     expect(getChirpBucket(9)).toBe('bad');
     expect(getChirpBucket(14)).toBe('bad');
-    expect(getChirpBucket(15)).toBe('terrible');
+    expect(getChirpBucket(20)).toBe('bad');
   });
 });
 

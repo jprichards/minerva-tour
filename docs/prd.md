@@ -372,28 +372,28 @@ The app is mobile-first (used on phones, often outdoors). Layout and visual desi
 
 ### **Chirps (Automated Score Commentary):**
 
-- When a score is submitted, the app generates an automated "chirp" — a humorous, personalized commentary based on the player's performance.
-- **Chirp buckets** are based on net strokes over par: -6 or better (legendary), -5 to -3 (excellent), -2 to -1 (solid), E to +1 (neutral), +2 to +4 (mediocre), +5 to +8 (rough), +9 to +14 (bad), +15 or worse (terrible). Ranges were calibrated from historical score distribution analysis (2,082 scores, median +3) to ensure each bucket fires with meaningful frequency.
-- Each bucket has multiple chirp templates. A random template is selected from the matching bucket when a score is finalized.
+- When a qualifying score notification is sent to Slack, the app can attach an automated "chirp" — a humorous, personalized commentary based on the player's performance. **Chirps appear only in Slack** (as part of score-related Slack messages). They are **not** shown on score cards, leaderboards, or elsewhere in the app.
+- **Chirp trigger configuration** (`app_settings` key `chirp_config`): Controls when chirps may fire — **round complete only** (default), matching legacy behavior, or **all score updates** (in-progress and completed rounds). Slack still respects per-event-type toggles in `slack_config`; chirp trigger config only gates whether a chirp line is included on applicable score notifications.
+- **Chirp buckets** are based on net strokes over par: -5 or better (legendary — mega hype), -4 to -1 (excellent — positive), E to +1 (neutral — decent/positive-leaning), +2 to +4 (mediocre — **no chirp fired**), +5 to +8 (rough — light roast), +9 or worse (bad — fully roasted). The mediocre range intentionally has no chirp — Slack notifications still fire but without a chirp line. Ranges were calibrated from historical score distribution and refined based on league member feedback.
 - Templates use `$first_name` as a placeholder which is substituted with the player's first name.
-- Chirps are displayed:
-  - On the completed score card (after submission)
-  - On the event leaderboard (next to each player's entry)
-- Chirps add personality and social engagement to the app, inspired by the original Glide app's chirps feature.
+- **Selection model (feature flag `chirps-queue`):**
+  - **Flag off (default):** Behavior is unchanged from the original implementation — each bucket has multiple chirp templates; when a chirp fires, a **random** template is chosen from the matching bucket's pool.
+  - **Flag on:** Each bucket uses an **ordered queue**. Chirps are **consumed one at a time** in queue order. Used chirps are **archived** (not deleted). **AI auto-replenishment** keeps approximately **10** active queued chirps per bucket (driven by **`chirp_ai_config`** in `app_settings`, separate from `chirp_config`). Members can **reorder** queued chirps (move up/down), **add manual** chirps to the queue, and **revive** items from the archive. An **Initialize Queue** button supports first-time setup (populate queues from existing templates).
+- Chirps add personality and social engagement in Slack, inspired by the original Glide app's chirps feature.
 - Chirps are purely entertainment — they have no effect on scoring or standings.
 - **Chirp Management (Implemented):**
   - All members can add new chirp templates to any performance bucket via `/chirps`.
   - All members can edit existing chirp templates (inline editing).
   - All members can delete chirp templates (with confirmation).
   - Management page accessible from the More menu and Admin dashboard.
-  - 8 bucket accordions show chirp counts and templates with add/edit/delete controls.
+  - 6 bucket accordions show chirp counts and templates with add/edit/delete controls. The mediocre bucket shows a "No chirp" indicator and does not support queue management or AI generation.
   - `$first_name` placeholder hint shown on the page.
   - **Admin bucket range editor**: Admins see a collapsible "Score Range Configuration" section at the top of the chirps page to adjust the net score thresholds for each bucket. Ranges are validated (must be strictly increasing) and stored in `app_settings` under key `chirp_bucket_ranges`. A reset-to-defaults button is available. Labels throughout the page update dynamically to reflect configured ranges.
   - Changes take effect immediately for future score submissions and Slack notifications.
   - Stored in the `chirp_templates` database table with RLS policies for authenticated members.
   - Hardcoded templates in `src/lib/chirps.ts` serve as fallback when DB is unavailable and as seed data source.
   - Seed script (`scripts/seed-chirps.mjs`) imports existing hardcoded templates into the database.
-  - Both Slack notify route (server-side) and leaderboard (client-side) use DB-backed templates with automatic fallback.
+  - The Slack notify route (server-side) resolves chirps from DB-backed templates (random pool or queue, per flag) with automatic fallback to hardcoded templates when needed.
 
 ### **Betting/Wagering (Deferred — Future Phase):**
 
@@ -843,7 +843,10 @@ The following features have been built and should be considered part of the app'
 
 **Chirps:**
 
-- **Automated score commentary** (`src/lib/chirps.ts`): Score-based trash talk templates with performance buckets and `$first_name` substitution. Bucket ranges are admin-configurable via `app_settings` and default to distribution-calibrated thresholds. `getChirpBucket` accepts optional custom ranges; `buildBucketLabels` generates display labels from any range configuration.
+- **Automated score commentary** (`src/lib/chirps.ts`): Score-based trash talk templates with performance buckets and `$first_name` substitution. Bucket ranges are admin-configurable via `app_settings` (`chirp_bucket_ranges`) and default to distribution-calibrated thresholds. `getChirpBucket` accepts optional custom ranges; `buildBucketLabels` generates display labels from any range configuration. Chirps are attached only in Slack score notifications (not in-app UI).
+- **Chirp + Slack settings** (`app_settings`): `chirp_config` stores chirp trigger mode (round-complete-only vs all score updates). `chirp_ai_config` stores AI generation settings for queue replenishment when the `chirps-queue` feature flag is enabled.
+- **AI generation utility** (`src/lib/chirps-ai.ts`): Server-side helper used to generate chirp text for queue replenishment.
+- **API**: `POST /api/chirps/generate` — runs `generateChirps` from `chirps-ai.ts` to fill queue buckets up to 10 (optional JSON body `{ bucket }` for one bucket; omit for all buckets below target). Authenticated members and admins.
 
 **Data Migration:**
 
@@ -869,16 +872,16 @@ The following features have been built and should be considered part of the app'
 - **Admin configuration** (extended in `/admin/settings`): Admins paste a Slack Bot Token, select a channel from a dropdown (populated via Slack API), and toggle which events fire notifications.
 - **Event types**:
   - `tee_time` — New tee time created (player, course/tee, date/time)
-  - `score_in_progress` — Score posted for an in-progress round (gross, net, holes played)
-  - `round_complete` — Round finished (gross, net, holes, chirp commentary)
+  - `score_in_progress` — Score posted for an in-progress round (gross, net, holes played; chirp line only when chirp trigger config allows all score updates)
+  - `round_complete` — Round finished (gross, net, holes; chirp line included when chirp trigger config allows)
   - `score_edit` — Score edited (before/after values)
   - `retroactive` — Retroactive score entered by admin (player, course, event)
   - `feedback_submitted` — User submitted feedback (type, title, description, attachment links if any)
-- **Architecture**: Client fires a fire-and-forget POST to `/api/slack/notify` after score operations and feedback submissions. The API route reads the Slack config from `app_settings` server-side (bot token never exposed to browser), checks if the event type is enabled, formats a Slack Block Kit message (including chirp for completed rounds), and posts via `chat.postMessage`.
+- **Architecture**: Client fires a fire-and-forget POST to `/api/slack/notify` after score operations and feedback submissions. The API route reads the Slack config from `app_settings` server-side (bot token never exposed to browser), checks if the event type is enabled, reads **`chirp_config`** to decide whether to attach a chirp for this notification (round-complete-only vs all score updates), **consumes** the next chirp from the matching bucket when the **`chirps-queue`** flag is on (ordered queue + archive + replenishment), otherwise picks a **random** pool template, formats a Slack Block Kit message, and posts via `chat.postMessage`.
 - **Projected points**: For `score_in_progress`, `round_complete`, and `retroactive` events, the API route queries the current event's completed scores from the database, ranks the player among all participants (handling ties with point splitting), and includes both projected net and scratch points in the Slack message. Points are calculated server-side using the same formulas as the leaderboard (`calculateProjectedPoints` in `src/lib/scoring.ts`). Tee time notifications show "Points: -" since no score exists yet.
 - **Message format**: Compact single-section Slack blocks with no header/title blocks. Chirps appear as regular-sized italic text with a `:studio_microphone:` emoji. No event-type emojis on player lines. Feedback messages show a type-specific emoji (:bug:, :bulb:, :speech_balloon:), submitter name, title, description, and clickable attachment links when present.
 - **Feedback channel**: Admins can optionally configure a separate Slack channel for feedback notifications (stored as `feedback_channel_id` and `feedback_channel_name` in `slack_config`). If not configured, feedback posts to the main score channel. The admin settings page shows a "Feedback Channel" dropdown (visible after loading channels) with a "Same as score channel" default option.
-- **Configuration stored in** `app_settings` table with key `slack_config` (JSONB): bot_token, channel_id, channel_name, per-event-type enabled flags, and optional feedback_channel_id/feedback_channel_name.
+- **Configuration stored in** `app_settings`: `slack_config` (JSONB) holds bot_token, channel_id, channel_name, per-event-type enabled flags, and optional feedback_channel_id/feedback_channel_name. **`chirp_config`** and **`chirp_ai_config`** (separate keys) hold chirp trigger mode and AI generation settings for queue replenishment.
 - **Error handling**: Slack notifications are best-effort — failures are silent and never block score submission or feedback submission.
 
 **iOS Standalone Session Persistence:**
