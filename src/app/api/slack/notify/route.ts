@@ -5,7 +5,7 @@ import { calculateProjectedPoints, calculateScratchScore, getMaxHoles } from '@/
 import { DEFAULT_BUCKET_RANGES, NO_CHIRP_BUCKETS, getChirpBucket, type BucketRange, type ChirpContext } from '@/lib/chirps';
 import { generateChirps } from '@/lib/chirps-ai';
 import { isFeatureEnabled, FEATURE_FLAGS } from '@/lib/feature-flags';
-import type { SlackConfig, SlackNotifyPayload, SlackScorePayload, ChirpConfig } from '@/types/database';
+import type { SlackConfig, SlackNotifyPayload, SlackScorePayload, ChirpConfig, ChirpTrigger } from '@/types/database';
 
 /**
  * POST /api/slack/notify
@@ -70,7 +70,8 @@ export async function POST(request: NextRequest) {
     // Determine if chirps should fire for this event type
     const isScoreEvent = ['score_in_progress', 'round_complete'].includes(payload.event_type);
     const chirpTrigger = isFeedback ? null : await loadChirpTrigger(supabase);
-    const shouldSkipChirp = isScoreEvent && chirpTrigger === 'round_complete' && payload.event_type === 'score_in_progress';
+    const shouldSkipChirp = isScoreEvent && chirpTrigger != null
+      && shouldSkipChirpForTrigger(chirpTrigger, payload as SlackScorePayload);
 
     // Check if chirps-queue flag is enabled
     const queueEnabled = !isFeedback && !shouldSkipChirp && isScoreEvent
@@ -280,12 +281,29 @@ async function enrichWithProjectedPoints(
 }
 
 /**
+ * Decide whether to suppress the chirp for this score event based on trigger config.
+ *
+ * - round_complete: only fire on round_complete events
+ * - nine_holes_complete: fire once holes_played >= 9 (at the turn for 18h, at finish for 9h)
+ * - all_score_updates: never skip
+ */
+function shouldSkipChirpForTrigger(trigger: ChirpTrigger, payload: SlackScorePayload): boolean {
+  switch (trigger) {
+    case 'round_complete':
+      return payload.event_type !== 'round_complete';
+    case 'nine_holes_complete':
+      return (payload.holes_played ?? 0) < 9;
+    case 'all_score_updates':
+      return false;
+  }
+}
+
+/**
  * Load the chirp trigger config from app_settings.
- * Returns 'round_complete' (default) or 'all_score_updates'.
  */
 async function loadChirpTrigger(
   supabase: Awaited<ReturnType<typeof createClient>>
-): Promise<string> {
+): Promise<ChirpTrigger> {
   try {
     const { data } = await supabase
       .from('app_settings')

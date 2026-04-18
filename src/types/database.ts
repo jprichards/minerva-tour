@@ -291,7 +291,7 @@ export interface AIConfig {
   max_tokens: number;
 }
 
-export type ChirpTrigger = 'round_complete' | 'all_score_updates';
+export type ChirpTrigger = 'round_complete' | 'nine_holes_complete' | 'all_score_updates';
 
 export interface ChirpConfig {
   trigger: ChirpTrigger;

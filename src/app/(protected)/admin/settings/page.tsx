@@ -853,6 +853,19 @@ export default function AdminSettingsPage() {
                 <input
                   type="radio"
                   name="chirp-trigger"
+                  checked={chirpTrigger === 'nine_holes_complete'}
+                  onChange={() => setChirpTrigger('nine_holes_complete')}
+                  className="w-4 h-4 text-minerva-600 focus:ring-minerva-500"
+                />
+                <div>
+                  <span className="text-sm text-[var(--text-primary)]">9 holes complete</span>
+                  <p className="text-xs text-[var(--text-faint)]">Fires at the turn for 18-hole rounds and at completion for 9-hole rounds</p>
+                </div>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="chirp-trigger"
                   checked={chirpTrigger === 'all_score_updates'}
                   onChange={() => setChirpTrigger('all_score_updates')}
                   className="w-4 h-4 text-minerva-600 focus:ring-minerva-500"

@@ -373,7 +373,7 @@ The app is mobile-first (used on phones, often outdoors). Layout and visual desi
 ### **Chirps (Automated Score Commentary):**
 
 - When a qualifying score notification is sent to Slack, the app can attach an automated "chirp" — a humorous, personalized commentary based on the player's performance. **Chirps appear only in Slack** (as part of score-related Slack messages). They are **not** shown on score cards, leaderboards, or elsewhere in the app.
-- **Chirp trigger configuration** (`app_settings` key `chirp_config`): Controls when chirps may fire — **round complete only** (default), matching legacy behavior, or **all score updates** (in-progress and completed rounds). Slack still respects per-event-type toggles in `slack_config`; chirp trigger config only gates whether a chirp line is included on applicable score notifications.
+- **Chirp trigger configuration** (`app_settings` key `chirp_config`): Controls when chirps may fire — **round complete only** (default), **9 holes complete** (fires at the turn for 18-hole rounds and at completion for 9-hole rounds), or **all score updates** (in-progress and completed rounds). Slack still respects per-event-type toggles in `slack_config`; chirp trigger config only gates whether a chirp line is included on applicable score notifications.
 - **Chirp buckets** are based on net strokes over par: -5 or better (legendary — mega hype), -4 to -1 (excellent — positive), E to +1 (neutral — decent/positive-leaning), +2 to +4 (mediocre — **no chirp fired**), +5 to +8 (rough — light roast), +9 or worse (bad — fully roasted). The mediocre range intentionally has no chirp — Slack notifications still fire but without a chirp line. Ranges were calibrated from historical score distribution and refined based on league member feedback.
 - Templates use `$first_name` as a placeholder which is substituted with the player's first name.
 - **Selection model (feature flag `chirps-queue`):**
@@ -844,7 +844,7 @@ The following features have been built and should be considered part of the app'
 **Chirps:**
 
 - **Automated score commentary** (`src/lib/chirps.ts`): Score-based trash talk templates with performance buckets and `$first_name` substitution. Bucket ranges are admin-configurable via `app_settings` (`chirp_bucket_ranges`) and default to distribution-calibrated thresholds. `getChirpBucket` accepts optional custom ranges; `buildBucketLabels` generates display labels from any range configuration. Chirps are attached only in Slack score notifications (not in-app UI).
-- **Chirp + Slack settings** (`app_settings`): `chirp_config` stores chirp trigger mode (round-complete-only vs all score updates). `chirp_ai_config` stores AI generation settings for queue replenishment when the `chirps-queue` feature flag is enabled.
+- **Chirp + Slack settings** (`app_settings`): `chirp_config` stores chirp trigger mode (round-complete-only, 9-holes-complete, or all score updates). `chirp_ai_config` stores AI generation settings for queue replenishment when the `chirps-queue` feature flag is enabled.
 - **AI generation utility** (`src/lib/chirps-ai.ts`): Server-side helper used to generate chirp text for queue replenishment.
 - **API**: `POST /api/chirps/generate` — runs `generateChirps` from `chirps-ai.ts` to fill queue buckets up to 10 (optional JSON body `{ bucket }` for one bucket; omit for all buckets below target). Authenticated members and admins.
 
@@ -872,8 +872,8 @@ The following features have been built and should be considered part of the app'
 - **Admin configuration** (extended in `/admin/settings`): Admins paste a Slack Bot Token, select a channel from a dropdown (populated via Slack API), and toggle which events fire notifications.
 - **Event types**:
   - `tee_time` — New tee time created (player, course/tee, date/time)
-  - `score_in_progress` — Score posted for an in-progress round (gross, net, holes played; chirp line only when chirp trigger config allows all score updates)
-  - `round_complete` — Round finished (gross, net, holes; chirp line included when chirp trigger config allows)
+  - `score_in_progress` — Score posted for an in-progress round (gross, net, holes played; chirp line when trigger is "all score updates", or when trigger is "9 holes complete" and holes played >= 9)
+  - `round_complete` — Round finished (gross, net, holes; chirp line included for all trigger modes)
   - `score_edit` — Score edited (before/after values)
   - `retroactive` — Retroactive score entered by admin (player, course, event)
   - `feedback_submitted` — User submitted feedback (type, title, description, attachment links if any)

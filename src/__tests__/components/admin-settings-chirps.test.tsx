@@ -144,6 +144,7 @@ describe('AdminSettingsPage - Chirps Configuration', () => {
     });
 
     expect(screen.getByText('Round complete only')).toBeInTheDocument();
+    expect(screen.getByText('9 holes complete')).toBeInTheDocument();
     expect(screen.getByText('Every score update')).toBeInTheDocument();
   });
 
@@ -164,6 +165,24 @@ describe('AdminSettingsPage - Chirps Configuration', () => {
 
     expect(roundCompleteRadio).toBeChecked();
     expect(allUpdatesRadio).not.toBeChecked();
+  });
+
+  it('can switch chirp trigger to "nine_holes_complete"', async () => {
+    render(<AdminSettingsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Chirps Fire On')).toBeInTheDocument();
+    });
+
+    const radios = screen.getAllByRole('radio');
+    const nineHolesRadio = radios.find((r) =>
+      r.closest('label')?.textContent?.includes('9 holes complete')
+    );
+
+    if (nineHolesRadio) {
+      fireEvent.click(nineHolesRadio);
+      expect(nineHolesRadio).toBeChecked();
+    }
   });
 
   it('can switch chirp trigger to "all_score_updates"', async () => {
