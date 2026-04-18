@@ -317,7 +317,7 @@ async function popChirpFromQueue(
   try {
     const { data } = await supabase
       .rpc('pop_chirp_from_queue', { target_bucket: bucket })
-      .maybeSingle();
+      .maybeSingle() as { data: { id: string; template: string } | null };
 
     return data ?? null;
   } catch {
