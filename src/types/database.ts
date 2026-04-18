@@ -281,6 +281,7 @@ export interface SlackConfig {
   recap_channel_id?: string;
   recap_channel_name?: string;
   recap_images_in_thread?: boolean;
+  score_post_trigger?: ChirpTrigger;
 }
 
 export interface AIConfig {

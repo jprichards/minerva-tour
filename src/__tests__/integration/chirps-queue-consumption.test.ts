@@ -525,3 +525,206 @@ describe('Chirps Queue Consumption in Slack Notify', () => {
     expect(chirpOverrideArg).toBeUndefined();
   });
 });
+
+describe('Score Post Trigger in Slack Notify', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.resetModules();
+    global.fetch = mockFetch;
+    mockIsFeatureEnabled.mockResolvedValue(false);
+  });
+
+  afterAll(() => {
+    global.fetch = originalFetch;
+  });
+
+  it('skips entire Slack post when score_post_trigger is nine_holes_complete and holes < 9', async () => {
+    mockSupabaseServer.auth.getUser.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+      error: null,
+    });
+
+    const slackConfigWith9h = {
+      ...baseSlackConfig,
+      score_post_trigger: 'nine_holes_complete',
+    };
+
+    let appSettingsCallCount = 0;
+    const appSettingsChain: Record<string, any> = {};
+    const methods = ['select', 'eq', 'neq', 'in', 'not', 'is', 'lte', 'gte', 'order', 'limit', 'update', 'insert'];
+    for (const m of methods) {
+      appSettingsChain[m] = vi.fn().mockReturnValue(appSettingsChain);
+    }
+    appSettingsChain.single = vi.fn().mockImplementation(() => {
+      appSettingsCallCount++;
+      if (appSettingsCallCount === 1) {
+        return Promise.resolve({ data: { value: slackConfigWith9h }, error: null });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+    appSettingsChain.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    appSettingsChain.then = (resolve: (v: unknown) => void) =>
+      Promise.resolve({ data: null, error: null }).then(resolve);
+
+    mockSupabaseServer.from.mockImplementation((table: string) => {
+      if (table === 'app_settings') return appSettingsChain;
+      return mockChain({ data: null, error: null });
+    });
+
+    const { POST } = await import('@/app/api/slack/notify/route');
+    const req = new Request('http://localhost/api/slack/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_type: 'score_in_progress',
+        player_name: 'John Smith',
+        course_name: 'Pine Valley',
+        tee_name: 'White',
+        par: 72,
+        gross_score: 20,
+        net_strokes_over_par: -1,
+        holes_played: 4,
+        max_holes: 18,
+      }),
+    });
+
+    const res = await POST(req as any);
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data.ok).toBe(false);
+    expect(data.reason).toBe('score_post_trigger_skip');
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('allows Slack post when score_post_trigger is nine_holes_complete and holes >= 9', async () => {
+    mockSupabaseServer.auth.getUser.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+      error: null,
+    });
+
+    const slackConfigWith9h = {
+      ...baseSlackConfig,
+      score_post_trigger: 'nine_holes_complete',
+    };
+
+    let appSettingsCallCount = 0;
+    const appSettingsChain: Record<string, any> = {};
+    const methods = ['select', 'eq', 'neq', 'in', 'not', 'is', 'lte', 'gte', 'order', 'limit', 'update', 'insert'];
+    for (const m of methods) {
+      appSettingsChain[m] = vi.fn().mockReturnValue(appSettingsChain);
+    }
+    appSettingsChain.single = vi.fn().mockImplementation(() => {
+      appSettingsCallCount++;
+      if (appSettingsCallCount === 1) {
+        return Promise.resolve({ data: { value: slackConfigWith9h }, error: null });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+    appSettingsChain.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    appSettingsChain.then = (resolve: (v: unknown) => void) =>
+      Promise.resolve({ data: null, error: null }).then(resolve);
+
+    mockSupabaseServer.from.mockImplementation((table: string) => {
+      if (table === 'app_settings') return appSettingsChain;
+      if (table === 'seasons') return mockChain({ data: [{ id: 'season-1' }], error: null });
+      if (table === 'events') return mockChain({ data: [{ id: 'event-1', is_major: false }], error: null });
+      if (table === 'scores') return mockChain({ data: [], error: null });
+      return mockChain({ data: null, error: null });
+    });
+
+    mockFetch.mockResolvedValueOnce({
+      json: () => Promise.resolve({ ok: true }),
+    });
+
+    const { POST } = await import('@/app/api/slack/notify/route');
+    const req = new Request('http://localhost/api/slack/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_type: 'score_in_progress',
+        player_name: 'John Smith',
+        course_name: 'Pine Valley',
+        tee_name: 'White',
+        par: 72,
+        gross_score: 40,
+        net_strokes_over_par: -2,
+        holes_played: 9,
+        max_holes: 18,
+      }),
+    });
+
+    const res = await POST(req as any);
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data.ok).toBe(true);
+    expect(mockFetch).toHaveBeenCalled();
+  });
+
+  it('always allows round_complete through regardless of score_post_trigger', async () => {
+    mockSupabaseServer.auth.getUser.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+      error: null,
+    });
+
+    const slackConfigRoundOnly = {
+      ...baseSlackConfig,
+      score_post_trigger: 'round_complete',
+    };
+
+    let appSettingsCallCount = 0;
+    const appSettingsChain: Record<string, any> = {};
+    const methods = ['select', 'eq', 'neq', 'in', 'not', 'is', 'lte', 'gte', 'order', 'limit', 'update', 'insert'];
+    for (const m of methods) {
+      appSettingsChain[m] = vi.fn().mockReturnValue(appSettingsChain);
+    }
+    appSettingsChain.single = vi.fn().mockImplementation(() => {
+      appSettingsCallCount++;
+      if (appSettingsCallCount === 1) {
+        return Promise.resolve({ data: { value: slackConfigRoundOnly }, error: null });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+    appSettingsChain.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    appSettingsChain.then = (resolve: (v: unknown) => void) =>
+      Promise.resolve({ data: null, error: null }).then(resolve);
+
+    mockSupabaseServer.from.mockImplementation((table: string) => {
+      if (table === 'app_settings') return appSettingsChain;
+      if (table === 'seasons') return mockChain({ data: [{ id: 'season-1' }], error: null });
+      if (table === 'events') return mockChain({ data: [{ id: 'event-1', is_major: false }], error: null });
+      if (table === 'scores') return mockChain({ data: [], error: null });
+      return mockChain({ data: null, error: null });
+    });
+
+    mockFetch.mockResolvedValueOnce({
+      json: () => Promise.resolve({ ok: true }),
+    });
+
+    const { POST } = await import('@/app/api/slack/notify/route');
+    const req = new Request('http://localhost/api/slack/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_type: 'round_complete',
+        player_name: 'John Smith',
+        course_name: 'Pine Valley',
+        tee_name: 'White',
+        par: 72,
+        gross_score: 80,
+        net_strokes_over_par: 0,
+        holes_played: 18,
+        max_holes: 18,
+        is_complete: true,
+      }),
+    });
+
+    const res = await POST(req as any);
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data.ok).toBe(true);
+    expect(mockFetch).toHaveBeenCalled();
+  });
+});

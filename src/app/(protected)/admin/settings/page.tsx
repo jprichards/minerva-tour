@@ -78,6 +78,9 @@ export default function AdminSettingsPage() {
   // Chirp trigger config state
   const [chirpTrigger, setChirpTrigger] = useState<ChirpTrigger>('round_complete');
 
+  // Score post trigger state (stored in slack_config)
+  const [scorePostTrigger, setScorePostTrigger] = useState<ChirpTrigger>('all_score_updates');
+
   useEffect(() => {
     if (!userLoading && !isAdmin) router.push('/home');
   }, [isAdmin, userLoading, router]);
@@ -114,6 +117,7 @@ export default function AdminSettingsPage() {
         if (config.recap_channel_id) setRecapChannelId(config.recap_channel_id);
         if (config.recap_channel_name) setRecapChannelName(config.recap_channel_name);
         if (config.recap_images_in_thread) setRecapImagesInThread(config.recap_images_in_thread);
+        if (config.score_post_trigger) setScorePostTrigger(config.score_post_trigger);
         if (config.events) setSlackEvents({ ...DEFAULT_SLACK_EVENTS, ...config.events });
         if (config.bot_token && config.channel_id) setSlackStatus('connected');
       }
@@ -271,6 +275,7 @@ export default function AdminSettingsPage() {
         recap_channel_id: recapChannelId || undefined,
         recap_channel_name: recapChannelName || undefined,
         recap_images_in_thread: recapImagesInThread,
+        score_post_trigger: scorePostTrigger,
       };
       await supabase.from('app_settings').upsert({
         key: 'slack_config',
@@ -335,6 +340,7 @@ export default function AdminSettingsPage() {
         chirp_ai_model: chirpAiModel,
         chirp_ai_endpoint: chirpAiEndpoint,
         chirp_trigger: chirpTrigger,
+        score_post_trigger: scorePostTrigger,
       });
 
       showToast('Settings saved!', 'success');
@@ -824,6 +830,58 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Score Post Trigger Config */}
+          <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-blue-600" />
+              <label className="text-sm font-medium text-[var(--text-primary)]">Slack Score Posts Fire On</label>
+            </div>
+            <p className="text-xs text-[var(--text-faint)]">
+              Control when score-related Slack messages are sent. This gates the entire Slack post, not just the chirp line.
+            </p>
+            <div className="space-y-2">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="score-post-trigger"
+                  checked={scorePostTrigger === 'round_complete'}
+                  onChange={() => setScorePostTrigger('round_complete')}
+                  className="w-4 h-4 text-minerva-600 focus:ring-minerva-500"
+                />
+                <div>
+                  <span className="text-sm text-[var(--text-primary)]">Round complete only</span>
+                  <p className="text-xs text-[var(--text-faint)]">Score updates are only posted to Slack when the round is finalized</p>
+                </div>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="score-post-trigger"
+                  checked={scorePostTrigger === 'nine_holes_complete'}
+                  onChange={() => setScorePostTrigger('nine_holes_complete')}
+                  className="w-4 h-4 text-minerva-600 focus:ring-minerva-500"
+                />
+                <div>
+                  <span className="text-sm text-[var(--text-primary)]">9 holes complete</span>
+                  <p className="text-xs text-[var(--text-faint)]">Posts at the turn for 18-hole rounds and at completion for 9-hole rounds</p>
+                </div>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="score-post-trigger"
+                  checked={scorePostTrigger === 'all_score_updates'}
+                  onChange={() => setScorePostTrigger('all_score_updates')}
+                  className="w-4 h-4 text-minerva-600 focus:ring-minerva-500"
+                />
+                <div>
+                  <span className="text-sm text-[var(--text-primary)]">Every score update</span>
+                  <p className="text-xs text-[var(--text-faint)]">Every score update posts to Slack as it happens</p>
+                </div>
+              </label>
+            </div>
           </div>
 
           {/* Chirp Trigger Config */}

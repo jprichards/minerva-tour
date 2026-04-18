@@ -62,6 +62,14 @@ export async function POST(request: NextRequest) {
       ? (config.feedback_channel_id || config.channel_id)
       : config.channel_id;
 
+    // Gate score posts by score_post_trigger (default: all_score_updates)
+    const isScorePost = ['score_in_progress', 'round_complete'].includes(payload.event_type);
+    if (isScorePost && config.score_post_trigger && config.score_post_trigger !== 'all_score_updates') {
+      if (shouldSkipForTrigger(config.score_post_trigger, payload as SlackScorePayload)) {
+        return NextResponse.json({ ok: false, reason: 'score_post_trigger_skip' }, { status: 200 });
+      }
+    }
+
     // Calculate projected points for score-related events
     if (['score_in_progress', 'round_complete', 'retroactive'].includes(payload.event_type)) {
       await enrichWithProjectedPoints(supabase, payload as SlackScorePayload);
@@ -71,7 +79,7 @@ export async function POST(request: NextRequest) {
     const isScoreEvent = ['score_in_progress', 'round_complete'].includes(payload.event_type);
     const chirpTrigger = isFeedback ? null : await loadChirpTrigger(supabase);
     const shouldSkipChirp = isScoreEvent && chirpTrigger != null
-      && shouldSkipChirpForTrigger(chirpTrigger, payload as SlackScorePayload);
+      && shouldSkipForTrigger(chirpTrigger, payload as SlackScorePayload);
 
     // Check if chirps-queue flag is enabled
     const queueEnabled = !isFeedback && !shouldSkipChirp && isScoreEvent
@@ -281,13 +289,15 @@ async function enrichWithProjectedPoints(
 }
 
 /**
- * Decide whether to suppress the chirp for this score event based on trigger config.
+ * Decide whether to suppress a score event based on a trigger config value.
+ * Used by both the score post trigger (gates the entire Slack message) and
+ * the chirp trigger (gates whether a chirp line is included).
  *
  * - round_complete: only fire on round_complete events
  * - nine_holes_complete: fire once holes_played >= 9 (at the turn for 18h, at finish for 9h)
  * - all_score_updates: never skip
  */
-function shouldSkipChirpForTrigger(trigger: ChirpTrigger, payload: SlackScorePayload): boolean {
+function shouldSkipForTrigger(trigger: ChirpTrigger, payload: SlackScorePayload): boolean {
   switch (trigger) {
     case 'round_complete':
       return payload.event_type !== 'round_complete';

@@ -136,6 +136,36 @@ describe('AdminSettingsPage - Chirps Configuration', () => {
     });
   });
 
+  it('Slack Score Posts Fire On radio buttons exist', async () => {
+    render(<AdminSettingsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Slack Score Posts Fire On')).toBeInTheDocument();
+    });
+
+    const scorePostSection = screen.getByText('Slack Score Posts Fire On').closest('div.space-y-3');
+    expect(scorePostSection).toBeInTheDocument();
+  });
+
+  it('default score post trigger is "all_score_updates"', async () => {
+    render(<AdminSettingsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Slack Score Posts Fire On')).toBeInTheDocument();
+    });
+
+    const radios = screen.getAllByRole('radio');
+    const scorePostRadios = radios.filter((r) => {
+      const name = r.getAttribute('name');
+      return name === 'score-post-trigger';
+    });
+
+    const everyUpdateRadio = scorePostRadios.find((r) =>
+      r.closest('label')?.textContent?.includes('Every score update')
+    );
+    expect(everyUpdateRadio).toBeChecked();
+  });
+
   it('Chirps Fire On radio buttons exist', async () => {
     render(<AdminSettingsPage />);
 
@@ -143,23 +173,26 @@ describe('AdminSettingsPage - Chirps Configuration', () => {
       expect(screen.getByText('Chirps Fire On')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Round complete only')).toBeInTheDocument();
-    expect(screen.getByText('9 holes complete')).toBeInTheDocument();
-    expect(screen.getByText('Every score update')).toBeInTheDocument();
+    const chirpRadios = screen.getAllByRole('radio').filter((r) =>
+      r.getAttribute('name') === 'chirp-trigger'
+    );
+    expect(chirpRadios).toHaveLength(3);
   });
 
-  it('default trigger is "round_complete"', async () => {
+  it('default chirp trigger is "round_complete"', async () => {
     render(<AdminSettingsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Chirps Fire On')).toBeInTheDocument();
     });
 
-    const radios = screen.getAllByRole('radio');
-    const roundCompleteRadio = radios.find((r) =>
+    const chirpRadios = screen.getAllByRole('radio').filter((r) =>
+      r.getAttribute('name') === 'chirp-trigger'
+    );
+    const roundCompleteRadio = chirpRadios.find((r) =>
       r.closest('label')?.textContent?.includes('Round complete only')
     );
-    const allUpdatesRadio = radios.find((r) =>
+    const allUpdatesRadio = chirpRadios.find((r) =>
       r.closest('label')?.textContent?.includes('Every score update')
     );
 
@@ -174,8 +207,10 @@ describe('AdminSettingsPage - Chirps Configuration', () => {
       expect(screen.getByText('Chirps Fire On')).toBeInTheDocument();
     });
 
-    const radios = screen.getAllByRole('radio');
-    const nineHolesRadio = radios.find((r) =>
+    const chirpRadios = screen.getAllByRole('radio').filter((r) =>
+      r.getAttribute('name') === 'chirp-trigger'
+    );
+    const nineHolesRadio = chirpRadios.find((r) =>
       r.closest('label')?.textContent?.includes('9 holes complete')
     );
 
@@ -192,8 +227,10 @@ describe('AdminSettingsPage - Chirps Configuration', () => {
       expect(screen.getByText('Chirps Fire On')).toBeInTheDocument();
     });
 
-    const radios = screen.getAllByRole('radio');
-    const allUpdatesRadio = radios.find((r) =>
+    const chirpRadios = screen.getAllByRole('radio').filter((r) =>
+      r.getAttribute('name') === 'chirp-trigger'
+    );
+    const allUpdatesRadio = chirpRadios.find((r) =>
       r.closest('label')?.textContent?.includes('Every score update')
     );
 
