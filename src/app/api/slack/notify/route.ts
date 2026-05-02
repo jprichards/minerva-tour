@@ -294,15 +294,25 @@ async function enrichWithProjectedPoints(
  * the chirp trigger (gates whether a chirp line is included).
  *
  * - round_complete: only fire on round_complete events
- * - nine_holes_complete: fire once holes_played >= 9 (at the turn for 18h, at finish for 9h)
+ * - nine_holes_complete: fire at the turn (holes_played == 9 for in-progress)
+ *   and at round completion. Suppress all other mid-round updates.
  * - all_score_updates: never skip
  */
 function shouldSkipForTrigger(trigger: ChirpTrigger, payload: SlackScorePayload): boolean {
   switch (trigger) {
     case 'round_complete':
       return payload.event_type !== 'round_complete';
-    case 'nine_holes_complete':
-      return (payload.holes_played ?? 0) < 9;
+    case 'nine_holes_complete': {
+      if (payload.event_type === 'round_complete') return false;
+      const holes = payload.holes_played ?? 0;
+      const maxHoles = payload.max_holes ?? 18;
+      // For 9-hole courses, fire at completion (holes == maxHoles handled by round_complete event type above)
+      // For 18+ hole courses, fire only at exact multiples of 9 (the turn)
+      if (maxHoles <= 9) {
+        return holes < maxHoles;
+      }
+      return holes < 9 || holes % 9 !== 0;
+    }
     case 'all_score_updates':
       return false;
   }
