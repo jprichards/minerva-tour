@@ -104,8 +104,12 @@ export async function POST(request: NextRequest) {
           if (popped) {
             chirpOverride = substituteWildcards(popped.template, scorePayload);
             consumedBucket = bucket;
+          } else {
+            chirpOverride = null;
           }
         }
+      } else {
+        chirpOverride = null;
       }
     }
 
