@@ -71,7 +71,12 @@ function buildWildcardRef(): string {
   return CHIRP_WILDCARDS.map((w) => `${w.token} — ${w.description}`).join('\n');
 }
 
-export function buildGenerationPrompt(bucket: ChirpBucket, count: number, existingInQueue: string[]): string {
+export function buildGenerationPrompt(
+  bucket: ChirpBucket,
+  count: number,
+  existingInQueue: string[],
+  recentlyUsed: string[] = []
+): string {
   const examples = pickExamples(bucket);
   const bucketLabel = BUCKET_LABELS[bucket];
 
@@ -82,9 +87,10 @@ export function buildGenerationPrompt(bucket: ChirpBucket, count: number, existi
   prompt += `Example chirps for this bucket:\n`;
   examples.forEach((e, i) => { prompt += `${i + 1}. ${e}\n`; });
 
-  if (existingInQueue.length > 0) {
-    prompt += `\nChirps already in the queue (do NOT repeat these or generate very similar ones):\n`;
-    existingInQueue.forEach((e, i) => { prompt += `${i + 1}. ${e}\n`; });
+  const doNotRepeat = [...existingInQueue, ...recentlyUsed];
+  if (doNotRepeat.length > 0) {
+    prompt += `\nChirps already in the queue or recently used (do NOT repeat these or generate very similar ones):\n`;
+    doNotRepeat.forEach((e, i) => { prompt += `${i + 1}. ${e}\n`; });
   }
 
   prompt += `\nRespond with ONLY a JSON array of ${count} string${count > 1 ? 's' : ''}, no markdown, no explanation. Example: ["chirp one", "chirp two"]`;
@@ -149,6 +155,41 @@ async function getExistingQueueTemplates(
     .order('queue_position', { ascending: true });
 
   return (data ?? []).map((r) => r.template);
+}
+
+/**
+ * Fetch recently archived chirp templates so AI generation avoids repeating
+ * chirps that were just used. Limits to the most recent 20 per bucket.
+ */
+async function getRecentlyArchivedTemplates(
+  supabase: SupabaseClient,
+  bucket: ChirpBucket
+): Promise<string[]> {
+  const { data } = await supabase
+    .from('chirp_templates')
+    .select('template')
+    .eq('bucket', bucket)
+    .not('archived_at', 'is', null)
+    .order('archived_at', { ascending: false })
+    .limit(20);
+
+  return (data ?? []).map((r) => r.template);
+}
+
+/**
+ * Fetch all template strings for a bucket that exist anywhere in the DB
+ * (queued or archived) for deduplication at insert time.
+ */
+async function getAllKnownTemplates(
+  supabase: SupabaseClient,
+  bucket: ChirpBucket
+): Promise<Set<string>> {
+  const { data } = await supabase
+    .from('chirp_templates')
+    .select('template')
+    .eq('bucket', bucket);
+
+  return new Set((data ?? []).map((r) => r.template));
 }
 
 function parseAIResponse(text: string): string[] {
@@ -216,8 +257,9 @@ export async function generateChirps(
 
     try {
       const existingTemplates = await getExistingQueueTemplates(supabase, bucket);
+      const recentlyUsed = await getRecentlyArchivedTemplates(supabase, bucket);
       const systemPrompt = config.system_prompt || DEFAULT_CHIRP_SYSTEM_PROMPT;
-      const userPrompt = buildGenerationPrompt(bucket, deficit, existingTemplates);
+      const userPrompt = buildGenerationPrompt(bucket, deficit, existingTemplates, recentlyUsed);
 
       const aiResponse = await fetch(config.api_endpoint, {
         method: 'POST',
@@ -256,13 +298,26 @@ export async function generateChirps(
         continue;
       }
 
+      const knownTemplates = await getAllKnownTemplates(supabase, bucket);
+      const seen = new Set<string>();
       let maxPos = await getMaxQueuePosition(supabase, bucket);
-      const inserts = chirps.slice(0, deficit).map((template) => ({
-        bucket,
-        template,
-        source: 'ai' as const,
-        queue_position: ++maxPos,
-      }));
+      const inserts: { bucket: string; template: string; source: 'ai'; queue_position: number }[] = [];
+
+      for (const template of chirps.slice(0, deficit)) {
+        if (knownTemplates.has(template) || seen.has(template)) continue;
+        seen.add(template);
+        inserts.push({
+          bucket,
+          template,
+          source: 'ai' as const,
+          queue_position: ++maxPos,
+        });
+      }
+
+      if (inserts.length === 0) {
+        results.push({ bucket, generated: 0, deficit });
+        continue;
+      }
 
       const { error: insertError } = await supabase
         .from('chirp_templates')
