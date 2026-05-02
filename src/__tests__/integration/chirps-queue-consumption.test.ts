@@ -451,6 +451,12 @@ describe('Chirps Queue Consumption in Slack Notify', () => {
     const formatCall = mockFormatSlackMessage.mock.calls[0];
     const chirpOverrideArg = formatCall[3];
     expect(chirpOverrideArg).toBe('John just crushed it at Pine Valley!');
+
+    expect(mockIsFeatureEnabled).toHaveBeenCalledWith(
+      expect.anything(),
+      'chirps-queue',
+      'user-1'
+    );
   });
 
   it('falls back to hardcoded templates when queue is empty', async () => {

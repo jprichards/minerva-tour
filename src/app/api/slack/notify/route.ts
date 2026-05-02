@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
 
     // Check if chirps-queue flag is enabled
     const queueEnabled = !isFeedback && !shouldSkipChirp && isScoreEvent
-      ? await isFeatureEnabled(supabase, FEATURE_FLAGS.CHIRPS_QUEUE)
+      ? await isFeatureEnabled(supabase, FEATURE_FLAGS.CHIRPS_QUEUE, user.id)
       : false;
 
     let chirpOverride: string | null | undefined;
