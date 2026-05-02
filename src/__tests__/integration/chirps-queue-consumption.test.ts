@@ -451,6 +451,12 @@ describe('Chirps Queue Consumption in Slack Notify', () => {
     const formatCall = mockFormatSlackMessage.mock.calls[0];
     const chirpOverrideArg = formatCall[3];
     expect(chirpOverrideArg).toBe('John just crushed it at Pine Valley!');
+
+    expect(mockIsFeatureEnabled).toHaveBeenCalledWith(
+      expect.anything(),
+      'chirps-queue',
+      'user-1'
+    );
   });
 
   it('falls back to hardcoded templates when queue is empty', async () => {
@@ -522,7 +528,78 @@ describe('Chirps Queue Consumption in Slack Notify', () => {
 
     const formatCall = mockFormatSlackMessage.mock.calls[0];
     const chirpOverrideArg = formatCall[3];
-    expect(chirpOverrideArg).toBeUndefined();
+    expect(chirpOverrideArg).toBeNull();
+  });
+
+  it('skips chirps (null override) when queue is enabled but net_strokes_over_par is null', async () => {
+    mockSupabaseServer.auth.getUser.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+      error: null,
+    });
+
+    mockIsFeatureEnabled.mockResolvedValue(true);
+
+    let appSettingsCallCount = 0;
+    const appSettingsChain: Record<string, any> = {};
+    const chainMethods = ['select', 'eq', 'neq', 'in', 'not', 'is', 'lte', 'gte', 'order', 'limit', 'update', 'insert'];
+    for (const m of chainMethods) {
+      appSettingsChain[m] = vi.fn().mockReturnValue(appSettingsChain);
+    }
+    appSettingsChain.single = vi.fn().mockImplementation(() => {
+      appSettingsCallCount++;
+      if (appSettingsCallCount === 1) {
+        return Promise.resolve({ data: { value: baseSlackConfig }, error: null });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+    appSettingsChain.maybeSingle = vi.fn().mockImplementation(() => {
+      appSettingsCallCount++;
+      return Promise.resolve({ data: { value: { trigger: 'all_score_updates' } }, error: null });
+    });
+    appSettingsChain.then = (resolve: (v: unknown) => void) =>
+      Promise.resolve({ data: null, error: null }).then(resolve);
+
+    mockSupabaseServer.from.mockImplementation((table: string) => {
+      if (table === 'app_settings') return appSettingsChain;
+      if (table === 'seasons') return mockChain({ data: [{ id: 'season-1' }], error: null });
+      if (table === 'events') return mockChain({ data: [{ id: 'event-1', is_major: false }], error: null });
+      if (table === 'scores') return mockChain({ data: [], error: null });
+      if (table === 'feature_flags') return mockChain({ data: { key: 'chirps-queue', enabled: true, target_user_ids: [], target_roles: [] }, error: null });
+      return mockChain({ data: null, error: null });
+    });
+
+    mockFetch.mockResolvedValueOnce({
+      json: () => Promise.resolve({ ok: true }),
+    });
+
+    const { POST } = await import('@/app/api/slack/notify/route');
+    const req = new Request('http://localhost/api/slack/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_type: 'round_complete',
+        player_name: 'John Smith',
+        course_name: 'Pine Valley',
+        tee_name: 'White',
+        par: 72,
+        gross_score: 85,
+        holes_played: 18,
+        max_holes: 18,
+        is_complete: true,
+      }),
+    });
+
+    const res = await POST(req as any);
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data.ok).toBe(true);
+
+    const formatCall = mockFormatSlackMessage.mock.calls[0];
+    const chirpOverrideArg = formatCall[3];
+    expect(chirpOverrideArg).toBeNull();
+
+    expect(mockSupabaseServer.rpc).not.toHaveBeenCalled();
   });
 });
 

@@ -18,10 +18,13 @@ CREATE INDEX IF NOT EXISTS idx_chirp_templates_archive
 
 -- Atomically pop the next chirp from the queue for a bucket.
 -- Uses FOR UPDATE SKIP LOCKED so concurrent requests grab different rows.
+-- SECURITY DEFINER so any authenticated user (including playing_guest) can
+-- consume chirps — the UPDATE RLS policy only allows admin/member, but chirp
+-- consumption is an internal queue operation that should work for all roles.
 CREATE OR REPLACE FUNCTION pop_chirp_from_queue(target_bucket TEXT)
 RETURNS TABLE(id UUID, template TEXT)
 LANGUAGE sql
-SECURITY INVOKER
+SECURITY DEFINER
 AS $$
   UPDATE chirp_templates
   SET archived_at = NOW(), queue_position = NULL
