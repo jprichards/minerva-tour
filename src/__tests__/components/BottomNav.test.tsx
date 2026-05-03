@@ -114,6 +114,22 @@ describe('BottomNav', () => {
     expect(scoresLink?.className).toContain('text-[var(--text-secondary)]');
   });
 
+  it('inactive More menu items use --text-secondary for better contrast', () => {
+    mockUseUser.mockReturnValue({
+      isAdmin: true,
+      isAuthenticated: true,
+    });
+    render(<BottomNav />);
+
+    fireEvent.click(screen.getByText('More'));
+
+    const coursesLink = screen.getByText('Courses').closest('a');
+    expect(coursesLink?.className).toContain('text-[var(--text-secondary)]');
+
+    const adminLink = screen.getByText('Admin').closest('a');
+    expect(adminLink?.className).toContain('text-[var(--text-secondary)]');
+  });
+
   it('closes More menu when X is clicked', () => {
     mockUseUser.mockReturnValue({
       isAdmin: false,

@@ -60,7 +60,7 @@ export default function BottomNav() {
                     href={item.href}
                     onClick={() => setMenuOpen(false)}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors ${
-                      isActive ? 'bg-minerva-50 text-minerva-600' : 'text-[var(--text-muted)] hover:bg-[var(--bg-page)]'
+                      isActive ? 'bg-minerva-50 text-minerva-600' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-page)] hover:text-[var(--text-primary)]'
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -73,7 +73,7 @@ export default function BottomNav() {
                   href={adminItem.href}
                   onClick={() => setMenuOpen(false)}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors ${
-                    pathname.startsWith(adminItem.href) ? 'bg-red-50 text-red-600' : 'text-[var(--text-muted)] hover:bg-[var(--bg-page)]'
+                    pathname.startsWith(adminItem.href) ? 'bg-red-50 text-red-600' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-page)] hover:text-[var(--text-primary)]'
                   }`}
                 >
                   <Shield className="w-5 h-5" />
