@@ -96,7 +96,7 @@ export default function BottomNav() {
                 key={item.href}
                 href={item.href}
                 className={`flex flex-col items-center justify-center gap-0.5 min-h-[60px] px-4 py-3 rounded-lg transition-colors min-w-0 flex-1 ${
-                  isActive ? 'text-minerva-600' : 'text-[var(--text-faint)] hover:text-[var(--text-muted)]'
+                  isActive ? 'text-minerva-600' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
@@ -110,7 +110,7 @@ export default function BottomNav() {
           <button
             onClick={() => setMenuOpen(true)}
             className={`flex flex-col items-center justify-center gap-0.5 min-h-[60px] px-4 py-3 rounded-lg transition-colors min-w-0 flex-1 ${
-              menuOpen ? 'text-minerva-600' : 'text-[var(--text-faint)] hover:text-[var(--text-muted)]'
+              menuOpen ? 'text-minerva-600' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
             <Menu className="w-5 h-5" />

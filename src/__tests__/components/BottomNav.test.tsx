@@ -103,6 +103,17 @@ describe('BottomNav', () => {
     expect(scoresLink).toHaveClass('py-3');
   });
 
+  it('inactive nav items use --text-secondary for better contrast', () => {
+    mockUseUser.mockReturnValue({
+      isAdmin: false,
+      isAuthenticated: true,
+    });
+    render(<BottomNav />);
+
+    const scoresLink = screen.getByText('Scores').closest('a');
+    expect(scoresLink?.className).toContain('text-[var(--text-secondary)]');
+  });
+
   it('closes More menu when X is clicked', () => {
     mockUseUser.mockReturnValue({
       isAdmin: false,
