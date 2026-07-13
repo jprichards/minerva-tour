@@ -8,6 +8,12 @@ export type CourseType = '18_holes' | '9_holes' | 'front_9' | 'back_9';
 
 export type PlayoffFlight = 'championship' | 'consolation' | 'unicorn';
 
+export type PlayoffFormat = 'stroke_play' | 'match_play';
+
+export type PlayoffMatchStatus = 'scheduled' | 'in_progress' | 'final';
+
+export type PlayoffHoleResult = 'player1' | 'player2' | 'halve';
+
 export type AuditActionType =
   | 'login'
   | 'logout'
@@ -49,7 +55,10 @@ export type AuditActionType =
   | 'chirp_template_delete'
   | 'user_seen'
   | 'feature_flag_toggle'
-  | 'feature_flag_update';
+  | 'feature_flag_update'
+  | 'set_playoff_format'
+  | 'log_playoff_hole'
+  | 'set_playoff_match_status';
 
 export interface User {
   id: string;
@@ -164,6 +173,23 @@ export interface PlayoffBracket {
   player1_result: string | null;
   player2_result: string | null;
   event_id: string | null;
+  format: PlayoffFormat | null;
+  holes: number;
+  status: PlayoffMatchStatus;
+  created_at: string;
+  updated_at: string;
+  // Joined fields
+  player1?: Pick<User, 'id' | 'full_name' | 'profile_picture_url'> | null;
+  player2?: Pick<User, 'id' | 'full_name' | 'profile_picture_url'> | null;
+  winner?: Pick<User, 'id' | 'full_name'> | null;
+}
+
+export interface PlayoffMatchHole {
+  id: string;
+  matchup_id: string;
+  hole_number: number;
+  result: PlayoffHoleResult;
+  updated_by: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -269,7 +295,14 @@ export interface FeatureFlag {
 }
 
 export type SlackScoreEventType = 'tee_time' | 'score_in_progress' | 'round_complete' | 'score_edit' | 'retroactive';
-export type SlackEventType = SlackScoreEventType | 'feedback_submitted';
+export type PlayoffSlackEventType =
+  | 'playoff_format_set'
+  | 'playoff_match_start'
+  | 'playoff_status_update'
+  | 'playoff_stroke_score'
+  | 'playoff_match_final'
+  | 'playoff_round_complete';
+export type SlackEventType = SlackScoreEventType | 'feedback_submitted' | PlayoffSlackEventType;
 
 export interface SlackConfig {
   bot_token: string;
@@ -360,7 +393,33 @@ export interface SlackFeedbackPayload {
   attachments?: string[];
 }
 
-export type SlackNotifyPayload = SlackScorePayload | SlackFeedbackPayload;
+export interface SlackPlayoffPayload {
+  event_type: PlayoffSlackEventType;
+  flight: PlayoffFlight;
+  round: number;
+  round_label?: string | null;
+  /** Omitted for playoff_round_complete, which isn't about a specific matchup. */
+  player1_name?: string;
+  player2_name?: string;
+  format?: PlayoffFormat | null;
+  holes?: number | null;
+  /** Running match-play status ("2 UP thru 7") or a best-net summary line. */
+  status_text?: string | null;
+  hole_number?: number | null;
+  /** Set only for playoff_match_final. */
+  winner_name?: string | null;
+  /** Set only for playoff_round_complete: how many matchups were in the completed round. */
+  matchup_count?: number | null;
+  /**
+   * Only used by playoff_stroke_score, so the notify route can gate it
+   * through the same score_post_trigger cadence as regular score posts
+   * ("additive to, never a bypass of, the regular-season score settings").
+   */
+  holes_played?: number | null;
+  is_complete?: boolean | null;
+}
+
+export type SlackNotifyPayload = SlackScorePayload | SlackFeedbackPayload | SlackPlayoffPayload;
 
 export type NotificationType = 'event_start' | 'event_end' | 'score_posted' | 'handicap_update' | 'admin_message' | 'season_mode' | 'tournament' | 'general';
 

@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { formatSlackMessage } from '@/lib/slack';
+import { formatSlackMessage, DEFAULT_SLACK_EVENTS } from '@/lib/slack';
 import { calculateProjectedPoints, calculateScratchScore, getMaxHoles } from '@/lib/scoring';
 import { DEFAULT_BUCKET_RANGES, NO_CHIRP_BUCKETS, getChirpBucket, type BucketRange, type ChirpContext } from '@/lib/chirps';
 import { generateChirps } from '@/lib/chirps-ai';
 import { isFeatureEnabled, FEATURE_FLAGS } from '@/lib/feature-flags';
-import type { SlackConfig, SlackNotifyPayload, SlackScorePayload, ChirpConfig, ChirpTrigger } from '@/types/database';
+import type { SlackConfig, SlackNotifyPayload, SlackScorePayload, PlayoffSlackEventType, ChirpConfig, ChirpTrigger } from '@/types/database';
+
+const PLAYOFF_EVENT_TYPES = new Set<PlayoffSlackEventType>([
+  'playoff_format_set',
+  'playoff_match_start',
+  'playoff_status_update',
+  'playoff_stroke_score',
+  'playoff_match_final',
+  'playoff_round_complete',
+]);
 
 /**
  * POST /api/slack/notify
@@ -51,10 +60,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, reason: 'incomplete_config' }, { status: 200 });
     }
 
-    // Check if this event type is enabled (default to true for event types not yet saved in config)
-    if (config.events?.[payload.event_type] === false) {
+    // Check if this event type is enabled. Merge over DEFAULT_SLACK_EVENTS so
+    // a stored config that predates a given event type (missing key) still
+    // gets its intended default rather than silently defaulting to enabled —
+    // this matters for playoff types like playoff_stroke_score, which ship
+    // OFF by default.
+    const eventsConfig = { ...DEFAULT_SLACK_EVENTS, ...config.events };
+    if (eventsConfig[payload.event_type] === false) {
       return NextResponse.json({ ok: false, reason: 'event_disabled' }, { status: 200 });
     }
+
+    // Playoff messages are their own branch: no projected points, no chirps,
+    // no score_post_trigger gating — those are all score-specific concerns.
+    const isPlayoffEvent = PLAYOFF_EVENT_TYPES.has(payload.event_type as PlayoffSlackEventType);
 
     // Determine target channel — feedback goes to its own channel if configured
     const isFeedback = payload.event_type === 'feedback_submitted';
@@ -70,14 +88,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // playoff_stroke_score is additive to the regular score notifications,
+    // never a bypass of them — apply the same score_post_trigger cadence,
+    // reading is_complete/holes_played off the playoff payload instead.
+    if (payload.event_type === 'playoff_stroke_score' && config.score_post_trigger && config.score_post_trigger !== 'all_score_updates') {
+      const p = payload as SlackNotifyPayload & { is_complete?: boolean | null; holes_played?: number | null };
+      const skip = config.score_post_trigger === 'round_complete'
+        ? !p.is_complete
+        : (p.holes_played ?? 0) < 9;
+      if (skip) {
+        return NextResponse.json({ ok: false, reason: 'score_post_trigger_skip' }, { status: 200 });
+      }
+    }
+
     // Calculate projected points for score-related events
-    if (['score_in_progress', 'round_complete', 'retroactive'].includes(payload.event_type)) {
+    if (!isPlayoffEvent && ['score_in_progress', 'round_complete', 'retroactive'].includes(payload.event_type)) {
       await enrichWithProjectedPoints(supabase, payload as SlackScorePayload);
     }
 
     // Determine if chirps should fire for this event type
-    const isScoreEvent = ['score_in_progress', 'round_complete'].includes(payload.event_type);
-    const chirpTrigger = isFeedback ? null : await loadChirpTrigger(supabase);
+    const isScoreEvent = !isPlayoffEvent && ['score_in_progress', 'round_complete'].includes(payload.event_type);
+    const chirpTrigger = (isFeedback || isPlayoffEvent) ? null : await loadChirpTrigger(supabase);
     const shouldSkipChirp = isScoreEvent && chirpTrigger != null
       && shouldSkipForTrigger(chirpTrigger, payload as SlackScorePayload);
 
@@ -110,8 +141,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Load chirp templates for non-queue path
-    const dbTemplates = (!isFeedback && !queueEnabled && !shouldSkipChirp) ? await loadChirpTemplates(supabase) : undefined;
-    const bucketRanges = (!isFeedback && !queueEnabled && !shouldSkipChirp) ? await loadBucketRanges(supabase) : undefined;
+    const dbTemplates = (!isFeedback && !isPlayoffEvent && !queueEnabled && !shouldSkipChirp) ? await loadChirpTemplates(supabase) : undefined;
+    const bucketRanges = (!isFeedback && !isPlayoffEvent && !queueEnabled && !shouldSkipChirp) ? await loadBucketRanges(supabase) : undefined;
 
     // Format the message
     const message = formatSlackMessage(payload, dbTemplates, bucketRanges, chirpOverride);

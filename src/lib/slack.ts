@@ -7,7 +7,34 @@
 
 import { getChirp, getChirpFromTemplates, type ChirpContext, type BucketRange } from '@/lib/chirps';
 import { formatNetScore, formatGrossScore, calculatePartialPar, formatPoints } from '@/lib/scoring';
-import type { SlackNotifyPayload, SlackScorePayload, SlackFeedbackPayload, CourseType } from '@/types/database';
+import type { SlackNotifyPayload, SlackScorePayload, SlackFeedbackPayload, SlackPlayoffPayload, SlackEventType, CourseType } from '@/types/database';
+
+/**
+ * Default enabled/disabled state for each Slack event type. Shared between
+ * the App Settings admin UI and the notify route so a stored config that
+ * predates a new event type (missing key) still gets the intended default
+ * instead of silently falling back to "enabled".
+ *
+ * Playoff defaults (per commish): match play fires live on every
+ * hole/score entry (`playoff_status_update` ON); stroke play relies on the
+ * existing score-update messages instead (`playoff_stroke_score` OFF).
+ * `playoff_format_set` is chatty/low-value so it ships OFF; the rest
+ * default ON.
+ */
+export const DEFAULT_SLACK_EVENTS: Record<SlackEventType, boolean> = {
+  tee_time: true,
+  score_in_progress: true,
+  round_complete: true,
+  score_edit: true,
+  retroactive: true,
+  feedback_submitted: true,
+  playoff_format_set: false,
+  playoff_match_start: true,
+  playoff_status_update: true,
+  playoff_stroke_score: false,
+  playoff_match_final: true,
+  playoff_round_complete: true,
+};
 
 export interface SlackBlock {
   type: string;
@@ -181,6 +208,18 @@ export function formatSlackMessage(
       return formatRetroactive(payload as SlackScorePayload);
     case 'feedback_submitted':
       return formatFeedbackSubmitted(payload as SlackFeedbackPayload);
+    case 'playoff_format_set':
+      return formatPlayoffFormatSet(payload as SlackPlayoffPayload);
+    case 'playoff_match_start':
+      return formatPlayoffMatchStart(payload as SlackPlayoffPayload);
+    case 'playoff_status_update':
+      return formatPlayoffStatusUpdate(payload as SlackPlayoffPayload);
+    case 'playoff_stroke_score':
+      return formatPlayoffStrokeScore(payload as SlackPlayoffPayload);
+    case 'playoff_match_final':
+      return formatPlayoffMatchFinal(payload as SlackPlayoffPayload);
+    case 'playoff_round_complete':
+      return formatPlayoffRoundComplete(payload as SlackPlayoffPayload);
     default: {
       const _exhaustive: never = event_type;
       throw new Error(`Unknown event type: ${_exhaustive}`);
@@ -367,4 +406,101 @@ function formatFeedbackSubmitted(p: SlackFeedbackPayload): SlackMessage {
   ];
 
   return { text: fallbackText, blocks };
+}
+
+const PLAYOFF_FLIGHT_LABELS: Record<string, string> = {
+  championship: 'Championship',
+  consolation: 'Consolation',
+  unicorn: 'Unicorn',
+};
+
+const PLAYOFF_FORMAT_LABELS: Record<string, string> = {
+  stroke_play: 'Stroke Play',
+  match_play: 'Match Play',
+};
+
+function matchupLine(p: SlackPlayoffPayload): string {
+  return `*${p.player1_name ?? 'Player 1'}* vs *${p.player2_name ?? 'Player 2'}*`;
+}
+
+function flightRoundLine(p: SlackPlayoffPayload): string {
+  const flightLabel = PLAYOFF_FLIGHT_LABELS[p.flight] || p.flight;
+  const roundLabel = p.round_label || `Round ${p.round}`;
+  return `${flightLabel} — ${roundLabel}`;
+}
+
+function formatPlayoffFormatSet(p: SlackPlayoffPayload): SlackMessage {
+  const formatLabel = p.format ? PLAYOFF_FORMAT_LABELS[p.format] : 'a format';
+  const holesLabel = p.holes ? ` (${p.holes} holes)` : '';
+  const fallbackText = `Playoff format set — ${p.player1_name} vs ${p.player2_name}: ${formatLabel}${holesLabel}`;
+
+  const lines = [
+    `⛳ ${matchupLine(p)} set their matchup to *${formatLabel}${holesLabel}*.`,
+    flightRoundLine(p),
+  ];
+
+  return { text: fallbackText, blocks: [sectionBlock(lines.join('\n'))] };
+}
+
+function formatPlayoffMatchStart(p: SlackPlayoffPayload): SlackMessage {
+  const formatLabel = p.format ? PLAYOFF_FORMAT_LABELS[p.format] : null;
+  const holesLabel = p.holes ? `, ${p.holes} holes` : '';
+  const detail = formatLabel ? ` (${formatLabel}${holesLabel})` : '';
+  const fallbackText = `Match started — ${p.player1_name} vs ${p.player2_name}`;
+
+  const lines = [
+    `🏁 Match started: ${matchupLine(p)}${detail}`,
+    flightRoundLine(p),
+  ];
+
+  return { text: fallbackText, blocks: [sectionBlock(lines.join('\n'))] };
+}
+
+function formatPlayoffStatusUpdate(p: SlackPlayoffPayload): SlackMessage {
+  const statusSuffix = p.status_text ? ` — ${p.status_text}` : '';
+  const fallbackText = `Playoff update — ${p.player1_name} vs ${p.player2_name}${statusSuffix}`;
+
+  const lines = [
+    `⛳ ${matchupLine(p)}${statusSuffix}`,
+    flightRoundLine(p),
+  ];
+  if (p.hole_number != null) lines.push(`Hole ${p.hole_number}`);
+
+  return { text: fallbackText, blocks: [sectionBlock(lines.join('\n'))] };
+}
+
+function formatPlayoffStrokeScore(p: SlackPlayoffPayload): SlackMessage {
+  const statusSuffix = p.status_text ? ` — ${p.status_text}` : '';
+  const fallbackText = `Playoff stroke play update — ${p.player1_name} vs ${p.player2_name}${statusSuffix}`;
+
+  const lines = [
+    `⛳ ${matchupLine(p)}${statusSuffix}`,
+    flightRoundLine(p),
+  ];
+
+  return { text: fallbackText, blocks: [sectionBlock(lines.join('\n'))] };
+}
+
+function formatPlayoffMatchFinal(p: SlackPlayoffPayload): SlackMessage {
+  const loserName = p.winner_name === p.player1_name ? p.player2_name : p.player1_name;
+  const resultSuffix = p.status_text ? ` ${p.status_text}` : '';
+  const fallbackText = `Match Final — ${p.winner_name} defeats ${loserName}${resultSuffix}`;
+
+  const lines = [
+    `🏆 *${p.winner_name}* defeats *${loserName}*${resultSuffix} and advances!`,
+    flightRoundLine(p),
+  ];
+
+  return { text: fallbackText, blocks: [sectionBlock(lines.join('\n'))] };
+}
+
+function formatPlayoffRoundComplete(p: SlackPlayoffPayload): SlackMessage {
+  const flightLabel = PLAYOFF_FLIGHT_LABELS[p.flight] || p.flight;
+  const roundLabel = p.round_label || `Round ${p.round}`;
+  const countLabel = p.matchup_count != null ? ` (${p.matchup_count} matchup${p.matchup_count !== 1 ? 's' : ''})` : '';
+  const fallbackText = `${roundLabel} complete — ${flightLabel}${countLabel}`;
+
+  const lines = [`🎉 *${roundLabel}* complete for the *${flightLabel}* flight${countLabel}!`];
+
+  return { text: fallbackText, blocks: [sectionBlock(lines.join('\n'))] };
 }

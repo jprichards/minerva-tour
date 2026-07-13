@@ -4,6 +4,11 @@ import type {
   SeasonMode,
   CourseType,
   PlayoffFlight,
+  PlayoffFormat,
+  PlayoffMatchStatus,
+  PlayoffHoleResult,
+  PlayoffBracket,
+  PlayoffMatchHole,
   AuditActionType,
   NotificationType,
   User,
@@ -13,6 +18,10 @@ import type {
   Course,
   Tournament,
   Notification,
+  SlackEventType,
+  PlayoffSlackEventType,
+  SlackPlayoffPayload,
+  SlackNotifyPayload,
 } from '@/types/database';
 
 /**
@@ -46,6 +55,27 @@ describe('Database Types', () => {
     it('accepts all valid flights', () => {
       const flights: PlayoffFlight[] = ['championship', 'consolation', 'unicorn'];
       expect(flights).toHaveLength(3);
+    });
+  });
+
+  describe('PlayoffFormat', () => {
+    it('accepts all valid formats', () => {
+      const formats: PlayoffFormat[] = ['stroke_play', 'match_play'];
+      expect(formats).toHaveLength(2);
+    });
+  });
+
+  describe('PlayoffMatchStatus', () => {
+    it('accepts all valid statuses', () => {
+      const statuses: PlayoffMatchStatus[] = ['scheduled', 'in_progress', 'final'];
+      expect(statuses).toHaveLength(3);
+    });
+  });
+
+  describe('PlayoffHoleResult', () => {
+    it('accepts all valid hole results', () => {
+      const results: PlayoffHoleResult[] = ['player1', 'player2', 'halve'];
+      expect(results).toHaveLength(3);
     });
   });
 
@@ -158,6 +188,115 @@ describe('Database Types', () => {
         updated_at: '2024-01-01T00:00:00Z',
       };
       expect(tourn.is_active).toBe(true);
+    });
+
+    it('PlayoffBracket has all required fields including format/holes/status', () => {
+      const bracket: PlayoffBracket = {
+        id: 'b-1',
+        season_id: 's-1',
+        flight: 'championship',
+        round: 1,
+        matchup_number: 1,
+        player1_id: 'u-1',
+        player2_id: 'u-2',
+        winner_id: null,
+        player1_result: null,
+        player2_result: null,
+        event_id: null,
+        format: 'match_play',
+        holes: 18,
+        status: 'scheduled',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+      expect(bracket.format).toBe('match_play');
+      expect(bracket.holes).toBe(18);
+      expect(bracket.status).toBe('scheduled');
+    });
+
+    it('PlayoffBracket allows a null format (undecided -> best-net stroke play)', () => {
+      const bracket: Partial<PlayoffBracket> = { format: null, holes: 18, status: 'scheduled' };
+      expect(bracket.format).toBeNull();
+    });
+
+    it('PlayoffMatchHole has all required fields', () => {
+      const hole: PlayoffMatchHole = {
+        id: 'h-1',
+        matchup_id: 'b-1',
+        hole_number: 7,
+        result: 'player1',
+        updated_by: 'u-1',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+      expect(hole.hole_number).toBe(7);
+      expect(hole.result).toBe('player1');
+    });
+  });
+
+  describe('AuditActionType playoff additions', () => {
+    it('includes the new playoffs self-service action types', () => {
+      const actions: AuditActionType[] = ['set_playoff_format', 'log_playoff_hole', 'set_playoff_match_status'];
+      expect(actions).toHaveLength(3);
+    });
+  });
+
+  describe('PlayoffSlackEventType', () => {
+    it('accepts all 6 playoff Slack event types', () => {
+      const types: PlayoffSlackEventType[] = [
+        'playoff_format_set',
+        'playoff_match_start',
+        'playoff_status_update',
+        'playoff_stroke_score',
+        'playoff_match_final',
+        'playoff_round_complete',
+      ];
+      expect(types).toHaveLength(6);
+    });
+
+    it('is a member of the broader SlackEventType union', () => {
+      const eventType: SlackEventType = 'playoff_match_final';
+      expect(eventType).toBe('playoff_match_final');
+    });
+  });
+
+  describe('SlackPlayoffPayload', () => {
+    it('accepts a full matchup-scoped payload', () => {
+      const payload: SlackPlayoffPayload = {
+        event_type: 'playoff_status_update',
+        flight: 'championship',
+        round: 2,
+        round_label: 'Semifinal',
+        player1_name: 'David Mustard',
+        player2_name: 'Grady Bunn',
+        format: 'match_play',
+        holes: 18,
+        status_text: '2 UP thru 7',
+        hole_number: 7,
+      };
+      expect(payload.event_type).toBe('playoff_status_update');
+    });
+
+    it('allows omitting player names for a round-scoped (not matchup-scoped) payload', () => {
+      const payload: SlackPlayoffPayload = {
+        event_type: 'playoff_round_complete',
+        flight: 'consolation',
+        round: 1,
+        matchup_count: 3,
+      };
+      expect(payload.player1_name).toBeUndefined();
+      expect(payload.matchup_count).toBe(3);
+    });
+
+    it('is assignable to the SlackNotifyPayload union', () => {
+      const payload: SlackNotifyPayload = {
+        event_type: 'playoff_match_final',
+        flight: 'unicorn',
+        round: 3,
+        winner_name: 'David Mustard',
+        status_text: '3 & 2',
+      };
+      expect(payload.event_type).toBe('playoff_match_final');
     });
   });
 });

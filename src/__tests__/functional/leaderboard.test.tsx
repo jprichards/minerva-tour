@@ -17,8 +17,15 @@ vi.mock('@/lib/hooks/useUser', () => ({
 }));
 
 let mockIsOffSeason = false;
+let mockIsPlayoffs = false;
 vi.mock('@/lib/hooks/useSeason', () => ({
-  useSeason: () => ({ isOffSeason: mockIsOffSeason }),
+  useSeason: () => ({ isOffSeason: mockIsOffSeason, isPlayoffs: mockIsPlayoffs }),
+}));
+
+vi.mock('@/components/playoffs/PlayoffBracket', () => ({
+  default: ({ seasonId }: { seasonId: string }) => (
+    <div data-testid="playoff-bracket-stub">Bracket for {seasonId}</div>
+  ),
 }));
 
 vi.mock('@/lib/export', () => ({
@@ -101,6 +108,8 @@ const secondRoundScore = {
 
 const allScores = [completedScore, inProgressScore, secondRoundScore];
 
+let mockHasPlayoffBrackets = false;
+
 vi.mock('swr', () => {
   const actual = { useSWRConfig: () => ({ mutate: vi.fn() }) };
   return {
@@ -115,6 +124,7 @@ vi.mock('swr', () => {
             eventScores: allScores,
             allSeasonScores: allScores,
             seasonEvents: [mockEvent],
+            hasPlayoffBrackets: mockHasPlayoffBrackets,
           },
           isLoading: false,
           error: null,
@@ -138,6 +148,8 @@ import LeaderboardPage from '@/app/(protected)/leaderboard/page';
 describe('Leaderboard Page', () => {
   beforeEach(() => {
     mockIsOffSeason = false;
+    mockIsPlayoffs = false;
+    mockHasPlayoffBrackets = false;
     vi.clearAllMocks();
   });
 
@@ -245,6 +257,62 @@ describe('Leaderboard Page', () => {
     fireEvent.click(seasonBtn);
     await waitFor(() => {
       expect(screen.getByText(/2026 Season/)).toBeInTheDocument();
+    });
+  });
+
+  describe('Playoffs tab', () => {
+    it('does not show the Playoffs tab outside of playoffs mode with no bracket data', async () => {
+      render(<LeaderboardPage />);
+      await waitFor(() => expect(screen.getByText('Ashby Foltz')).toBeInTheDocument());
+      expect(screen.queryByText('Playoffs')).not.toBeInTheDocument();
+    });
+
+    it('shows the Playoffs tab when the season has bracket data even outside playoffs mode', async () => {
+      mockHasPlayoffBrackets = true;
+      render(<LeaderboardPage />);
+      await waitFor(() => expect(screen.getByText('Ashby Foltz')).toBeInTheDocument());
+      expect(screen.getByText('Playoffs')).toBeInTheDocument();
+    });
+
+    it('defaults to the Playoffs tab and renders the bracket when the season is in playoffs mode', async () => {
+      mockIsPlayoffs = true;
+      mockHasPlayoffBrackets = true;
+      render(<LeaderboardPage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('playoff-bracket-stub')).toBeInTheDocument();
+      });
+      expect(screen.getByText('Bracket for s-1')).toBeInTheDocument();
+      // Standings content should not render while the Playoffs tab is active
+      expect(screen.queryByText('Ashby Foltz')).not.toBeInTheDocument();
+    });
+
+    it('defaults to Net (not Playoffs) when the season is not in playoffs mode', async () => {
+      mockHasPlayoffBrackets = true;
+      render(<LeaderboardPage />);
+      await waitFor(() => expect(screen.getByText('Ashby Foltz')).toBeInTheDocument());
+      expect(screen.queryByTestId('playoff-bracket-stub')).not.toBeInTheDocument();
+    });
+
+    it('switches between Playoffs and Net tabs', async () => {
+      mockIsPlayoffs = true;
+      mockHasPlayoffBrackets = true;
+      render(<LeaderboardPage />);
+      await waitFor(() => expect(screen.getByTestId('playoff-bracket-stub')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByText('Net'));
+      await waitFor(() => expect(screen.getByText('Ashby Foltz')).toBeInTheDocument());
+      expect(screen.queryByTestId('playoff-bracket-stub')).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByText('Playoffs'));
+      await waitFor(() => expect(screen.getByTestId('playoff-bracket-stub')).toBeInTheDocument());
+    });
+
+    it('hides the CSV export button while the Playoffs tab is active', async () => {
+      mockIsPlayoffs = true;
+      mockHasPlayoffBrackets = true;
+      render(<LeaderboardPage />);
+      await waitFor(() => expect(screen.getByTestId('playoff-bracket-stub')).toBeInTheDocument());
+      expect(screen.queryByTitle('Export CSV')).not.toBeInTheDocument();
     });
   });
 });

@@ -58,6 +58,7 @@ export const mockSupabaseClient = {
     subscribe: vi.fn().mockReturnThis(),
   }),
   removeChannel: vi.fn(),
+  rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
   storage: {
     from: vi.fn().mockReturnValue({
       upload: vi.fn().mockResolvedValue({ data: { path: 'test.jpg' }, error: null }),

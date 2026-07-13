@@ -5,9 +5,11 @@ import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
+import { notifySlack } from '@/lib/slack-notify';
+import { checkAndNotifyRoundComplete } from '@/lib/playoffs';
 import { ArrowLeft, Plus, Trash2, Trophy, CheckCircle, Pencil, Check, X, ChevronDown, ChevronUp, Hash } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import type { Season, User } from '@/types/database';
+import type { Season, User, PlayoffFlight, PlayoffFormat, PlayoffMatchStatus } from '@/types/database';
 
 interface PlayoffBracket {
   id: string;
@@ -21,10 +23,18 @@ interface PlayoffBracket {
   player1_result: string | null;
   player2_result: string | null;
   event_id: string | null;
+  format?: PlayoffFormat | null;
+  holes?: number | null;
+  status?: PlayoffMatchStatus | null;
   player1?: User | null;
   player2?: User | null;
   winner?: User | null;
 }
+
+const FORMAT_LABELS: Record<PlayoffFormat, string> = {
+  stroke_play: 'Stroke Play',
+  match_play: 'Match Play',
+};
 
 interface PlayoffSeed {
   id: string;
@@ -84,7 +94,8 @@ export default function PlayoffsAdminPage() {
   const [editFields, setEditFields] = useState<{
     player1_id: string; player2_id: string; winner_id: string;
     player1_result: string; player2_result: string;
-  }>({ player1_id: '', player2_id: '', winner_id: '', player1_result: '', player2_result: '' });
+    format: string; holes: string;
+  }>({ player1_id: '', player2_id: '', winner_id: '', player1_result: '', player2_result: '', format: '', holes: '18' });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -240,7 +251,34 @@ export default function PlayoffsAdminPage() {
     await refreshBrackets();
   };
 
+  // Fires playoff_match_final + round-complete detection the moment a
+  // winner is FIRST assigned (previousWinnerId was null). Guarded so
+  // re-saving/correcting an already-decided matchup doesn't re-notify —
+  // this is the only trigger point for stroke-play matchups, which have
+  // no self-service "mark final" action, and also serves as a backstop
+  // for match-play matchups an admin decides directly without going
+  // through the participant hole-by-hole flow.
+  const notifyMatchFinalIfNewlyDecided = (match: PlayoffBracket, previousWinnerId: string | null, newWinnerId: string | null) => {
+    if (previousWinnerId != null || newWinnerId == null) return;
+
+    const winner = newWinnerId === match.player1_id ? match.player1 : match.player2;
+    const resultLabel = newWinnerId === match.player1_id ? match.player1_result : match.player2_result;
+
+    notifySlack({
+      event_type: 'playoff_match_final',
+      flight: match.flight as PlayoffFlight,
+      round: match.round,
+      player1_name: match.player1?.full_name || 'Player 1',
+      player2_name: match.player2?.full_name || 'Player 2',
+      winner_name: winner?.full_name || 'Unknown',
+      status_text: resultLabel || null,
+    });
+    checkAndNotifyRoundComplete(supabase, match, null);
+  };
+
   const handleSetWinner = async (bracketId: string, winnerId: string) => {
+    const match = brackets.find((b) => b.id === bracketId);
+
     const { error } = await supabase
       .from('playoff_brackets')
       .update({ winner_id: winnerId })
@@ -252,6 +290,7 @@ export default function PlayoffsAdminPage() {
     }
 
     logAuditEvent('set_playoff_winner', 'playoff_bracket', bracketId, { winner_id: winnerId });
+    if (match) notifyMatchFinalIfNewlyDecided(match, match.winner_id, winnerId);
     showToast('Winner set!', 'success');
     setBrackets((prev) =>
       prev.map((b) => b.id === bracketId ? { ...b, winner_id: winnerId } : b)
@@ -273,24 +312,55 @@ export default function PlayoffsAdminPage() {
       winner_id: match.winner_id || '',
       player1_result: match.player1_result || '',
       player2_result: match.player2_result || '',
+      format: match.format || '',
+      holes: String(match.holes || 18),
     });
   };
 
   const cancelEditing = () => {
     setEditingId(null);
-    setEditFields({ player1_id: '', player2_id: '', winner_id: '', player1_result: '', player2_result: '' });
+    setEditFields({ player1_id: '', player2_id: '', winner_id: '', player1_result: '', player2_result: '', format: '', holes: '18' });
   };
 
   const handleSaveEdit = async () => {
     if (!editingId) return;
     setSaving(true);
 
-    const updateData: Record<string, string | null> = {
-      player1_id: editFields.player1_id || null,
-      player2_id: editFields.player2_id || null,
-      winner_id: editFields.winner_id || null,
+    const existing = brackets.find((b) => b.id === editingId);
+    const player1Id = editFields.player1_id || null;
+    const player2Id = editFields.player2_id || null;
+    let winnerId = editFields.winner_id || null;
+
+    // Guard against an orphaned winner: if the selected winner no longer
+    // matches either participant (e.g. players were just re-assigned in
+    // this same edit), clear it rather than persist a stale reference.
+    // The DB trigger (guard_playoff_winner) enforces this too, defense in depth.
+    if (winnerId !== null && winnerId !== player1Id && winnerId !== player2Id) {
+      winnerId = null;
+    }
+
+    // "Not set" in the format select maps to null, which resets a matchup
+    // back to the undecided/auto-best-net default. A format change (incl.
+    // a reset) also resets status to 'scheduled' and, unless the new
+    // format is still match_play, clears any logged hole-by-hole results —
+    // this is the admin's only way to undo a participant's self-service
+    // format pick (the picker never re-renders once match.format is set).
+    const prevFormat = existing?.format ?? null;
+    const newFormat = (editFields.format || null) as PlayoffFormat | null;
+    const formatChanged = newFormat !== prevFormat;
+    const newHoles = newFormat ? (Number(editFields.holes) === 36 ? 36 : 18) : 18;
+    const newStatus: PlayoffMatchStatus = formatChanged ? 'scheduled' : (existing?.status ?? 'scheduled');
+    const shouldClearHoleLog = formatChanged && newFormat !== 'match_play';
+
+    const updateData: Record<string, string | number | null> = {
+      player1_id: player1Id,
+      player2_id: player2Id,
+      winner_id: winnerId,
       player1_result: editFields.player1_result.trim() || null,
       player2_result: editFields.player2_result.trim() || null,
+      format: newFormat,
+      holes: newHoles,
+      status: newStatus,
     };
 
     const { error } = await supabase
@@ -304,11 +374,26 @@ export default function PlayoffsAdminPage() {
       return;
     }
 
+    if (shouldClearHoleLog) {
+      await supabase.from('playoff_match_holes').delete().eq('matchup_id', editingId);
+    }
+
     logAuditEvent('update_playoff_matchup', 'playoff_bracket', editingId, updateData);
+    if (existing) {
+      const updated: PlayoffBracket = {
+        ...existing,
+        player1_id: player1Id,
+        player2_id: player2Id,
+        winner_id: winnerId,
+        player1_result: updateData.player1_result as string | null,
+        player2_result: updateData.player2_result as string | null,
+      };
+      notifyMatchFinalIfNewlyDecided(updated, existing.winner_id, winnerId);
+    }
     showToast('Matchup updated!', 'success');
     await refreshBrackets();
     setEditingId(null);
-    setEditFields({ player1_id: '', player2_id: '', winner_id: '', player1_result: '', player2_result: '' });
+    setEditFields({ player1_id: '', player2_id: '', winner_id: '', player1_result: '', player2_result: '', format: '', holes: '18' });
     setSaving(false);
   };
 
@@ -533,6 +618,34 @@ export default function PlayoffsAdminPage() {
                                 />
                               </div>
                               <div>
+                                <label className="text-xs text-[var(--text-muted)]">Format</label>
+                                <select
+                                  value={editFields.format}
+                                  onChange={(e) => setEditFields({ ...editFields, format: e.target.value })}
+                                  className="w-full mt-1 px-3 py-2 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-[var(--text-primary)]"
+                                >
+                                  <option value="">Not set (auto best-net)</option>
+                                  <option value="stroke_play">Stroke Play</option>
+                                  <option value="match_play">Match Play</option>
+                                </select>
+                                <p className="mt-1 text-[10px] text-[var(--text-faint)]">
+                                  Resetting to &quot;Not set&quot; clears any logged match-play holes and re-enables the self-service format picker.
+                                </p>
+                              </div>
+                              {editFields.format && (
+                                <div>
+                                  <label className="text-xs text-[var(--text-muted)]">Holes</label>
+                                  <select
+                                    value={editFields.holes}
+                                    onChange={(e) => setEditFields({ ...editFields, holes: e.target.value })}
+                                    className="w-full mt-1 px-3 py-2 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-[var(--text-primary)]"
+                                  >
+                                    <option value="18">18</option>
+                                    <option value="36">36</option>
+                                  </select>
+                                </div>
+                              )}
+                              <div>
                                 <label className="text-xs text-[var(--text-muted)]">
                                   {selectedFlight === 'unicorn' ? 'Advances (loser)' : 'Winner'}
                                 </label>
@@ -576,6 +689,11 @@ export default function PlayoffsAdminPage() {
                             /* Display mode */
                             <div className="flex items-center justify-between">
                               <div className="flex-1 space-y-1.5">
+                                {match.format && (
+                                  <span className="inline-block text-[10px] font-semibold text-[var(--text-faint)] bg-[var(--bg-subtle)] px-1.5 py-0.5 rounded">
+                                    {FORMAT_LABELS[match.format]} • {match.holes || 18} holes
+                                  </span>
+                                )}
                                 {/* Player 1 */}
                                 <button
                                   onClick={() => match.player1_id && handleSetWinner(match.id, match.player1_id)}

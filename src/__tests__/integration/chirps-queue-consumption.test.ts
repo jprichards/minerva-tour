@@ -22,6 +22,20 @@ vi.mock('@/lib/slack', () => ({
     text: 'Test message',
     blocks: [{ type: 'section', text: { type: 'mrkdwn', text: 'Test' } }],
   }),
+  DEFAULT_SLACK_EVENTS: {
+    tee_time: true,
+    score_in_progress: true,
+    round_complete: true,
+    score_edit: true,
+    retroactive: true,
+    feedback_submitted: true,
+    playoff_format_set: false,
+    playoff_match_start: true,
+    playoff_status_update: true,
+    playoff_stroke_score: false,
+    playoff_match_final: true,
+    playoff_round_complete: true,
+  },
 }));
 
 vi.mock('@/lib/chirps-ai', () => ({

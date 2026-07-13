@@ -86,7 +86,7 @@ describe('AdminSettingsPage - Slack Integration', () => {
     }
   });
 
-  it('renders all 6 event toggle switches (5 score + 1 feedback)', async () => {
+  it('renders all 6 score/feedback event toggle switches (5 score + 1 feedback)', async () => {
     render(<AdminSettingsPage />);
 
     await waitFor(() => {
@@ -100,7 +100,22 @@ describe('AdminSettingsPage - Slack Integration', () => {
     expect(screen.getByText('Feedback Submissions')).toBeInTheDocument();
   });
 
-  it('renders event toggles as switches with correct initial state (all on)', async () => {
+  it('renders all 6 playoff event toggle switches', async () => {
+    render(<AdminSettingsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Playoff Notifications')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Format/Holes Set')).toBeInTheDocument();
+    expect(screen.getByText('Match Started')).toBeInTheDocument();
+    expect(screen.getByText('Match Play Status Updates')).toBeInTheDocument();
+    expect(screen.getByText('Stroke Play Score Updates')).toBeInTheDocument();
+    expect(screen.getByText('Match Final (Winner Advances)')).toBeInTheDocument();
+    expect(screen.getByText('Round Complete')).toBeInTheDocument();
+  });
+
+  it('renders event toggles as switches with correct initial state', async () => {
     render(<AdminSettingsPage />);
 
     await waitFor(() => {
@@ -108,13 +123,22 @@ describe('AdminSettingsPage - Slack Integration', () => {
     });
 
     const switches = screen.getAllByRole('switch');
-    // 5 score event toggles + 1 feedback toggle + 1 recap images toggle = 7
-    expect(switches.length).toBe(7);
-    // First 6 are notification event toggles (default on), last is recap images (default off)
+    // 5 score + 1 feedback + 6 playoff + 1 recap-images toggle = 13
+    expect(switches.length).toBe(13);
+    // Score toggles (0-4) + feedback toggle (5): default on
     switches.slice(0, 6).forEach((sw) => {
       expect(sw.getAttribute('aria-checked')).toBe('true');
     });
-    expect(switches[6].getAttribute('aria-checked')).toBe('false');
+    // Playoff toggles (6-11), in FEATURE_FLAGS/PLAYOFF_EVENT_TYPES order:
+    // format_set(off), match_start(on), status_update(on), stroke_score(off), match_final(on), round_complete(on)
+    expect(switches[6].getAttribute('aria-checked')).toBe('false'); // playoff_format_set
+    expect(switches[7].getAttribute('aria-checked')).toBe('true'); // playoff_match_start
+    expect(switches[8].getAttribute('aria-checked')).toBe('true'); // playoff_status_update
+    expect(switches[9].getAttribute('aria-checked')).toBe('false'); // playoff_stroke_score
+    expect(switches[10].getAttribute('aria-checked')).toBe('true'); // playoff_match_final
+    expect(switches[11].getAttribute('aria-checked')).toBe('true'); // playoff_round_complete
+    // Recap images toggle: default off
+    expect(switches[12].getAttribute('aria-checked')).toBe('false');
   });
 
   it('toggles an event switch off and on', async () => {

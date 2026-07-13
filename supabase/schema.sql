@@ -140,11 +140,29 @@ CREATE TABLE IF NOT EXISTS playoff_brackets (
   player2_id UUID REFERENCES users(id),
   winner_id UUID REFERENCES users(id),
   event_id UUID REFERENCES events(id),
+  format TEXT CHECK (format IN ('stroke_play', 'match_play')),
+  holes INT CHECK (holes IN (18, 36)) DEFAULT 18,
+  status TEXT CHECK (status IN ('scheduled', 'in_progress', 'final')) DEFAULT 'scheduled',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_playoff_brackets_season_id ON playoff_brackets(season_id);
+
+-- Hole-by-hole match play results (see supabase/add-playoff-format.sql for
+-- the SECURITY DEFINER RPCs and winner-guard trigger that go with this table)
+CREATE TABLE IF NOT EXISTS playoff_match_holes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  matchup_id UUID NOT NULL REFERENCES playoff_brackets(id) ON DELETE CASCADE,
+  hole_number INT NOT NULL CHECK (hole_number BETWEEN 1 AND 36),
+  result TEXT NOT NULL CHECK (result IN ('player1', 'player2', 'halve')),
+  updated_by UUID REFERENCES users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (matchup_id, hole_number)
+);
+
+CREATE INDEX IF NOT EXISTS idx_playoff_match_holes_matchup ON playoff_match_holes(matchup_id);
 
 -- Audit logs
 CREATE TABLE IF NOT EXISTS audit_logs (
@@ -336,6 +354,14 @@ CREATE POLICY "Users can delete own scores or admins any" ON scores FOR DELETE U
 -- Playoff brackets policies
 CREATE POLICY "Anyone can read playoff brackets" ON playoff_brackets FOR SELECT USING (true);
 CREATE POLICY "Admins can manage playoff brackets" ON playoff_brackets FOR ALL USING (
+  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
+);
+
+-- Playoff match holes policies (member writes go through SECURITY DEFINER
+-- RPCs in supabase/add-playoff-format.sql, not directly through this policy)
+ALTER TABLE playoff_match_holes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read playoff match holes" ON playoff_match_holes FOR SELECT USING (true);
+CREATE POLICY "Admins can manage playoff match holes" ON playoff_match_holes FOR ALL USING (
   EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin')
 );
 

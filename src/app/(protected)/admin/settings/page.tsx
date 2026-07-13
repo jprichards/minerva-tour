@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
 import { ArrowLeft, Save, Image, ExternalLink, Hash, Eye, EyeOff, CheckCircle, XCircle, Loader2, MessageSquare, Bot, ChevronDown, ChevronRight, Mic } from 'lucide-react';
 import FeatureFlagsSection from '@/components/admin/FeatureFlagsSection';
+import { DEFAULT_SLACK_EVENTS } from '@/lib/slack';
 import type { SlackConfig, SlackEventType, AIConfig, ChirpConfig, ChirpTrigger } from '@/types/database';
 
 const SLACK_EVENT_LABELS: Record<SlackEventType, string> = {
@@ -17,18 +18,24 @@ const SLACK_EVENT_LABELS: Record<SlackEventType, string> = {
   score_edit: 'Score Edits',
   retroactive: 'Retroactive Scores',
   feedback_submitted: 'Feedback Submissions',
+  playoff_format_set: 'Format/Holes Set',
+  playoff_match_start: 'Match Started',
+  playoff_status_update: 'Match Play Status Updates',
+  playoff_stroke_score: 'Stroke Play Score Updates',
+  playoff_match_final: 'Match Final (Winner Advances)',
+  playoff_round_complete: 'Round Complete',
 };
 
 const SCORE_EVENT_TYPES: SlackEventType[] = ['tee_time', 'score_in_progress', 'round_complete', 'score_edit', 'retroactive'];
 
-const DEFAULT_SLACK_EVENTS: Record<SlackEventType, boolean> = {
-  tee_time: true,
-  score_in_progress: true,
-  round_complete: true,
-  score_edit: true,
-  retroactive: true,
-  feedback_submitted: true,
-};
+const PLAYOFF_EVENT_TYPES: SlackEventType[] = [
+  'playoff_format_set',
+  'playoff_match_start',
+  'playoff_status_update',
+  'playoff_stroke_score',
+  'playoff_match_final',
+  'playoff_round_complete',
+];
 
 export default function AdminSettingsPage() {
   const { isAdmin, loading: userLoading } = useUser();
@@ -581,6 +588,34 @@ export default function AdminSettingsPage() {
                   Feedback channel: <span className="font-medium">{feedbackChannelName}</span>
                 </div>
               )}
+            </div>
+
+            {/* Playoff Notifications */}
+            <div className="border-t border-[var(--border-light)] pt-5 space-y-3">
+              <p className="text-sm font-semibold text-[var(--text-primary)]">Playoff Notifications</p>
+              <p className="text-xs text-[var(--text-faint)]">
+                Posted to the main score channel. Stroke play score updates are off by default to avoid noise.
+              </p>
+              <div className="space-y-2">
+                {PLAYOFF_EVENT_TYPES.map((eventType) => (
+                  <label key={eventType} className="flex items-center justify-between cursor-pointer">
+                    <span className="text-sm text-[var(--text-primary)]">{SLACK_EVENT_LABELS[eventType]}</span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={slackEvents[eventType]}
+                      onClick={() => toggleSlackEvent(eventType)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        slackEvents[eventType] ? 'bg-minerva-600' : 'bg-gray-200'
+                      }`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        slackEvents[eventType] ? 'translate-x-6' : 'translate-x-1'
+                      }`} />
+                    </button>
+                  </label>
+                ))}
+              </div>
             </div>
 
             {/* Recap Channel */}

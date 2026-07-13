@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/lib/hooks/useUser';
@@ -10,17 +10,20 @@ import { downloadCSV } from '@/lib/export';
 import { useSeason } from '@/lib/hooks/useSeason';
 import { formatNetScore, formatPoints } from '@/lib/scoring';
 import { computeEventLeaderboard, computeSeasonStandings } from '@/lib/standings';
+import PlayoffBracket from '@/components/playoffs/PlayoffBracket';
 import type { Score, Event, Season } from '@/types/database';
-import type { ScoringMode } from '@/lib/standings';
 import { formatLocalDate } from '@/lib/date-utils';
 
 type ViewMode = 'event' | 'season';
+type BoardTab = 'playoffs' | 'net' | 'scratch';
 
 export default function LeaderboardPage() {
   const { profile } = useUser();
-  const { isOffSeason } = useSeason();
+  const { isOffSeason, isPlayoffs } = useSeason();
   const [view, setView] = useState<ViewMode>('event');
-  const [scoringMode, setScoringMode] = useState<ScoringMode>('net');
+  const [boardTab, setBoardTab] = useState<BoardTab>('net');
+  const defaultTabAppliedRef = useRef(false);
+  const scoringMode = boardTab === 'scratch' ? 'scratch' : 'net';
   const supabase = createClient();
 
   const { data: leaderboardData, isLoading: loading } = useSWR(
@@ -40,10 +43,20 @@ export default function LeaderboardPage() {
           eventScores: [] as Score[],
           allSeasonScores: [] as Score[],
           seasonEvents: [] as Event[],
+          hasPlayoffBrackets: false,
         };
       }
 
       const season = seasons[0];
+
+      // Lightweight existence check — used to decide whether the Playoffs
+      // tab should be offered at all (independent of the season's mode).
+      const { data: bracketCheck } = await supabase
+        .from('playoff_brackets')
+        .select('id')
+        .eq('season_id', season.id)
+        .limit(1);
+      const hasPlayoffBrackets = !!(bracketCheck && bracketCheck.length > 0);
 
       // Get all events for this season
       const { data: events } = await supabase
@@ -95,6 +108,7 @@ export default function LeaderboardPage() {
         eventScores,
         allSeasonScores,
         seasonEvents: (events || []) as Event[],
+        hasPlayoffBrackets,
       };
     },
     { revalidateOnFocus: true, dedupingInterval: 5000 }
@@ -105,6 +119,8 @@ export default function LeaderboardPage() {
   const currentSeason = leaderboardData?.currentSeason ?? null;
   const currentEvent = leaderboardData?.currentEvent ?? null;
   const eventScores = leaderboardData?.eventScores ?? [];
+  const hasPlayoffBrackets = leaderboardData?.hasPlayoffBrackets ?? false;
+  const showPlayoffsTab = isPlayoffs || hasPlayoffBrackets;
   const allSeasonScores = leaderboardData?.allSeasonScores ?? [];
   const seasonEvents = leaderboardData?.seasonEvents ?? [];
 
@@ -126,6 +142,14 @@ export default function LeaderboardPage() {
       supabase.removeChannel(channel);
     };
   }, [supabase, globalMutate]);
+
+  // Default to the Playoffs tab during playoffs mode, applied once the
+  // season data resolves. Never overrides a tab the user already picked.
+  useEffect(() => {
+    if (defaultTabAppliedRef.current || loading) return;
+    defaultTabAppliedRef.current = true;
+    if (isPlayoffs) setBoardTab('playoffs');
+  }, [loading, isPlayoffs]);
 
   const eventLeaderboard = useMemo(
     () => currentEvent ? computeEventLeaderboard(eventScores, currentEvent, currentSeason, scoringMode) : [],
@@ -163,42 +187,78 @@ export default function LeaderboardPage() {
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-[var(--text-primary)]">Leaderboard</h1>
-        <div className="flex gap-1.5">
-          <button
-            onClick={() => {
-              if (view === 'event') {
-                downloadCSV(
-                  eventLeaderboard.map((e, i) => ({
-                    Rank: i + 1,
-                    Player: e.playerName,
-                    Score: e.bestNetOverPar ?? '',
-                    Gross: e.bestGrossScore ?? '',
-                    Points: formatPoints(e.projectedPoints),
-                    Course: e.courseName,
-                    Holes: e.holesPlayed,
-                  })),
-                  `leaderboard-event-${currentEvent?.event_number || 'current'}`
-                );
-              } else {
-                downloadCSV(
-                  seasonStandings.map((e, i) => ({
-                    Rank: i + 1,
-                    Player: e.playerName,
-                    Points: formatPoints(e.totalPoints),
-                    Events: e.eventsPlayed,
-                  })),
-                  `leaderboard-season-${currentSeason?.year || 'current'}`
-                );
-              }
-            }}
-            className="p-2 text-[var(--text-faint)] hover:text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] rounded-lg transition-colors"
-            title="Export CSV"
-          >
-            <Download className="w-4 h-4" />
-          </button>
-        </div>
+        {boardTab !== 'playoffs' && (
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => {
+                if (view === 'event') {
+                  downloadCSV(
+                    eventLeaderboard.map((e, i) => ({
+                      Rank: i + 1,
+                      Player: e.playerName,
+                      Score: e.bestNetOverPar ?? '',
+                      Gross: e.bestGrossScore ?? '',
+                      Points: formatPoints(e.projectedPoints),
+                      Course: e.courseName,
+                      Holes: e.holesPlayed,
+                    })),
+                    `leaderboard-event-${currentEvent?.event_number || 'current'}`
+                  );
+                } else {
+                  downloadCSV(
+                    seasonStandings.map((e, i) => ({
+                      Rank: i + 1,
+                      Player: e.playerName,
+                      Points: formatPoints(e.totalPoints),
+                      Events: e.eventsPlayed,
+                    })),
+                    `leaderboard-season-${currentSeason?.year || 'current'}`
+                  );
+                }
+              }}
+              className="p-2 text-[var(--text-faint)] hover:text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] rounded-lg transition-colors"
+              title="Export CSV"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
 
+      {/* Board Tabs: Playoffs (during playoffs) | Net | Scratch */}
+      <div className="flex bg-[var(--bg-subtle)] rounded-xl p-1">
+        {showPlayoffsTab && (
+          <button
+            onClick={() => setBoardTab('playoffs')}
+            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
+              boardTab === 'playoffs' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
+            }`}
+          >
+            Playoffs
+          </button>
+        )}
+        <button
+          onClick={() => setBoardTab('net')}
+          className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
+            boardTab === 'net' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
+          }`}
+        >
+          Net
+        </button>
+        <button
+          onClick={() => setBoardTab('scratch')}
+          className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
+            boardTab === 'scratch' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
+          }`}
+        >
+          Scratch
+        </button>
+      </div>
+
+      {boardTab === 'playoffs' ? (
+        currentSeason && <PlayoffBracket seasonId={currentSeason.id} />
+      ) : (
+      <>
       {/* View Toggle */}
       <div className="flex bg-[var(--bg-subtle)] rounded-xl p-1">
         <button
@@ -216,26 +276,6 @@ export default function LeaderboardPage() {
           }`}
         >
           Season Standings
-        </button>
-      </div>
-
-      {/* Scoring Mode Toggle */}
-      <div className="flex bg-[var(--bg-subtle)] rounded-xl p-1">
-        <button
-          onClick={() => setScoringMode('net')}
-          className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
-            scoringMode === 'net' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
-          }`}
-        >
-          Net
-        </button>
-        <button
-          onClick={() => setScoringMode('scratch')}
-          className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
-            scoringMode === 'scratch' ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-muted)]'
-          }`}
-        >
-          Scratch
         </button>
       </div>
 
@@ -419,6 +459,8 @@ export default function LeaderboardPage() {
             </div>
           )}
         </>
+      )}
+      </>
       )}
     </div>
   );

@@ -175,3 +175,163 @@ describe('Playoffs Member View', () => {
     });
   });
 });
+
+describe('Playoffs Member View — bug fixes', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('does not dim either slot when winner_id is orphaned (matches neither participant)', async () => {
+    const orphanedBrackets = [
+      {
+        id: 'b1',
+        season_id: 's1',
+        flight: 'championship',
+        round: 1,
+        matchup_number: 2,
+        player1_id: 'u1',
+        player2_id: 'u2',
+        // Orphaned: neither participant — simulates a stale winner from a re-seed.
+        winner_id: 'u99',
+        player1_result: null,
+        player2_result: null,
+        player1: { id: 'u1', full_name: 'David Mustard', profile_picture_url: null },
+        player2: { id: 'u2', full_name: 'Grady Bunn', profile_picture_url: null },
+      },
+    ];
+
+    mockSupabaseClient.from.mockImplementation((table: string) => {
+      if (table === 'seasons') return createChainProxy(mockSeasons);
+      if (table === 'playoff_brackets') return createChainProxy(orphanedBrackets);
+      if (table === 'playoff_seeds') return createChainProxy([]);
+      return createChainProxy([]);
+    });
+
+    render(<PlayoffsPage />);
+    const p1 = await screen.findByText('David Mustard');
+    const p2 = await screen.findByText('Grady Bunn');
+
+    // Neither slot should be marked as winner (bold/green) or loser (dimmed).
+    expect(p1.className).not.toContain('text-green-700');
+    expect(p2.className).not.toContain('text-green-700');
+    expect(p1.closest('div')?.className).not.toContain('opacity-60');
+    expect(p2.closest('div')?.className).not.toContain('opacity-60');
+  });
+
+  it('dims only the actual loser when winner_id matches a real participant', async () => {
+    const validBrackets = [
+      {
+        id: 'b1',
+        season_id: 's1',
+        flight: 'championship',
+        round: 1,
+        matchup_number: 1,
+        player1_id: 'u1',
+        player2_id: 'u2',
+        winner_id: 'u1',
+        player1_result: null,
+        player2_result: null,
+        player1: { id: 'u1', full_name: 'David Mustard', profile_picture_url: null },
+        player2: { id: 'u2', full_name: 'Grady Bunn', profile_picture_url: null },
+      },
+    ];
+
+    mockSupabaseClient.from.mockImplementation((table: string) => {
+      if (table === 'seasons') return createChainProxy(mockSeasons);
+      if (table === 'playoff_brackets') return createChainProxy(validBrackets);
+      if (table === 'playoff_seeds') return createChainProxy([]);
+      return createChainProxy([]);
+    });
+
+    render(<PlayoffsPage />);
+    const winner = await screen.findByText('David Mustard');
+    const loser = await screen.findByText('Grady Bunn');
+
+    expect(winner.className).toContain('text-green-700');
+    expect(loser.closest('div')?.className).toContain('opacity-60');
+  });
+
+  it('labels round 1 as Quarterfinal (not Final) when the flight has 6 seeds', async () => {
+    const sixSeeds = Array.from({ length: 6 }, (_, i) => ({
+      id: `seed${i + 1}`,
+      season_id: 's1',
+      user_id: `u${i + 1}`,
+      seed_number: i + 1,
+    }));
+    const round1Only = [
+      {
+        id: 'b1',
+        season_id: 's1',
+        flight: 'championship',
+        round: 1,
+        matchup_number: 1,
+        player1_id: 'u1',
+        player2_id: 'u2',
+        winner_id: null,
+        player1_result: null,
+        player2_result: null,
+        player1: { id: 'u1', full_name: 'Player One', profile_picture_url: null },
+        player2: { id: 'u2', full_name: 'Player Two', profile_picture_url: null },
+      },
+    ];
+
+    mockSupabaseClient.from.mockImplementation((table: string) => {
+      if (table === 'seasons') return createChainProxy(mockSeasons);
+      if (table === 'playoff_brackets') return createChainProxy(round1Only);
+      if (table === 'playoff_seeds') return createChainProxy(sixSeeds);
+      return createChainProxy([]);
+    });
+
+    render(<PlayoffsPage />);
+    await screen.findByText('Player One');
+    expect(screen.getByText('Quarterfinal')).toBeInTheDocument();
+    expect(screen.queryByText('Final')).not.toBeInTheDocument();
+  });
+
+  it('hides the flight filter row entirely when only one flight has bracket data', async () => {
+    const championshipOnly = [
+      {
+        id: 'b1',
+        season_id: 's1',
+        flight: 'championship',
+        round: 1,
+        matchup_number: 1,
+        player1_id: 'u1',
+        player2_id: 'u2',
+        winner_id: null,
+        player1_result: null,
+        player2_result: null,
+        player1: { id: 'u1', full_name: 'Solo Flight One', profile_picture_url: null },
+        player2: { id: 'u2', full_name: 'Solo Flight Two', profile_picture_url: null },
+      },
+    ];
+
+    mockSupabaseClient.from.mockImplementation((table: string) => {
+      if (table === 'seasons') return createChainProxy(mockSeasons);
+      if (table === 'playoff_brackets') return createChainProxy(championshipOnly);
+      if (table === 'playoff_seeds') return createChainProxy([]);
+      return createChainProxy([]);
+    });
+
+    render(<PlayoffsPage />);
+    await screen.findByText('Solo Flight One');
+    expect(screen.queryByText('Championship')).not.toBeInTheDocument();
+    expect(screen.queryByText('Consolation')).not.toBeInTheDocument();
+    expect(screen.queryByText('Unicorn')).not.toBeInTheDocument();
+  });
+
+  it('still shows the flight filter row when multiple flights have bracket data', async () => {
+    mockSupabaseClient.from.mockImplementation((table: string) => {
+      if (table === 'seasons') return createChainProxy(mockSeasons);
+      if (table === 'playoff_brackets') return createChainProxy(mockBrackets);
+      if (table === 'playoff_seeds') return createChainProxy(mockSeeds);
+      return createChainProxy([]);
+    });
+
+    render(<PlayoffsPage />);
+    await screen.findByText('Tiger Woods');
+    expect(screen.getByText(/Championship/)).toBeInTheDocument();
+    expect(screen.getByText(/Consolation/)).toBeInTheDocument();
+    expect(screen.getByText(/Unicorn/)).toBeInTheDocument();
+  });
+});

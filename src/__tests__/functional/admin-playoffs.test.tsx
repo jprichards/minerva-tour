@@ -23,7 +23,16 @@ vi.mock('@/lib/audit', () => ({
   logAuditEvent: vi.fn(),
 }));
 
+vi.mock('@/lib/slack-notify', () => ({ notifySlack: vi.fn() }));
+
+const mockCheckAndNotifyRoundComplete = vi.fn().mockResolvedValue(undefined);
+vi.mock('@/lib/playoffs', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/playoffs')>('@/lib/playoffs');
+  return { ...actual, checkAndNotifyRoundComplete: (...args: unknown[]) => mockCheckAndNotifyRoundComplete(...args) };
+});
+
 import AdminPlayoffsPage from '@/app/(protected)/admin/playoffs/page';
+import { notifySlack } from '@/lib/slack-notify';
 
 function createChainProxy(resolvedData: unknown = []) {
   const proxy: Record<string, unknown> = {};
@@ -338,6 +347,59 @@ describe('Admin Playoffs Page', () => {
     });
   });
 
+  it('clears an orphaned winner_id on save when the selected player no longer matches it', async () => {
+    // Matchup where winner_id ('u3') is currently player1 — a valid winner.
+    const startBrackets = [
+      {
+        id: 'b1',
+        season_id: 's2',
+        flight: 'championship',
+        round: 1,
+        matchup_number: 1,
+        player1_id: 'u3',
+        player2_id: 'u4',
+        winner_id: 'u3',
+        player1_result: '-1',
+        player2_result: '+3',
+        event_id: null,
+        player1: { id: 'u3', full_name: 'Arnold Palmer' },
+        player2: { id: 'u4', full_name: 'Ben Hogan' },
+        winner: { id: 'u3', full_name: 'Arnold Palmer' },
+      },
+    ];
+
+    const bracketsProxy = createChainProxy(startBrackets);
+    mockSupabaseClient.from.mockImplementation((table: string) => {
+      if (table === 'seasons') return createChainProxy(mockSeasons);
+      if (table === 'users') return createChainProxy(mockMembers);
+      if (table === 'playoff_brackets') return bracketsProxy;
+      if (table === 'playoff_seeds') return createChainProxy(mockSeeds);
+      return createChainProxy([]);
+    });
+
+    render(<AdminPlayoffsPage />);
+    await screen.findByText('Arnold Palmer');
+
+    const editButtons = screen.getAllByTitle('Edit matchup');
+    fireEvent.click(editButtons[0]);
+    await waitFor(() => expect(screen.getByText(/Editing Matchup #1/)).toBeInTheDocument());
+
+    // Re-assign Player 1 away from the current winner ('u3') to another
+    // member — the stale winner_id ('u3') no longer matches either slot.
+    // Both the "Player 1" select and the "Winner" select currently display
+    // "Arnold Palmer"; the Player 1 select is the first one in the DOM.
+    const [player1Select] = screen.getAllByDisplayValue('Arnold Palmer');
+    fireEvent.change(player1Select, { target: { value: 'u2' } });
+
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() => {
+      expect(bracketsProxy.update).toHaveBeenCalled();
+    });
+    const updateArg = (bracketsProxy.update as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(updateArg.winner_id).toBeNull();
+  });
+
   it('displays matchups in correct order (matchup 1 before matchup 2)', async () => {
     const orderedBrackets = [
       {
@@ -366,5 +428,226 @@ describe('Admin Playoffs Page', () => {
 
     // Tiger (matchup 1) should appear before Arnold (matchup 2) in the DOM
     expect(tiger.compareDocumentPosition(arnold) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  describe('playoff_match_final Slack notification on winner assignment', () => {
+    const undecidedBracket = {
+      id: 'b9',
+      season_id: 's2',
+      flight: 'championship',
+      round: 1,
+      matchup_number: 1,
+      player1_id: 'u1',
+      player2_id: 'u2',
+      winner_id: null,
+      player1_result: '-1',
+      player2_result: '+1',
+      event_id: null,
+      player1: { id: 'u1', full_name: 'Tiger Woods' },
+      player2: { id: 'u2', full_name: 'Jack Nicklaus' },
+      winner: null,
+    };
+
+    beforeEach(() => {
+      mockCheckAndNotifyRoundComplete.mockClear();
+      mockSupabaseClient.from.mockImplementation((table: string) => {
+        if (table === 'seasons') return createChainProxy(mockSeasons);
+        if (table === 'users') return createChainProxy(mockMembers);
+        if (table === 'playoff_brackets') return createChainProxy([undecidedBracket]);
+        if (table === 'playoff_seeds') return createChainProxy(mockSeeds);
+        return createChainProxy([]);
+      });
+    });
+
+    it('fires playoff_match_final and checks round completion when a winner is set for the first time (tap-to-set)', async () => {
+      render(<AdminPlayoffsPage />);
+      await screen.findByText('Tiger Woods');
+
+      fireEvent.click(screen.getByText('Tiger Woods'));
+
+      await waitFor(() => {
+        expect(notifySlack).toHaveBeenCalledWith({
+          event_type: 'playoff_match_final',
+          flight: 'championship',
+          round: 1,
+          player1_name: 'Tiger Woods',
+          player2_name: 'Jack Nicklaus',
+          winner_name: 'Tiger Woods',
+          status_text: '-1',
+        });
+      });
+      expect(mockCheckAndNotifyRoundComplete).toHaveBeenCalledWith(
+        mockSupabaseClient,
+        expect.objectContaining({ id: 'b9' }),
+        null
+      );
+    });
+
+    it('does not re-fire playoff_match_final when correcting an already-decided winner', async () => {
+      const decidedBracket = { ...undecidedBracket, winner_id: 'u1', winner: { id: 'u1', full_name: 'Tiger Woods' } };
+      mockSupabaseClient.from.mockImplementation((table: string) => {
+        if (table === 'seasons') return createChainProxy(mockSeasons);
+        if (table === 'users') return createChainProxy(mockMembers);
+        if (table === 'playoff_brackets') return createChainProxy([decidedBracket]);
+        if (table === 'playoff_seeds') return createChainProxy(mockSeeds);
+        return createChainProxy([]);
+      });
+
+      render(<AdminPlayoffsPage />);
+      await screen.findByText('Tiger Woods');
+
+      // Correct the winner from Tiger to Jack — winner_id was already set,
+      // so this is a correction, not a first-time decision.
+      fireEvent.click(screen.getByText('Jack Nicklaus'));
+
+      await waitFor(() => {
+        expect(mockSupabaseClient.rpc).not.toHaveBeenCalledWith('nonexistent'); // sanity no-op
+      });
+      expect(notifySlack).not.toHaveBeenCalled();
+      expect(mockCheckAndNotifyRoundComplete).not.toHaveBeenCalled();
+    });
+
+    it('fires playoff_match_final via the edit form when a winner is newly selected', async () => {
+      render(<AdminPlayoffsPage />);
+      await screen.findByText('Tiger Woods');
+
+      const editButtons = screen.getAllByTitle('Edit matchup');
+      fireEvent.click(editButtons[0]);
+      await waitFor(() => expect(screen.getByText(/Editing Matchup #1/)).toBeInTheDocument());
+
+      const winnerSelect = screen.getByDisplayValue('No winner yet');
+      fireEvent.change(winnerSelect, { target: { value: 'u2' } });
+      fireEvent.click(screen.getByText('Save'));
+
+      await waitFor(() => {
+        expect(notifySlack).toHaveBeenCalledWith(expect.objectContaining({
+          event_type: 'playoff_match_final',
+          winner_name: 'Jack Nicklaus',
+        }));
+      });
+      expect(mockCheckAndNotifyRoundComplete).toHaveBeenCalled();
+    });
+  });
+
+  describe('Admin format/holes reset controls', () => {
+    const matchPlayBracket = {
+      id: 'b5',
+      season_id: 's2',
+      flight: 'championship',
+      round: 1,
+      matchup_number: 1,
+      player1_id: 'u1',
+      player2_id: 'u2',
+      winner_id: null,
+      player1_result: '2 UP thru 5',
+      player2_result: '2 DN thru 5',
+      event_id: null,
+      format: 'match_play',
+      holes: 18,
+      status: 'in_progress',
+      player1: { id: 'u1', full_name: 'Tiger Woods' },
+      player2: { id: 'u2', full_name: 'Jack Nicklaus' },
+      winner: null,
+    };
+
+    let bracketsProxy: ReturnType<typeof createChainProxy>;
+    let matchHolesProxy: ReturnType<typeof createChainProxy>;
+
+    beforeEach(() => {
+      bracketsProxy = createChainProxy([matchPlayBracket]);
+      matchHolesProxy = createChainProxy([]);
+      mockSupabaseClient.from.mockImplementation((table: string) => {
+        if (table === 'seasons') return createChainProxy(mockSeasons);
+        if (table === 'users') return createChainProxy(mockMembers);
+        if (table === 'playoff_brackets') return bracketsProxy;
+        if (table === 'playoff_seeds') return createChainProxy(mockSeeds);
+        if (table === 'playoff_match_holes') return matchHolesProxy;
+        return createChainProxy([]);
+      });
+    });
+
+    it('shows a format + holes badge in display mode when a format is set', async () => {
+      render(<AdminPlayoffsPage />);
+      await screen.findByText('Tiger Woods');
+      expect(screen.getByText('Match Play • 18 holes')).toBeInTheDocument();
+    });
+
+    it('shows the current format and holes selected in the edit form', async () => {
+      render(<AdminPlayoffsPage />);
+      await screen.findByText('Tiger Woods');
+      fireEvent.click(screen.getAllByTitle('Edit matchup')[0]);
+      await waitFor(() => expect(screen.getByText(/Editing Matchup #1/)).toBeInTheDocument());
+
+      expect(screen.getByDisplayValue('Match Play')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('18')).toBeInTheDocument();
+    });
+
+    it('resetting format to "Not set" nulls format/holes/status and deletes logged match holes', async () => {
+      render(<AdminPlayoffsPage />);
+      await screen.findByText('Tiger Woods');
+      fireEvent.click(screen.getAllByTitle('Edit matchup')[0]);
+      await waitFor(() => expect(screen.getByText(/Editing Matchup #1/)).toBeInTheDocument());
+
+      fireEvent.change(screen.getByDisplayValue('Match Play'), { target: { value: '' } });
+      fireEvent.click(screen.getByText('Save'));
+
+      await waitFor(() => expect(bracketsProxy.update).toHaveBeenCalled());
+      const updateArg = (bracketsProxy.update as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(updateArg.format).toBeNull();
+      expect(updateArg.holes).toBe(18);
+      expect(updateArg.status).toBe('scheduled');
+      expect(matchHolesProxy.delete).toHaveBeenCalled();
+    });
+
+    it('switching format from match_play to stroke_play also clears logged match holes', async () => {
+      render(<AdminPlayoffsPage />);
+      await screen.findByText('Tiger Woods');
+      fireEvent.click(screen.getAllByTitle('Edit matchup')[0]);
+      await waitFor(() => expect(screen.getByText(/Editing Matchup #1/)).toBeInTheDocument());
+
+      fireEvent.change(screen.getByDisplayValue('Match Play'), { target: { value: 'stroke_play' } });
+      fireEvent.click(screen.getByText('Save'));
+
+      await waitFor(() => expect(bracketsProxy.update).toHaveBeenCalled());
+      const updateArg = (bracketsProxy.update as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(updateArg.format).toBe('stroke_play');
+      expect(updateArg.status).toBe('scheduled');
+      expect(matchHolesProxy.delete).toHaveBeenCalled();
+    });
+
+    it('saving with format unchanged does not clear match holes or reset status', async () => {
+      render(<AdminPlayoffsPage />);
+      await screen.findByText('Tiger Woods');
+      fireEvent.click(screen.getAllByTitle('Edit matchup')[0]);
+      await waitFor(() => expect(screen.getByText(/Editing Matchup #1/)).toBeInTheDocument());
+
+      fireEvent.click(screen.getByText('Save'));
+
+      await waitFor(() => expect(bracketsProxy.update).toHaveBeenCalled());
+      const updateArg = (bracketsProxy.update as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(updateArg.format).toBe('match_play');
+      expect(updateArg.status).toBe('in_progress');
+      expect(matchHolesProxy.delete).not.toHaveBeenCalled();
+    });
+
+    it('hides the Holes selector when format is "Not set"', async () => {
+      const noFormatBracket = { ...matchPlayBracket, format: null, holes: null, status: 'scheduled' };
+      mockSupabaseClient.from.mockImplementation((table: string) => {
+        if (table === 'seasons') return createChainProxy(mockSeasons);
+        if (table === 'users') return createChainProxy(mockMembers);
+        if (table === 'playoff_brackets') return createChainProxy([noFormatBracket]);
+        if (table === 'playoff_seeds') return createChainProxy(mockSeeds);
+        if (table === 'playoff_match_holes') return matchHolesProxy;
+        return createChainProxy([]);
+      });
+
+      render(<AdminPlayoffsPage />);
+      await screen.findByText('Tiger Woods');
+      fireEvent.click(screen.getAllByTitle('Edit matchup')[0]);
+      await waitFor(() => expect(screen.getByText(/Editing Matchup #1/)).toBeInTheDocument());
+
+      expect(screen.getByDisplayValue('Not set (auto best-net)')).toBeInTheDocument();
+      expect(screen.queryByText('Holes')).not.toBeInTheDocument();
+    });
   });
 });

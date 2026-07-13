@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { formatSlackMessage } from '@/lib/slack';
-import type { SlackNotifyPayload, SlackScorePayload, SlackFeedbackPayload } from '@/types/database';
+import { formatSlackMessage, DEFAULT_SLACK_EVENTS } from '@/lib/slack';
+import type { SlackNotifyPayload, SlackScorePayload, SlackFeedbackPayload, SlackPlayoffPayload } from '@/types/database';
 
 // Mock chirps to return deterministic values
 vi.mock('@/lib/chirps', () => ({
@@ -567,6 +567,142 @@ describe('formatSlackMessage', () => {
       expect(msg.text).toContain('Jane Doe');
       expect(msg.text).toContain('Bug Report');
       expect(msg.text).toContain('Login page broken');
+    });
+  });
+
+  describe('playoff events', () => {
+    const basePlayoffPayload: SlackPlayoffPayload = {
+      event_type: 'playoff_format_set',
+      flight: 'championship',
+      round: 2,
+      round_label: 'Semifinal',
+      player1_name: 'David Mustard',
+      player2_name: 'Grady Bunn',
+    };
+
+    it('playoff_format_set names both players, the chosen format, and the flight/round', () => {
+      const msg = formatSlackMessage({ ...basePlayoffPayload, format: 'match_play', holes: 36 });
+      const text = allBlockText(msg);
+      expect(text).toContain('David Mustard');
+      expect(text).toContain('Grady Bunn');
+      expect(text).toContain('Match Play');
+      expect(text).toContain('36 holes');
+      expect(text).toContain('Championship');
+      expect(text).toContain('Semifinal');
+    });
+
+    it('playoff_match_start announces the matchup and format', () => {
+      const msg = formatSlackMessage({
+        ...basePlayoffPayload,
+        event_type: 'playoff_match_start',
+        format: 'match_play',
+        holes: 18,
+      });
+      const text = allBlockText(msg);
+      expect(text).toContain('Match started');
+      expect(text).toContain('David Mustard');
+      expect(text).toContain('Grady Bunn');
+      expect(text).toContain('Match Play');
+    });
+
+    it('playoff_status_update includes the running status text and hole number', () => {
+      const msg = formatSlackMessage({
+        ...basePlayoffPayload,
+        event_type: 'playoff_status_update',
+        status_text: '2 UP thru 7',
+        hole_number: 7,
+      });
+      const text = allBlockText(msg);
+      expect(text).toContain('2 UP thru 7');
+      expect(text).toContain('Hole 7');
+    });
+
+    it('playoff_stroke_score includes the status text summary', () => {
+      const msg = formatSlackMessage({
+        ...basePlayoffPayload,
+        event_type: 'playoff_stroke_score',
+        status_text: 'David Mustard posted a net of E',
+      });
+      const text = allBlockText(msg);
+      expect(text).toContain('David Mustard posted a net of E');
+    });
+
+    it('playoff_match_final announces the winner and loser with the closeout result', () => {
+      const msg = formatSlackMessage({
+        ...basePlayoffPayload,
+        event_type: 'playoff_match_final',
+        winner_name: 'David Mustard',
+        status_text: '3 & 2',
+      });
+      const text = allBlockText(msg);
+      expect(text).toContain('David Mustard');
+      expect(text).toContain('defeats');
+      expect(text).toContain('Grady Bunn');
+      expect(text).toContain('3 & 2');
+      expect(text).toContain('advances');
+    });
+
+    it('playoff_round_complete announces the flight and round with matchup count, without needing player names', () => {
+      const msg = formatSlackMessage({
+        event_type: 'playoff_round_complete',
+        flight: 'consolation',
+        round: 1,
+        round_label: 'Quarterfinal',
+        matchup_count: 3,
+      });
+      const text = allBlockText(msg);
+      expect(text).toContain('Quarterfinal');
+      expect(text).toContain('Consolation');
+      expect(text).toContain('3 matchups');
+    });
+
+    it('falls back to "Round N" when round_label is not provided', () => {
+      const msg = formatSlackMessage({
+        event_type: 'playoff_round_complete',
+        flight: 'unicorn',
+        round: 1,
+        matchup_count: 1,
+      });
+      const text = allBlockText(msg);
+      expect(text).toContain('Round 1');
+    });
+
+    it('always includes a fallback text string for every playoff event type', () => {
+      const eventTypes: SlackPlayoffPayload['event_type'][] = [
+        'playoff_format_set',
+        'playoff_match_start',
+        'playoff_status_update',
+        'playoff_stroke_score',
+        'playoff_match_final',
+        'playoff_round_complete',
+      ];
+
+      for (const event_type of eventTypes) {
+        const msg = formatSlackMessage({ ...basePlayoffPayload, event_type, winner_name: 'David Mustard' });
+        expect(msg.text).toBeTruthy();
+        expect(typeof msg.text).toBe('string');
+        expect(msg.text.length).toBeGreaterThan(0);
+      }
+    });
+  });
+
+  describe('DEFAULT_SLACK_EVENTS', () => {
+    it('ships playoff_stroke_score and playoff_format_set off by default, and the rest on', () => {
+      expect(DEFAULT_SLACK_EVENTS.playoff_format_set).toBe(false);
+      expect(DEFAULT_SLACK_EVENTS.playoff_stroke_score).toBe(false);
+      expect(DEFAULT_SLACK_EVENTS.playoff_match_start).toBe(true);
+      expect(DEFAULT_SLACK_EVENTS.playoff_status_update).toBe(true);
+      expect(DEFAULT_SLACK_EVENTS.playoff_match_final).toBe(true);
+      expect(DEFAULT_SLACK_EVENTS.playoff_round_complete).toBe(true);
+    });
+
+    it('defaults every regular-season event type to enabled', () => {
+      expect(DEFAULT_SLACK_EVENTS.tee_time).toBe(true);
+      expect(DEFAULT_SLACK_EVENTS.score_in_progress).toBe(true);
+      expect(DEFAULT_SLACK_EVENTS.round_complete).toBe(true);
+      expect(DEFAULT_SLACK_EVENTS.score_edit).toBe(true);
+      expect(DEFAULT_SLACK_EVENTS.retroactive).toBe(true);
+      expect(DEFAULT_SLACK_EVENTS.feedback_submitted).toBe(true);
     });
   });
 });

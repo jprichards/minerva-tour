@@ -23,6 +23,20 @@ vi.mock('@/lib/slack', () => ({
     text: 'Test message',
     blocks: [{ type: 'section', text: { type: 'mrkdwn', text: 'Test' } }],
   }),
+  DEFAULT_SLACK_EVENTS: {
+    tee_time: true,
+    score_in_progress: true,
+    round_complete: true,
+    score_edit: true,
+    retroactive: true,
+    feedback_submitted: true,
+    playoff_format_set: false,
+    playoff_match_start: true,
+    playoff_status_update: true,
+    playoff_stroke_score: false,
+    playoff_match_final: true,
+    playoff_round_complete: true,
+  },
 }));
 
 const mockFormatSlackMessage = vi.mocked(formatSlackMessage);
@@ -464,6 +478,170 @@ describe('Slack API Routes', () => {
       expect(res.status).toBe(200);
       expect(data.ok).toBe(false);
       expect(data.reason).toBe('channel_not_found');
+    });
+  });
+
+  describe('POST /api/slack/notify — playoff events', () => {
+    it('posts a playoff_match_final event without touching scores/events (score-only enrichment)', async () => {
+      mockSupabaseServer.auth.getUser.mockResolvedValue({
+        data: { user: { id: 'user-1' } },
+        error: null,
+      });
+
+      const scoresChain = mockChain({ data: [], error: null });
+      setupFromMock({
+        app_settings: mockChain({
+          data: { value: { bot_token: 'xoxb-test', channel_id: 'C001', channel_name: '#test' } },
+          error: null,
+        }),
+        scores: scoresChain,
+      });
+
+      mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve({ ok: true }) });
+
+      const { POST } = await import('@/app/api/slack/notify/route');
+      const req = new Request('http://localhost/api/slack/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_type: 'playoff_match_final',
+          flight: 'championship',
+          round: 2,
+          player1_name: 'David Mustard',
+          player2_name: 'Grady Bunn',
+          winner_name: 'David Mustard',
+          status_text: '3 & 2',
+        }),
+      });
+
+      const res = await POST(req as any);
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.ok).toBe(true);
+      // No score-enrichment queries were made for a playoff event.
+      expect(scoresChain.select).not.toHaveBeenCalled();
+    });
+
+    it('respects a stored config that has not yet been updated with new playoff keys (defaults fill in)', async () => {
+      mockSupabaseServer.auth.getUser.mockResolvedValue({
+        data: { user: { id: 'user-1' } },
+        error: null,
+      });
+
+      setupFromMock({
+        app_settings: mockChain({
+          data: {
+            // Legacy config saved before playoff event types existed — no
+            // playoff_stroke_score / playoff_match_start keys present.
+            value: { bot_token: 'xoxb-test', channel_id: 'C001', channel_name: '#test', events: { tee_time: true } },
+          },
+          error: null,
+        }),
+      });
+
+      mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve({ ok: true }) });
+
+      const { POST } = await import('@/app/api/slack/notify/route');
+      const req = new Request('http://localhost/api/slack/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_type: 'playoff_match_start',
+          flight: 'championship',
+          round: 1,
+          player1_name: 'David Mustard',
+          player2_name: 'Grady Bunn',
+        }),
+      });
+
+      const res = await POST(req as any);
+      const data = await res.json();
+
+      // playoff_match_start defaults to enabled even though it's absent
+      // from the stored config's events map.
+      expect(res.status).toBe(200);
+      expect(data.ok).toBe(true);
+    });
+
+    it('defaults playoff_stroke_score to disabled when absent from the stored config', async () => {
+      mockSupabaseServer.auth.getUser.mockResolvedValue({
+        data: { user: { id: 'user-1' } },
+        error: null,
+      });
+
+      setupFromMock({
+        app_settings: mockChain({
+          data: { value: { bot_token: 'xoxb-test', channel_id: 'C001', channel_name: '#test', events: {} } },
+          error: null,
+        }),
+      });
+
+      const { POST } = await import('@/app/api/slack/notify/route');
+      const req = new Request('http://localhost/api/slack/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_type: 'playoff_stroke_score',
+          flight: 'championship',
+          round: 1,
+          player1_name: 'David Mustard',
+          player2_name: 'Grady Bunn',
+        }),
+      });
+
+      const res = await POST(req as any);
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.ok).toBe(false);
+      expect(data.reason).toBe('event_disabled');
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('gates playoff_stroke_score by score_post_trigger just like regular score posts', async () => {
+      mockSupabaseServer.auth.getUser.mockResolvedValue({
+        data: { user: { id: 'user-1' } },
+        error: null,
+      });
+
+      setupFromMock({
+        app_settings: mockChain({
+          data: {
+            value: {
+              bot_token: 'xoxb-test',
+              channel_id: 'C001',
+              channel_name: '#test',
+              events: { playoff_stroke_score: true },
+              score_post_trigger: 'round_complete',
+            },
+          },
+          error: null,
+        }),
+      });
+
+      const { POST } = await import('@/app/api/slack/notify/route');
+      const req = new Request('http://localhost/api/slack/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_type: 'playoff_stroke_score',
+          flight: 'championship',
+          round: 1,
+          player1_name: 'David Mustard',
+          player2_name: 'Grady Bunn',
+          is_complete: false,
+          holes_played: 12,
+        }),
+      });
+
+      const res = await POST(req as any);
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.ok).toBe(false);
+      expect(data.reason).toBe('score_post_trigger_skip');
+      expect(mockFetch).not.toHaveBeenCalled();
     });
   });
 
