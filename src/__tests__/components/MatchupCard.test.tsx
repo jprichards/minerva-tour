@@ -343,6 +343,43 @@ describe('MatchupCard', () => {
       expect(screen.getByText('2 UP thru 3')).toBeInTheDocument();
     });
 
+    it('shows each player\'s first name and "Halved" on the hole grid buttons instead of P1/P2/AS', () => {
+      render(
+        <MatchupCard
+          match={makeMatch({ format: 'match_play', holes: 18 })}
+          seedMap={new Map()}
+          isActiveSeason
+          currentUserId="u1"
+        />
+      );
+      fireEvent.click(screen.getByText('Log holes'));
+      const holeRow = screen.getByText('#1').closest('div')!;
+      expect(within(holeRow).getByText('David')).toBeInTheDocument();
+      expect(within(holeRow).getByText('Halved')).toBeInTheDocument();
+      expect(within(holeRow).getByText('Grady')).toBeInTheDocument();
+      expect(within(holeRow).queryByText('P1')).not.toBeInTheDocument();
+      expect(within(holeRow).queryByText('P2')).not.toBeInTheDocument();
+      expect(within(holeRow).queryByText('AS')).not.toBeInTheDocument();
+    });
+
+    it('uses only the first name when a player has a multi-word full name', () => {
+      render(
+        <MatchupCard
+          match={makeMatch({
+            format: 'match_play',
+            holes: 18,
+            player1: { id: 'u1', full_name: 'Mary Jo Watson', profile_picture_url: null },
+          })}
+          seedMap={new Map()}
+          isActiveSeason
+          currentUserId="u1"
+        />
+      );
+      fireEvent.click(screen.getByText('Log holes'));
+      const holeRow = screen.getByText('#1').closest('div')!;
+      expect(within(holeRow).getByText('Mary')).toBeInTheDocument();
+    });
+
     it('expands to show a hole-by-hole grid sized to the matchup holes', () => {
       render(
         <MatchupCard
@@ -387,7 +424,7 @@ describe('MatchupCard', () => {
 
       fireEvent.click(screen.getByText('Log holes'));
       const holeRow = screen.getByText('#3').closest('div')!;
-      fireEvent.click(within(holeRow).getByText('AS'));
+      fireEvent.click(within(holeRow).getByText('Halved'));
 
       await waitFor(() => {
         expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('upsert_playoff_match_hole', {
@@ -426,7 +463,7 @@ describe('MatchupCard', () => {
 
       fireEvent.click(screen.getByText('Log holes'));
       const holeRow = screen.getByText('#1').closest('div')!;
-      fireEvent.click(within(holeRow).getByText('P1'));
+      fireEvent.click(within(holeRow).getByText('David'));
 
       await waitFor(() => {
         expect(notifySlack).toHaveBeenCalledWith({

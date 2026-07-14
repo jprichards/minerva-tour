@@ -23,11 +23,9 @@ export interface BestNet {
   player2: number | null;
 }
 
-const HOLE_CHOICES: Array<{ value: 'player1' | 'halve' | 'player2'; label: string }> = [
-  { value: 'player1', label: 'P1' },
-  { value: 'halve', label: 'AS' },
-  { value: 'player2', label: 'P2' },
-];
+function getFirstName(fullName: string): string {
+  return fullName.split(/\s+/)[0];
+}
 
 /**
  * Renders a single playoff matchup: two player slots (or a BYE for the
@@ -268,6 +266,11 @@ function MatchPlayGrid({ match, holes, roundLabel, onRefresh }: {
   const status = computeMatchStatus(holeEntries, totalHoles);
   const player1Name = match.player1?.full_name || 'Player 1';
   const player2Name = match.player2?.full_name || 'Player 2';
+  const holeChoices: Array<{ value: 'player1' | 'halve' | 'player2'; label: string }> = [
+    { value: 'player1', label: getFirstName(player1Name) },
+    { value: 'halve', label: 'Halved' },
+    { value: 'player2', label: getFirstName(player2Name) },
+  ];
 
   const handleHole = async (holeNumber: number, result: 'player1' | 'halve' | 'player2') => {
     const isFirstHole = holeEntries.length === 0;
@@ -356,16 +359,16 @@ function MatchPlayGrid({ match, holes, roundLabel, onRefresh }: {
             const current = holeMap.get(holeNumber);
             return (
               <div key={holeNumber} className="flex items-center gap-1.5">
-                <span className="w-8 text-[11px] font-medium text-[var(--text-muted)] flex-shrink-0">#{holeNumber}</span>
+                <span className="w-8 text-[11px] font-medium text-[var(--text-secondary)] flex-shrink-0">#{holeNumber}</span>
                 <div className="flex-1 grid grid-cols-3 gap-1">
-                  {HOLE_CHOICES.map((choice) => (
+                  {holeChoices.map((choice) => (
                     <button
                       key={choice.value}
                       type="button"
                       disabled={savingHole === holeNumber}
                       onClick={() => handleHole(holeNumber, choice.value)}
-                      className={`min-h-[36px] rounded-md text-[11px] font-semibold transition-colors disabled:opacity-50 ${
-                        current === choice.value ? 'bg-minerva-600 text-white' : 'bg-[var(--bg-subtle)] text-[var(--text-muted)]'
+                      className={`min-h-[36px] px-1 rounded-md text-[11px] font-semibold truncate transition-colors disabled:opacity-50 ${
+                        current === choice.value ? 'bg-minerva-600 text-white' : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)]'
                       }`}
                     >
                       {choice.label}
