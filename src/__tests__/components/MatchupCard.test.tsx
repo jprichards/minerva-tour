@@ -509,6 +509,7 @@ describe('MatchupCard', () => {
         player2_name: 'Grady Bunn',
         status_text: '2 UP thru 3',
         hole_number: 3,
+        leader_first_name: 'David',
       });
       expect(onRefresh).toHaveBeenCalled();
     });
@@ -550,6 +551,7 @@ describe('MatchupCard', () => {
         player2_name: 'Grady Bunn',
         status_text: '1 UP thru 1',
         hole_number: 1,
+        leader_first_name: 'David',
       });
     });
 

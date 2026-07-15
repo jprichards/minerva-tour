@@ -619,6 +619,30 @@ describe('formatSlackMessage', () => {
       expect(text).not.toContain('Semifinal');
     });
 
+    it('playoff_status_update prefixes the status text with the leader\'s first name so it is clear who is up', () => {
+      const msg = formatSlackMessage({
+        ...basePlayoffPayload,
+        event_type: 'playoff_status_update',
+        status_text: '2 UP thru 7',
+        hole_number: 7,
+        leader_first_name: 'Grady',
+      });
+      const text = allBlockText(msg);
+      expect(text).toContain('Grady 2 UP thru 7');
+    });
+
+    it('playoff_status_update omits the leader name when the match is tied (no leader_first_name)', () => {
+      const msg = formatSlackMessage({
+        ...basePlayoffPayload,
+        event_type: 'playoff_status_update',
+        status_text: 'All Square thru 7',
+        hole_number: 7,
+        leader_first_name: null,
+      });
+      const text = allBlockText(msg);
+      expect(text).toContain('David Mustard* vs *Grady Bunn* — All Square thru 7');
+    });
+
     it('playoff_stroke_score includes the status text summary', () => {
       const msg = formatSlackMessage({
         ...basePlayoffPayload,

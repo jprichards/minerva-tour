@@ -457,7 +457,8 @@ function formatPlayoffMatchStart(p: SlackPlayoffPayload): SlackMessage {
 }
 
 function formatPlayoffStatusUpdate(p: SlackPlayoffPayload): SlackMessage {
-  const statusSuffix = p.status_text ? ` — ${p.status_text}` : '';
+  const leaderPrefix = p.leader_first_name ? `${p.leader_first_name} ` : '';
+  const statusSuffix = p.status_text ? ` — ${leaderPrefix}${p.status_text}` : '';
   const fallbackText = `Playoff update — ${p.player1_name} vs ${p.player2_name}${statusSuffix}`;
 
   const line = `⛳ ${matchupLine(p)}${statusSuffix}`;

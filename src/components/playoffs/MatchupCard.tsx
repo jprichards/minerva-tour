@@ -300,6 +300,10 @@ function MatchPlayGrid({ match, holes, roundLabel, onRefresh, canEdit }: {
     }
     // Always send the status update too (including for hole 1) so the
     // actual result gets posted, not just the "match started" banner.
+    const leaderFirstName =
+      newStatus.leader === 'player1' ? getFirstName(player1Name)
+      : newStatus.leader === 'player2' ? getFirstName(player2Name)
+      : null;
     notifySlack({
       event_type: 'playoff_status_update',
       flight: match.flight,
@@ -309,6 +313,7 @@ function MatchPlayGrid({ match, holes, roundLabel, onRefresh, canEdit }: {
       player2_name: player2Name,
       status_text: newStatus.statusText,
       hole_number: holeNumber,
+      leader_first_name: leaderFirstName,
     });
 
     await onRefresh?.();

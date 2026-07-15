@@ -408,6 +408,8 @@ export interface SlackPlayoffPayload {
   hole_number?: number | null;
   /** Set only for playoff_match_final. */
   winner_name?: string | null;
+  /** First name of the player currently leading; only set for playoff_status_update, null/omitted when the match is tied. */
+  leader_first_name?: string | null;
   /** Set only for playoff_round_complete: how many matchups were in the completed round. */
   matchup_count?: number | null;
   /**
