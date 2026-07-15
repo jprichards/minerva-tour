@@ -34,10 +34,12 @@ function getFirstName(fullName: string): string {
  * visually and behaviorally identical.
  *
  * When `isActiveSeason` is true and the viewer is a participant or admin,
- * also renders self-service controls: a format/holes picker (once) and,
- * for match play, a hole-by-hole entry grid with live running status.
+ * also renders a format/holes picker (once, self-service only). The
+ * match-play hole-by-hole grid, once a format is chosen, is visible to
+ * ANY viewer (spectators included) but only editable by participants
+ * and admins — spectators get a read-only view of the same grid.
  *
- * The live best-net display for stroke play (`bestNet`), by contrast, is
+ * The live best-net display for stroke play (`bestNet`), similarly, is
  * shown to ANY viewer of the active season — not just participants —
  * since following the live leaderboard is the whole point (mirrors how
  * match-play status is already visible to everyone via player1_result/
@@ -122,8 +124,8 @@ export default function MatchupCard({
         <FormatPicker match={match} roundLabel={roundLabel} onRefresh={onRefresh} />
       )}
 
-      {canSelfService && match.format === 'match_play' && (
-        <MatchPlayGrid match={match} holes={holes} roundLabel={roundLabel} onRefresh={onRefresh} />
+      {!isBye && match.format === 'match_play' && (
+        <MatchPlayGrid match={match} holes={holes} roundLabel={roundLabel} onRefresh={onRefresh} canEdit={canSelfService} />
       )}
 
       {showLiveNet && (
@@ -248,11 +250,12 @@ function FormatPicker({ match, roundLabel, onRefresh }: {
   );
 }
 
-function MatchPlayGrid({ match, holes, roundLabel, onRefresh }: {
+function MatchPlayGrid({ match, holes, roundLabel, onRefresh, canEdit }: {
   match: PlayoffBracket;
   holes: PlayoffMatchHole[];
   roundLabel?: string | null;
   onRefresh?: () => void | Promise<void>;
+  canEdit: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [savingHole, setSavingHole] = useState<number | null>(null);
@@ -349,7 +352,7 @@ function MatchPlayGrid({ match, holes, roundLabel, onRefresh }: {
           onClick={() => setExpanded((v) => !v)}
           className="flex items-center gap-1 text-xs font-medium text-minerva-600 flex-shrink-0"
         >
-          {expanded ? 'Hide holes' : 'Log holes'}
+          {expanded ? 'Hide holes' : canEdit ? 'Log holes' : 'View holes'}
           {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </button>
       </div>
@@ -366,9 +369,11 @@ function MatchPlayGrid({ match, holes, roundLabel, onRefresh }: {
                     <button
                       key={choice.value}
                       type="button"
-                      disabled={savingHole === holeNumber}
-                      onClick={() => handleHole(holeNumber, choice.value)}
-                      className={`min-h-[36px] px-1 rounded-md text-[11px] font-semibold truncate transition-colors disabled:opacity-50 ${
+                      disabled={!canEdit || savingHole === holeNumber}
+                      onClick={canEdit ? () => handleHole(holeNumber, choice.value) : undefined}
+                      className={`min-h-[36px] px-1 rounded-md text-[11px] font-semibold truncate transition-colors ${
+                        savingHole === holeNumber ? 'opacity-50' : ''
+                      } ${
                         current === choice.value ? 'bg-minerva-600 text-white' : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)]'
                       }`}
                     >
@@ -382,7 +387,7 @@ function MatchPlayGrid({ match, holes, roundLabel, onRefresh }: {
         </div>
       )}
 
-      {match.status !== 'final' && status.played > 0 && (
+      {canEdit && match.status !== 'final' && status.played > 0 && (
         <button
           type="button"
           disabled={markingFinal}

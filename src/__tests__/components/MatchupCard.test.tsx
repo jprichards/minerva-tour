@@ -343,6 +343,70 @@ describe('MatchupCard', () => {
       expect(screen.getByText('2 UP thru 3')).toBeInTheDocument();
     });
 
+    it('shows a read-only "View holes" grid to a spectator (non-participant, non-admin)', () => {
+      const holes = [makeHole(1, 'player1')];
+      render(
+        <MatchupCard
+          match={makeMatch({ format: 'match_play', holes: 18 })}
+          seedMap={new Map()}
+          isActiveSeason
+          currentUserId="a-spectator"
+          holes={holes}
+        />
+      );
+      expect(screen.queryByText('Log holes')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByText('View holes'));
+      const holeRow = screen.getByText('#1').closest('div')!;
+      expect(within(holeRow).getByText('David')).toBeInTheDocument();
+      expect(within(holeRow).getByText('Grady')).toBeInTheDocument();
+    });
+
+    it('does not let a spectator log a hole result by clicking the read-only grid buttons', async () => {
+      render(
+        <MatchupCard
+          match={makeMatch({ format: 'match_play', holes: 18 })}
+          seedMap={new Map()}
+          isActiveSeason
+          currentUserId="a-spectator"
+        />
+      );
+      fireEvent.click(screen.getByText('View holes'));
+      const holeRow = screen.getByText('#1').closest('div')!;
+      const button = within(holeRow).getByText('David');
+      expect(button).toBeDisabled();
+      fireEvent.click(button);
+      expect(mockSupabaseClient.rpc).not.toHaveBeenCalledWith('upsert_playoff_match_hole', expect.anything());
+    });
+
+    it('hides the Mark Match Final button from a spectator even once holes have been played', () => {
+      const holes = [makeHole(1, 'player1')];
+      render(
+        <MatchupCard
+          match={makeMatch({ format: 'match_play', holes: 18, status: 'in_progress' })}
+          seedMap={new Map()}
+          isActiveSeason
+          currentUserId="a-spectator"
+          holes={holes}
+        />
+      );
+      fireEvent.click(screen.getByText('View holes'));
+      expect(screen.queryByText('Mark Match Final')).not.toBeInTheDocument();
+    });
+
+    it('still shows an editable "Log holes" grid to a participant even when a spectator would only see it read-only', () => {
+      render(
+        <MatchupCard
+          match={makeMatch({ format: 'match_play', holes: 18 })}
+          seedMap={new Map()}
+          isActiveSeason
+          currentUserId="u1"
+        />
+      );
+      fireEvent.click(screen.getByText('Log holes'));
+      const holeRow = screen.getByText('#1').closest('div')!;
+      expect(within(holeRow).getByText('David')).not.toBeDisabled();
+    });
+
     it('shows each player\'s first name and "Halved" on the hole grid buttons instead of P1/P2/AS', () => {
       render(
         <MatchupCard
