@@ -460,13 +460,9 @@ function formatPlayoffStatusUpdate(p: SlackPlayoffPayload): SlackMessage {
   const statusSuffix = p.status_text ? ` — ${p.status_text}` : '';
   const fallbackText = `Playoff update — ${p.player1_name} vs ${p.player2_name}${statusSuffix}`;
 
-  const lines = [
-    `⛳ ${matchupLine(p)}${statusSuffix}`,
-    flightRoundLine(p),
-  ];
-  if (p.hole_number != null) lines.push(`Hole ${p.hole_number}`);
+  const line = `⛳ ${matchupLine(p)}${statusSuffix}`;
 
-  return { text: fallbackText, blocks: [sectionBlock(lines.join('\n'))] };
+  return { text: fallbackText, blocks: [sectionBlock(line)] };
 }
 
 function formatPlayoffStrokeScore(p: SlackPlayoffPayload): SlackMessage {

@@ -605,7 +605,7 @@ describe('formatSlackMessage', () => {
       expect(text).toContain('Match Play');
     });
 
-    it('playoff_status_update includes the running status text and hole number', () => {
+    it('playoff_status_update includes the running status text on a single line, with no flight/round or hole number noise', () => {
       const msg = formatSlackMessage({
         ...basePlayoffPayload,
         event_type: 'playoff_status_update',
@@ -614,7 +614,9 @@ describe('formatSlackMessage', () => {
       });
       const text = allBlockText(msg);
       expect(text).toContain('2 UP thru 7');
-      expect(text).toContain('Hole 7');
+      expect(text).not.toContain('Hole 7');
+      expect(text).not.toContain('Championship');
+      expect(text).not.toContain('Semifinal');
     });
 
     it('playoff_stroke_score includes the status text summary', () => {
