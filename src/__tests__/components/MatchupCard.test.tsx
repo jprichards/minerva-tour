@@ -449,7 +449,7 @@ describe('MatchupCard', () => {
       expect(onRefresh).toHaveBeenCalled();
     });
 
-    it('fires playoff_match_start (not a status update) when the very first hole is logged', async () => {
+    it('fires both playoff_match_start and playoff_status_update when the very first hole is logged', async () => {
       render(
         <MatchupCard
           match={makeMatch({ format: 'match_play', holes: 18 })}
@@ -477,7 +477,16 @@ describe('MatchupCard', () => {
           holes: 18,
         });
       });
-      expect(notifySlack).not.toHaveBeenCalledWith(expect.objectContaining({ event_type: 'playoff_status_update' }));
+      expect(notifySlack).toHaveBeenCalledWith({
+        event_type: 'playoff_status_update',
+        flight: 'championship',
+        round: 1,
+        round_label: 'Quarterfinal',
+        player1_name: 'David Mustard',
+        player2_name: 'Grady Bunn',
+        status_text: '1 UP thru 1',
+        hole_number: 1,
+      });
     });
 
     it('shows a Mark Match Final button once holes have been played, and calls the status RPC', async () => {
