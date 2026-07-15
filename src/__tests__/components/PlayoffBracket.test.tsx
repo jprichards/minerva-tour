@@ -133,7 +133,7 @@ describe('PlayoffBracket — self-service wiring', () => {
     render(<PlayoffBracket seasonId="s1" />);
     await screen.findByText('Current Player');
     await waitFor(() => {
-      expect(screen.getByText('1 UP thru 2')).toBeInTheDocument();
+      expect(screen.getByText('Current 1 UP thru 2')).toBeInTheDocument();
     });
   });
 

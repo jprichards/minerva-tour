@@ -274,6 +274,10 @@ function MatchPlayGrid({ match, holes, roundLabel, onRefresh, canEdit }: {
     { value: 'halve', label: 'Halved' },
     { value: 'player2', label: getFirstName(player2Name) },
   ];
+  const statusHeaderText =
+    status.leader === 'player1' ? `${getFirstName(player1Name)} ${status.statusText}`
+    : status.leader === 'player2' ? `${getFirstName(player2Name)} ${status.statusText}`
+    : status.statusText;
 
   const handleHole = async (holeNumber: number, result: 'player1' | 'halve' | 'player2') => {
     const isFirstHole = holeEntries.length === 0;
@@ -351,7 +355,7 @@ function MatchPlayGrid({ match, holes, roundLabel, onRefresh, canEdit }: {
   return (
     <div className="border-t border-[var(--border-light)] bg-[var(--bg-page)] px-3 py-2.5 space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold text-[var(--text-secondary)] truncate">{status.statusText}</span>
+        <span className="text-xs font-semibold text-[var(--text-secondary)] truncate">{statusHeaderText}</span>
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}

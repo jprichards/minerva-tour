@@ -329,7 +329,7 @@ describe('MatchupCard', () => {
       return { id: `h${hole_number}`, matchup_id: 'b1', hole_number, result, updated_by: 'u1', created_at: '', updated_at: '' };
     }
 
-    it('shows the live running status text', () => {
+    it('shows the live running status text prefixed with the leader\'s first name', () => {
       const holes = [makeHole(1, 'player1'), makeHole(2, 'player1'), makeHole(3, 'halve')];
       render(
         <MatchupCard
@@ -340,7 +340,21 @@ describe('MatchupCard', () => {
           holes={holes}
         />
       );
-      expect(screen.getByText('2 UP thru 3')).toBeInTheDocument();
+      expect(screen.getByText('David 2 UP thru 3')).toBeInTheDocument();
+    });
+
+    it('shows the running status text with no leader name when the match is tied', () => {
+      const holes = [makeHole(1, 'player1'), makeHole(2, 'player2')];
+      render(
+        <MatchupCard
+          match={makeMatch({ format: 'match_play', holes: 18 })}
+          seedMap={new Map()}
+          isActiveSeason
+          currentUserId="u1"
+          holes={holes}
+        />
+      );
+      expect(screen.getByText('All Square thru 2')).toBeInTheDocument();
     });
 
     it('shows a read-only "View holes" grid to a spectator (non-participant, non-admin)', () => {
