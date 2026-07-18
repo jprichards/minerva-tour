@@ -58,7 +58,8 @@ export type AuditActionType =
   | 'feature_flag_update'
   | 'set_playoff_format'
   | 'log_playoff_hole'
-  | 'set_playoff_match_status';
+  | 'set_playoff_match_status'
+  | 'confirm_stroke_play_winner';
 
 export interface User {
   id: string;

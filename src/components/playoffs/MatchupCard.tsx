@@ -13,6 +13,7 @@ import {
   setPlayoffMatchupFormat,
   upsertPlayoffMatchHole,
   setPlayoffMatchStatus,
+  confirmStrokePlayWinner,
   checkAndNotifyRoundComplete,
   type HoleEntry,
 } from '@/lib/playoffs';
@@ -67,6 +68,10 @@ export default function MatchupCard({
   roundLabel?: string | null;
   onRefresh?: () => void | Promise<void>;
 }) {
+  const [confirmingWinner, setConfirmingWinner] = useState(false);
+  const { showToast } = useToast();
+  const supabase = createClient();
+
   const isBye = !!match.player1_id && !match.player2_id;
   const isParticipant = !!currentUserId && (currentUserId === match.player1_id || currentUserId === match.player2_id);
   const canSelfService = isActiveSeason && !isBye && (isParticipant || isAdmin);
@@ -81,6 +86,7 @@ export default function MatchupCard({
   const effectiveFormat = match.format ?? 'stroke_play';
   const showLiveNet = isActiveSeason && !isBye && effectiveFormat === 'stroke_play' && !formatPending;
   const hasBothNets = showLiveNet && bestNet.player1 != null && bestNet.player2 != null;
+  const isTie = hasBothNets && bestNet.player1 === bestNet.player2;
   const p1Leads = hasBothNets && (bestNet.player1 as number) < (bestNet.player2 as number);
   const p2Leads = hasBothNets && (bestNet.player2 as number) < (bestNet.player1 as number);
 
@@ -90,6 +96,40 @@ export default function MatchupCard({
   const player2Result = showLiveNet
     ? (bestNet.player2 != null ? formatNetScore(bestNet.player2) : null)
     : match.player2_result;
+
+  const player1Name = match.player1?.full_name || 'Player 1';
+  const player2Name = match.player2?.full_name || 'Player 2';
+
+  const handleConfirmWinner = async () => {
+    if (!hasBothNets || isTie || !match.player1_id || !match.player2_id) return;
+    const winnerId = p1Leads ? match.player1_id : match.player2_id;
+    const winnerName = p1Leads ? player1Name : player2Name;
+    const winnerNet = (p1Leads ? bestNet.player1 : bestNet.player2) as number;
+    const loserNet = (p1Leads ? bestNet.player2 : bestNet.player1) as number;
+
+    setConfirmingWinner(true);
+    const { error } = await confirmStrokePlayWinner(supabase, match.id, winnerId);
+    setConfirmingWinner(false);
+    if (error) {
+      showToast(`Failed to confirm winner: ${error}`, 'error');
+      return;
+    }
+    logAuditEvent('confirm_stroke_play_winner', 'playoff_bracket', match.id, { winner_id: winnerId });
+    notifySlack({
+      event_type: 'playoff_match_final',
+      flight: match.flight,
+      round: match.round,
+      round_label: roundLabel,
+      player1_name: player1Name,
+      player2_name: player2Name,
+      winner_name: winnerName,
+      status_text: `(net ${formatNetScore(winnerNet)} to ${formatNetScore(loserNet)})`,
+    });
+    checkAndNotifyRoundComplete(supabase, match, roundLabel ?? null);
+
+    showToast(`${getFirstName(winnerName)} confirmed as winner!`, 'success');
+    await onRefresh?.();
+  };
 
   return (
     <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-light)] shadow-[var(--shadow-sm)] overflow-hidden">
@@ -129,12 +169,26 @@ export default function MatchupCard({
       )}
 
       {showLiveNet && (
-        <div className="border-t border-[var(--border-light)] px-3 py-2.5 bg-[var(--bg-page)]">
+        <div className="border-t border-[var(--border-light)] px-3 py-2.5 bg-[var(--bg-page)] space-y-2">
           <p className="text-xs text-[var(--text-faint)]">
             {bestNet.player1 == null && bestNet.player2 == null
               ? 'Stroke play — best net will update automatically once scores are posted.'
+              : isTie
+              ? 'Stroke play — scores are tied. An admin will need to resolve this.'
               : 'Stroke play — best net updates automatically from posted scores.'}
           </p>
+          {canSelfService && hasBothNets && !isTie && !match.winner_id && (
+            <button
+              type="button"
+              disabled={confirmingWinner}
+              onClick={handleConfirmWinner}
+              className="w-full min-h-[36px] rounded-md text-xs font-semibold bg-minerva-600 text-white disabled:opacity-50"
+            >
+              {confirmingWinner
+                ? 'Saving...'
+                : `Confirm Winner: ${getFirstName(p1Leads ? player1Name : player2Name)} (${formatNetScore((p1Leads ? bestNet.player1 : bestNet.player2) as number)})`}
+            </button>
+          )}
         </div>
       )}
     </div>

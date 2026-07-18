@@ -324,6 +324,134 @@ describe('MatchupCard', () => {
     });
   });
 
+  describe('stroke play winner confirmation', () => {
+    it('shows a Confirm Winner button to a participant once both nets are posted with a clear leader', () => {
+      render(
+        <MatchupCard
+          match={makeMatch({ format: 'stroke_play' })}
+          seedMap={new Map()}
+          isActiveSeason
+          currentUserId="u1"
+          bestNet={{ player1: -2, player2: 3 }}
+        />
+      );
+      expect(screen.getByText('Confirm Winner: David (-2)')).toBeInTheDocument();
+    });
+
+    it('shows the Confirm Winner button to an admin who is not a participant', () => {
+      render(
+        <MatchupCard
+          match={makeMatch({ format: 'stroke_play' })}
+          seedMap={new Map()}
+          isActiveSeason
+          currentUserId="an-admin"
+          isAdmin
+          bestNet={{ player1: -2, player2: 3 }}
+        />
+      );
+      expect(screen.getByText('Confirm Winner: David (-2)')).toBeInTheDocument();
+    });
+
+    it('hides the Confirm Winner button from a spectator (non-participant, non-admin)', () => {
+      render(
+        <MatchupCard
+          match={makeMatch({ format: 'stroke_play' })}
+          seedMap={new Map()}
+          isActiveSeason
+          currentUserId="a-spectator"
+          bestNet={{ player1: -2, player2: 3 }}
+        />
+      );
+      expect(screen.queryByText(/Confirm Winner/)).not.toBeInTheDocument();
+    });
+
+    it('hides the Confirm Winner button and shows a tie note when nets are tied', () => {
+      render(
+        <MatchupCard
+          match={makeMatch({ format: 'stroke_play' })}
+          seedMap={new Map()}
+          isActiveSeason
+          currentUserId="u1"
+          bestNet={{ player1: 1, player2: 1 }}
+        />
+      );
+      expect(screen.queryByText(/Confirm Winner/)).not.toBeInTheDocument();
+      expect(screen.getByText(/scores are tied/)).toBeInTheDocument();
+    });
+
+    it('hides the Confirm Winner button once a winner has already been decided', () => {
+      render(
+        <MatchupCard
+          match={makeMatch({ format: 'stroke_play', winner_id: 'u1' })}
+          seedMap={new Map()}
+          isActiveSeason
+          currentUserId="u1"
+          bestNet={{ player1: -2, player2: 3 }}
+        />
+      );
+      expect(screen.queryByText(/Confirm Winner/)).not.toBeInTheDocument();
+    });
+
+    it('confirms the winner via the RPC, fires playoff_match_final, checks round completion, and refreshes', async () => {
+      const onRefresh = vi.fn();
+      render(
+        <MatchupCard
+          match={makeMatch({ format: 'stroke_play' })}
+          seedMap={new Map()}
+          isActiveSeason
+          currentUserId="u1"
+          bestNet={{ player1: -2, player2: 3 }}
+          roundLabel="Quarterfinal"
+          onRefresh={onRefresh}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Confirm Winner: David (-2)'));
+
+      await waitFor(() => {
+        expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('confirm_stroke_play_winner', {
+          p_matchup_id: 'b1',
+          p_winner_id: 'u1',
+        });
+      });
+      expect(mockLogAuditEvent).toHaveBeenCalledWith('confirm_stroke_play_winner', 'playoff_bracket', 'b1', { winner_id: 'u1' });
+      expect(notifySlack).toHaveBeenCalledWith({
+        event_type: 'playoff_match_final',
+        flight: 'championship',
+        round: 1,
+        round_label: 'Quarterfinal',
+        player1_name: 'David Mustard',
+        player2_name: 'Grady Bunn',
+        winner_name: 'David Mustard',
+        status_text: '(net -2 to +3)',
+      });
+      expect(mockCheckAndNotifyRoundComplete).toHaveBeenCalled();
+      expect(onRefresh).toHaveBeenCalled();
+    });
+
+    it('shows an error toast and does not refresh when the RPC fails', async () => {
+      mockSupabaseClient.rpc.mockResolvedValue({ data: null, error: { message: 'not authorized' } });
+      const onRefresh = vi.fn();
+      render(
+        <MatchupCard
+          match={makeMatch({ format: 'stroke_play' })}
+          seedMap={new Map()}
+          isActiveSeason
+          currentUserId="u1"
+          bestNet={{ player1: -2, player2: 3 }}
+          onRefresh={onRefresh}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Confirm Winner: David (-2)'));
+
+      await waitFor(() => {
+        expect(mockShowToast).toHaveBeenCalledWith('Failed to confirm winner: not authorized', 'error');
+      });
+      expect(onRefresh).not.toHaveBeenCalled();
+    });
+  });
+
   describe('match play grid', () => {
     function makeHole(hole_number: number, result: 'player1' | 'player2' | 'halve'): PlayoffMatchHole {
       return { id: `h${hole_number}`, matchup_id: 'b1', hole_number, result, updated_by: 'u1', created_at: '', updated_at: '' };

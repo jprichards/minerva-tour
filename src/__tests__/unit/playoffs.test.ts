@@ -6,6 +6,7 @@ import {
   setPlayoffMatchupFormat,
   upsertPlayoffMatchHole,
   setPlayoffMatchStatus,
+  confirmStrokePlayWinner,
   resolveEventIdForMatchup,
   resolveBestNet,
   isRoundComplete,
@@ -135,11 +136,12 @@ describe('perPlayerLabel / mirrorResultLabels', () => {
     expect(mirrorResultLabels(status)).toEqual({ player1_result: '4 UP thru 7', player2_result: '4 DN thru 7' });
   });
 
-  it('mirrors the same closeout text for both players (no UP/DN split for a definitive result)', () => {
+  it('shows the closeout text only on the winner\'s side, not both (no UP/DN split for a definitive result)', () => {
     const results: Array<'player1' | 'player2' | 'halve'> = ['player1', 'player1', 'player1', ...Array(13).fill('halve') as 'halve'[]];
     const status = computeMatchStatus(holes(results), 18);
     expect(perPlayerLabel(status, 'player1')).toBe('3 & 2');
-    expect(perPlayerLabel(status, 'player2')).toBe('3 & 2');
+    expect(perPlayerLabel(status, 'player2')).toBeNull();
+    expect(mirrorResultLabels(status)).toEqual({ player1_result: '3 & 2', player2_result: null });
   });
 
   it('gives the trailer "1 DN" when the leader wins 1 UP on the last hole', () => {
@@ -204,6 +206,18 @@ describe('RPC wrappers', () => {
     const result = await setPlayoffMatchStatus(supabase, 'm1', 'final');
     expect(mockRpc).toHaveBeenCalledWith('set_playoff_match_status', { p_matchup_id: 'm1', p_status: 'final' });
     expect(result.error).toBeNull();
+  });
+
+  it('confirmStrokePlayWinner calls the RPC with matchup id and winner id', async () => {
+    const result = await confirmStrokePlayWinner(supabase, 'm1', 'u1');
+    expect(mockRpc).toHaveBeenCalledWith('confirm_stroke_play_winner', { p_matchup_id: 'm1', p_winner_id: 'u1' });
+    expect(result.error).toBeNull();
+  });
+
+  it('confirmStrokePlayWinner surfaces an RPC error message', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'winner must be one of the two participants' } });
+    const result = await confirmStrokePlayWinner(supabase, 'm1', 'someone-else');
+    expect(result.error).toBe('winner must be one of the two participants');
   });
 });
 

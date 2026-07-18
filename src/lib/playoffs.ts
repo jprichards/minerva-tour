@@ -69,11 +69,18 @@ export function computeMatchStatus(holes: HoleEntry[], totalHoles: 18 | 36): Mat
  * Per-player display label derived from a computed MatchStatus: the
  * leader gets the full status text, the trailer gets a "DN" mirror of it,
  * ties show "AS", and an unplayed match shows no label at all (null).
+ *
+ * A closeout result ("3 & 2") has no "UP"/"DN" split — it's inherently
+ * stated from the winner's side — so the trailer gets no label at all
+ * rather than a confusing duplicate of the winner's text.
  */
 export function perPlayerLabel(status: MatchStatus, player: 'player1' | 'player2'): string | null {
   if (status.played === 0) return null;
   if (status.lead === 0) return 'AS';
   if (status.leader === player) return status.statusText;
+  // Only the early-closeout "X & Y" format has no UP/DN split — a match
+  // decided on the very last hole is still stated as "1 UP" / "1 DN".
+  if (status.decided && status.remaining > 0) return null;
   return status.statusText.replace('UP', 'DN');
 }
 
@@ -155,6 +162,27 @@ export async function setPlayoffMatchStatus(
   const { error } = await supabase.rpc('set_playoff_match_status', {
     p_matchup_id: matchupId,
     p_status: status,
+  });
+  return { error: error?.message ?? null };
+}
+
+/**
+ * Confirms the official winner of a stroke-play matchup. Unlike match
+ * play's self-service actions, this DOES set winner_id — stroke play has
+ * no hole-by-hole log to fall back on, so once both best-net scores are
+ * posted with a clear leader, either participant (or an admin) can
+ * confirm it directly. Scoped server-side (confirm_stroke_play_winner
+ * RPC) to stroke_play matchups only; match play's admin-only winner_id
+ * rule is unchanged. See supabase/add-stroke-play-winner-confirm.sql.
+ */
+export async function confirmStrokePlayWinner(
+  supabase: SupabaseClient,
+  matchupId: string,
+  winnerId: string
+): Promise<RpcResult> {
+  const { error } = await supabase.rpc('confirm_stroke_play_winner', {
+    p_matchup_id: matchupId,
+    p_winner_id: winnerId,
   });
   return { error: error?.message ?? null };
 }
