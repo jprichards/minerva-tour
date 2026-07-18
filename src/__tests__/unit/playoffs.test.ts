@@ -195,6 +195,25 @@ describe('RPC wrappers', () => {
     expect(result.error).toBeNull();
   });
 
+  it('upsertPlayoffMatchHole forwards a null p_player2_result to the RPC when the deciding hole closes out the match early', async () => {
+    // Dormie at "6 UP thru 12" (6 halved holes after 6 straight wins), then
+    // hole 13 is halved too: lead stays 6 with 5 remaining -> "6 & 5",
+    // and the trailer's label must become null (no UP/DN split for a
+    // closeout) -- not silently omitted, since the RPC must SET it to
+    // NULL rather than leave the stale "6 DN thru 12" text in place.
+    const existing: HoleEntry[] = holes(['player1', 'player1', 'player1', 'player1', 'player1', 'player1', 'halve', 'halve', 'halve', 'halve', 'halve', 'halve']);
+    const result = await upsertPlayoffMatchHole(supabase, 'm1', 13, 'halve', existing, 18);
+
+    expect(mockRpc).toHaveBeenCalledWith('upsert_playoff_match_hole', {
+      p_matchup_id: 'm1',
+      p_hole_number: 13,
+      p_result: 'halve',
+      p_player1_result: '6 & 5',
+      p_player2_result: null,
+    });
+    expect(result.status.decided).toBe(true);
+  });
+
   it('upsertPlayoffMatchHole overwrites an existing entry for the same hole_number rather than duplicating it', async () => {
     // Hole 2 was previously logged as player2; correcting it to player1.
     const existing: HoleEntry[] = holes(['player1', 'player2']);
