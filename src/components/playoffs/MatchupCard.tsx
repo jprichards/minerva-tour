@@ -30,6 +30,24 @@ function getFirstName(fullName: string): string {
 }
 
 /**
+ * For match play matchups where winner_id hasn't been explicitly set by an
+ * admin, derive the winner from the result strings. A winning result in
+ * match play contains " & " (e.g. "6 & 5") or ends with "UP" (e.g. "1 UP").
+ */
+function deriveMatchPlayWinner(match: PlayoffBracket): string | null {
+  if ((match.format ?? 'stroke_play') !== 'match_play') return null;
+  const p1 = match.player1_result;
+  const p2 = match.player2_result;
+  if (p1 && isWinningResult(p1) && match.player1_id) return match.player1_id;
+  if (p2 && isWinningResult(p2) && match.player2_id) return match.player2_id;
+  return null;
+}
+
+function isWinningResult(result: string): boolean {
+  return result.includes(' & ') || result.endsWith('UP');
+}
+
+/**
  * Renders a single playoff matchup: two player slots (or a BYE for the
  * second slot) with winner/loser styling. Shared between the standalone
  * /playoffs page and the Leaderboard page's Playoffs tab so both stay
@@ -103,6 +121,9 @@ export default function MatchupCard({
   const player1Seed = match.player1_id ? seedMap.get(match.player1_id) : undefined;
   const player2Seed = match.player2_id ? seedMap.get(match.player2_id) : undefined;
 
+  const derivedWinnerId = match.winner_id ?? deriveMatchPlayWinner(match);
+  const hasWinner = derivedWinnerId !== null;
+
   const handleConfirmWinner = async () => {
     if (!hasBothNets || isTie || !match.player1_id || !match.player2_id) return;
     const winnerId = p1Leads ? match.player1_id : match.player2_id;
@@ -141,8 +162,8 @@ export default function MatchupCard({
         player={match.player1}
         seed={match.player1_id ? seedMap.get(match.player1_id) : undefined}
         result={player1Result}
-        isWinner={match.winner_id !== null && match.winner_id === match.player1_id}
-        isLoser={match.winner_id !== null && match.winner_id === match.player2_id}
+        isWinner={hasWinner && derivedWinnerId === match.player1_id}
+        isLoser={hasWinner && derivedWinnerId === match.player2_id}
         isLiveLeader={p1Leads}
       />
       <div className="border-t border-[var(--border-light)]" />
@@ -158,8 +179,8 @@ export default function MatchupCard({
           player={match.player2}
           seed={match.player2_id ? seedMap.get(match.player2_id) : undefined}
           result={player2Result}
-          isWinner={match.winner_id !== null && match.winner_id === match.player2_id}
-          isLoser={match.winner_id !== null && match.winner_id === match.player1_id}
+          isWinner={hasWinner && derivedWinnerId === match.player2_id}
+          isLoser={hasWinner && derivedWinnerId === match.player1_id}
           isLiveLeader={p2Leads}
         />
       )}

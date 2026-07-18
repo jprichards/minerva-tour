@@ -80,6 +80,30 @@ describe('MatchupCard', () => {
     expect(loser.closest('div')?.className).toContain('opacity-60');
   });
 
+  it('highlights the winner derived from match play result even when winner_id is null', () => {
+    render(<MatchupCard match={makeMatch({ format: 'match_play', player1_result: '6 & 5', player2_result: null })} seedMap={new Map()} />);
+    const winner = screen.getByText('David Mustard');
+    const loser = screen.getByText('Grady Bunn');
+    expect(winner.className).toContain('text-green-700');
+    expect(loser.closest('div')?.className).toContain('opacity-60');
+  });
+
+  it('highlights player2 as winner when their result contains UP', () => {
+    render(<MatchupCard match={makeMatch({ format: 'match_play', player1_result: null, player2_result: '1 UP' })} seedMap={new Map()} />);
+    const winner = screen.getByText('Grady Bunn');
+    const loser = screen.getByText('David Mustard');
+    expect(winner.className).toContain('text-green-700');
+    expect(loser.closest('div')?.className).toContain('opacity-60');
+  });
+
+  it('does not derive a winner for stroke play matchups without winner_id', () => {
+    render(<MatchupCard match={makeMatch({ format: 'stroke_play', player1_result: '+1', player2_result: '+5' })} seedMap={new Map()} />);
+    const p1 = screen.getByText('David Mustard');
+    const p2 = screen.getByText('Grady Bunn');
+    expect(p1.className).not.toContain('text-green-700');
+    expect(p2.className).not.toContain('text-green-700');
+  });
+
   it('does not dim either slot when winner_id is orphaned (matches neither participant)', () => {
     render(<MatchupCard match={makeMatch({ winner_id: 'some-other-user' })} seedMap={new Map()} />);
     const p1 = screen.getByText('David Mustard');
