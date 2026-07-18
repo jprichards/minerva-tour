@@ -424,9 +424,29 @@ describe('MatchupCard', () => {
         player2_name: 'Grady Bunn',
         winner_name: 'David Mustard',
         status_text: '(net -2 to +3)',
+        is_seed_selection_match: false,
       });
       expect(mockCheckAndNotifyRoundComplete).toHaveBeenCalled();
       expect(onRefresh).toHaveBeenCalled();
+    });
+
+    it('flags is_seed_selection_match for the championship top-2-seed matchup so Slack uses the non-elimination copy', async () => {
+      const seedMap = new Map([['u1', 1], ['u2', 2]]);
+      render(
+        <MatchupCard
+          match={makeMatch({ format: 'stroke_play', round: 1 })}
+          seedMap={seedMap}
+          isActiveSeason
+          currentUserId="u1"
+          bestNet={{ player1: -2, player2: 3 }}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Confirm Winner: David (-2)'));
+
+      await waitFor(() => {
+        expect(notifySlack).toHaveBeenCalledWith(expect.objectContaining({ is_seed_selection_match: true }));
+      });
     });
 
     it('shows an error toast and does not refresh when the RPC fails', async () => {
@@ -727,12 +747,32 @@ describe('MatchupCard', () => {
         player2_name: 'Grady Bunn',
         winner_name: 'David Mustard',
         status_text: '1 UP thru 1',
+        is_seed_selection_match: false,
       });
       expect(mockCheckAndNotifyRoundComplete).toHaveBeenCalledWith(
         mockSupabaseClient,
         expect.objectContaining({ id: 'b1' }),
         'Quarterfinal'
       );
+    });
+
+    it('flags is_seed_selection_match when Mark Match Final is used on the championship top-2-seed matchup', async () => {
+      const holes = [makeHole(1, 'player1')];
+      const seedMap = new Map([['u1', 1], ['u2', 2]]);
+      render(
+        <MatchupCard
+          match={makeMatch({ format: 'match_play', holes: 18, status: 'in_progress', round: 1 })}
+          seedMap={seedMap}
+          isActiveSeason
+          currentUserId="u1"
+          holes={holes}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Mark Match Final'));
+      await waitFor(() => {
+        expect(notifySlack).toHaveBeenCalledWith(expect.objectContaining({ is_seed_selection_match: true }));
+      });
     });
 
     it('does not fire playoff_match_final when the match is marked final all square (no leader)', async () => {

@@ -6,7 +6,7 @@ import { useUser } from '@/lib/hooks/useUser';
 import { useToast } from '@/components/ui/Toast';
 import { logAuditEvent } from '@/lib/audit';
 import { notifySlack } from '@/lib/slack-notify';
-import { checkAndNotifyRoundComplete } from '@/lib/playoffs';
+import { checkAndNotifyRoundComplete, isSeedSelectionMatch, computeRoundLabel } from '@/lib/playoffs';
 import { ArrowLeft, Plus, Trash2, Trophy, CheckCircle, Pencil, Check, X, ChevronDown, ChevronUp, Hash } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import type { Season, User, PlayoffFlight, PlayoffFormat, PlayoffMatchStatus } from '@/types/database';
@@ -263,17 +263,27 @@ export default function PlayoffsAdminPage() {
 
     const winner = newWinnerId === match.player1_id ? match.player1 : match.player2;
     const resultLabel = newWinnerId === match.player1_id ? match.player1_result : match.player2_result;
+    const player1Seed = match.player1_id ? seedMap.get(match.player1_id) : undefined;
+    const player2Seed = match.player2_id ? seedMap.get(match.player2_id) : undefined;
+    // Admin actions have no rendered bracket to read a round label off of
+    // (unlike the self-service flows in MatchupCard.tsx), so derive the
+    // same "Quarterfinal"/"Semifinal"/"Final" label from the flight's seed
+    // count -- otherwise this falls back to a bare "Round 1".
+    const seedCountForFlight = seeds.filter((s) => getFlightForSeed(s.seed_number) === match.flight).length;
+    const roundLabel = computeRoundLabel(match.round, seedCountForFlight);
 
     notifySlack({
       event_type: 'playoff_match_final',
       flight: match.flight as PlayoffFlight,
       round: match.round,
+      round_label: roundLabel,
       player1_name: match.player1?.full_name || 'Player 1',
       player2_name: match.player2?.full_name || 'Player 2',
       winner_name: winner?.full_name || 'Unknown',
       status_text: resultLabel || null,
+      is_seed_selection_match: isSeedSelectionMatch(match.flight as PlayoffFlight, match.round, player1Seed, player2Seed),
     });
-    checkAndNotifyRoundComplete(supabase, match, null);
+    checkAndNotifyRoundComplete(supabase, match, roundLabel);
   };
 
   const handleSetWinner = async (bracketId: string, winnerId: string) => {

@@ -470,16 +470,23 @@ describe('Admin Playoffs Page', () => {
           event_type: 'playoff_match_final',
           flight: 'championship',
           round: 1,
+          // mockSeeds has 3 championship seeds, so round 1 of 2 total
+          // rounds (ceil(log2(3))) is a "Semifinal" — computed the same
+          // way PlayoffBracket.tsx labels rounds for players in the app.
+          round_label: 'Semifinal',
           player1_name: 'Tiger Woods',
           player2_name: 'Jack Nicklaus',
           winner_name: 'Tiger Woods',
           status_text: '-1',
+          // u1/u2 are seeds 1 & 2 in mockSeeds, so this championship round-1
+          // matchup is the top-2-seed "who picks their opponent" match.
+          is_seed_selection_match: true,
         });
       });
       expect(mockCheckAndNotifyRoundComplete).toHaveBeenCalledWith(
         mockSupabaseClient,
         expect.objectContaining({ id: 'b9' }),
-        null
+        'Semifinal'
       );
     });
 

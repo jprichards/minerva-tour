@@ -15,6 +15,7 @@ import {
   setPlayoffMatchStatus,
   confirmStrokePlayWinner,
   checkAndNotifyRoundComplete,
+  isSeedSelectionMatch,
   type HoleEntry,
 } from '@/lib/playoffs';
 import type { PlayoffBracket, PlayoffFormat, PlayoffMatchHole, User } from '@/types/database';
@@ -99,6 +100,8 @@ export default function MatchupCard({
 
   const player1Name = match.player1?.full_name || 'Player 1';
   const player2Name = match.player2?.full_name || 'Player 2';
+  const player1Seed = match.player1_id ? seedMap.get(match.player1_id) : undefined;
+  const player2Seed = match.player2_id ? seedMap.get(match.player2_id) : undefined;
 
   const handleConfirmWinner = async () => {
     if (!hasBothNets || isTie || !match.player1_id || !match.player2_id) return;
@@ -124,6 +127,7 @@ export default function MatchupCard({
       player2_name: player2Name,
       winner_name: winnerName,
       status_text: `(net ${formatNetScore(winnerNet)} to ${formatNetScore(loserNet)})`,
+      is_seed_selection_match: isSeedSelectionMatch(match.flight, match.round, player1Seed, player2Seed),
     });
     checkAndNotifyRoundComplete(supabase, match, roundLabel ?? null);
 
@@ -165,7 +169,15 @@ export default function MatchupCard({
       )}
 
       {!isBye && match.format === 'match_play' && (
-        <MatchPlayGrid match={match} holes={holes} roundLabel={roundLabel} onRefresh={onRefresh} canEdit={canSelfService} />
+        <MatchPlayGrid
+          match={match}
+          holes={holes}
+          roundLabel={roundLabel}
+          onRefresh={onRefresh}
+          canEdit={canSelfService}
+          player1Seed={player1Seed}
+          player2Seed={player2Seed}
+        />
       )}
 
       {showLiveNet && (
@@ -304,12 +316,14 @@ function FormatPicker({ match, roundLabel, onRefresh }: {
   );
 }
 
-function MatchPlayGrid({ match, holes, roundLabel, onRefresh, canEdit }: {
+function MatchPlayGrid({ match, holes, roundLabel, onRefresh, canEdit, player1Seed, player2Seed }: {
   match: PlayoffBracket;
   holes: PlayoffMatchHole[];
   roundLabel?: string | null;
   onRefresh?: () => void | Promise<void>;
   canEdit: boolean;
+  player1Seed?: number;
+  player2Seed?: number;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [savingHole, setSavingHole] = useState<number | null>(null);
@@ -398,6 +412,7 @@ function MatchPlayGrid({ match, holes, roundLabel, onRefresh, canEdit }: {
         player2_name: player2Name,
         winner_name: winnerName,
         status_text: status.statusText,
+        is_seed_selection_match: isSeedSelectionMatch(match.flight, match.round, player1Seed, player2Seed),
       });
     }
     checkAndNotifyRoundComplete(supabase, match, roundLabel ?? null);

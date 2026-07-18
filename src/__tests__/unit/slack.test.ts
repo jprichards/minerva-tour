@@ -668,6 +668,39 @@ describe('formatSlackMessage', () => {
       expect(text).toContain('advances');
     });
 
+    it('playoff_match_final does not say "defeats"/"advances" for the top-2-seed matchup, since both players advance regardless of this result', () => {
+      const msg = formatSlackMessage({
+        ...basePlayoffPayload,
+        event_type: 'playoff_match_final',
+        winner_name: 'David Mustard',
+        status_text: '3 & 2',
+        is_seed_selection_match: true,
+      });
+      const text = allBlockText(msg);
+      expect(text).toContain('David Mustard');
+      expect(text).toContain('Grady Bunn');
+      expect(text).toContain('3 & 2');
+      expect(text).toContain('seed matchup');
+      expect(text).toContain('Round 2 opponent');
+      expect(text).toContain('Both players advance');
+      expect(text).not.toContain('defeats');
+      expect(text).not.toContain('and advances!');
+    });
+
+    it('playoff_match_final falls back to the normal "defeats"/"advances" copy when is_seed_selection_match is false or omitted', () => {
+      const msg = formatSlackMessage({
+        ...basePlayoffPayload,
+        event_type: 'playoff_match_final',
+        winner_name: 'David Mustard',
+        status_text: '3 & 2',
+        is_seed_selection_match: false,
+      });
+      const text = allBlockText(msg);
+      expect(text).toContain('defeats');
+      expect(text).toContain('advances');
+      expect(text).not.toContain('seed matchup');
+    });
+
     it('playoff_round_complete announces the flight and round with matchup count, without needing player names', () => {
       const msg = formatSlackMessage({
         event_type: 'playoff_round_complete',

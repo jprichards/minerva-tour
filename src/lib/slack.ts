@@ -481,6 +481,16 @@ function formatPlayoffStrokeScore(p: SlackPlayoffPayload): SlackMessage {
 function formatPlayoffMatchFinal(p: SlackPlayoffPayload): SlackMessage {
   const loserName = p.winner_name === p.player1_name ? p.player2_name : p.player1_name;
   const resultSuffix = p.status_text ? ` ${p.status_text}` : '';
+
+  if (p.is_seed_selection_match) {
+    const fallbackText = `Seed matchup decided — ${p.winner_name} earns the right to pick their Round 2 opponent`;
+    const lines = [
+      `🎯 *${p.winner_name}* beats *${loserName}*${resultSuffix} in the seed matchup and earns the right to pick their Round 2 opponent. Both players advance.`,
+      flightRoundLine(p),
+    ];
+    return { text: fallbackText, blocks: [sectionBlock(lines.join('\n'))] };
+  }
+
   const fallbackText = `Match Final — ${p.winner_name} defeats ${loserName}${resultSuffix}`;
 
   const lines = [

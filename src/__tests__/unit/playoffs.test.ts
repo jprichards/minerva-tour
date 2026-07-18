@@ -11,6 +11,8 @@ import {
   resolveBestNet,
   isRoundComplete,
   checkAndNotifyRoundComplete,
+  isSeedSelectionMatch,
+  computeRoundLabel,
   type HoleEntry,
 } from '@/lib/playoffs';
 import { notifySlack } from '@/lib/slack-notify';
@@ -334,6 +336,64 @@ describe('isRoundComplete', () => {
   it('treats a bye (no player2) as automatically decided', () => {
     const matchups = [makeMatch({ player2_id: null }), makeMatch({ winner_id: 'p2' })];
     expect(isRoundComplete(matchups)).toBe(true);
+  });
+});
+
+describe('isSeedSelectionMatch', () => {
+  it('is true for the championship top-2-seed matchup in round 1', () => {
+    expect(isSeedSelectionMatch('championship', 1, 1, 2)).toBe(true);
+  });
+
+  it('is true regardless of which player is seed 1 vs seed 2', () => {
+    expect(isSeedSelectionMatch('championship', 1, 2, 1)).toBe(true);
+  });
+
+  it('is true for the consolation top-2-seed matchup (seeds 7 & 8) in round 1', () => {
+    expect(isSeedSelectionMatch('consolation', 1, 7, 8)).toBe(true);
+  });
+
+  it('is false outside round 1, even for the same seed pair', () => {
+    expect(isSeedSelectionMatch('championship', 2, 1, 2)).toBe(false);
+  });
+
+  it('is false for a non-top-seed pair in round 1', () => {
+    expect(isSeedSelectionMatch('championship', 1, 2, 3)).toBe(false);
+  });
+
+  it('is false for the unicorn flight regardless of seeds, since its bye goes to the last 2 seeds in a reverse bracket', () => {
+    expect(isSeedSelectionMatch('unicorn', 1, 1, 2)).toBe(false);
+  });
+
+  it('is false when either seed is missing (e.g. a BYE matchup)', () => {
+    expect(isSeedSelectionMatch('championship', 1, 1, undefined)).toBe(false);
+  });
+});
+
+describe('computeRoundLabel', () => {
+  it('labels the last round "Final" for a 6-seed flight (3 rounds)', () => {
+    expect(computeRoundLabel(3, 6)).toBe('Final');
+  });
+
+  it('labels the second-to-last round "Semifinal" for a 6-seed flight', () => {
+    expect(computeRoundLabel(2, 6)).toBe('Semifinal');
+  });
+
+  it('labels the third-to-last round "Quarterfinal" for a 6-seed flight', () => {
+    expect(computeRoundLabel(1, 6)).toBe('Quarterfinal');
+  });
+
+  it('labels the only round "Final" for a 2-seed flight', () => {
+    expect(computeRoundLabel(1, 2)).toBe('Final');
+  });
+
+  it('falls back to a plain "Round N" label further back than quarterfinals', () => {
+    // a 16-seed flight has 4 rounds (ceil(log2(16))), so round 1 is two
+    // rounds before the quarterfinal (round 2), landing on the fallback.
+    expect(computeRoundLabel(1, 16)).toBe('Round 1');
+  });
+
+  it('falls back to "Round N" when no seed count is available for the flight', () => {
+    expect(computeRoundLabel(1, 0)).toBe('Round 1');
   });
 });
 

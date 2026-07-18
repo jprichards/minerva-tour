@@ -96,6 +96,56 @@ export function mirrorResultLabels(status: MatchStatus): { player1_result: strin
   };
 }
 
+// Mirrors the flight-seed-range scheme already hardcoded elsewhere (see
+// getFlightForSeed in PlayoffBracket.tsx and the admin playoffs page):
+// championship = seeds 1-6, consolation = 7-12. Unicorn has no entry — its
+// bye goes to the LAST 2 seeds in a reverse bracket, not a pick-your-
+// opponent scenario, so this rule never applies there.
+const FLIGHT_MIN_TOP_SEED: Record<PlayoffFlight, number | null> = {
+  championship: 1,
+  consolation: 7,
+  unicorn: null,
+};
+
+/**
+ * True for the one round-1 matchup between a flight's top 2 seeds, who
+ * each get a bye from the "real" round-1 bracket but play each other to
+ * decide who gets to pick their round 2 opponent (see docs/prd.md,
+ * Playoffs section). Both players advance to round 2 regardless of this
+ * match's result, so it needs different Slack copy than a normal
+ * elimination match — see formatPlayoffMatchFinal in src/lib/slack.ts.
+ */
+export function isSeedSelectionMatch(
+  flight: PlayoffFlight,
+  round: number,
+  seed1: number | undefined,
+  seed2: number | undefined
+): boolean {
+  if (round !== 1 || seed1 == null || seed2 == null) return false;
+  const minSeed = FLIGHT_MIN_TOP_SEED[flight];
+  if (minSeed == null) return false;
+  const [lo, hi] = [seed1, seed2].sort((a, b) => a - b);
+  return lo === minSeed && hi === minSeed + 1;
+}
+
+/**
+ * Derives the human round label ("Quarterfinal", "Semifinal", "Final",
+ * or a plain "Round N" fallback) purely from a round number + how many
+ * players are seeded into that round's flight. Mirrors the bracket
+ * display logic in PlayoffBracket.tsx so admin-triggered Slack
+ * notifications -- which have no rendered bracket to read a label off
+ * of -- describe the round the same way players see it in the app,
+ * instead of falling back to a bare "Round 1".
+ */
+export function computeRoundLabel(round: number, seedCountForFlight: number): string {
+  if (seedCountForFlight <= 0) return `Round ${round}`;
+  const totalRounds = Math.ceil(Math.log2(seedCountForFlight));
+  if (round === totalRounds) return 'Final';
+  if (round === totalRounds - 1) return 'Semifinal';
+  if (round === totalRounds - 2) return 'Quarterfinal';
+  return `Round ${round}`;
+}
+
 interface RpcResult {
   error: string | null;
 }

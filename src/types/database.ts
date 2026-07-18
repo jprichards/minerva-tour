@@ -409,6 +409,13 @@ export interface SlackPlayoffPayload {
   hole_number?: number | null;
   /** Set only for playoff_match_final. */
   winner_name?: string | null;
+  /**
+   * Set only for playoff_match_final: true when this is the round-1
+   * matchup between a flight's top 2 seeds, who play only to decide who
+   * picks their round 2 opponent -- both players advance regardless of
+   * the result, so the Slack copy must not imply elimination.
+   */
+  is_seed_selection_match?: boolean;
   /** First name of the player currently leading; only set for playoff_status_update, null/omitted when the match is tied. */
   leader_first_name?: string | null;
   /** Set only for playoff_round_complete: how many matchups were in the completed round. */
